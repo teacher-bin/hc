@@ -1,0 +1,847 @@
+﻿<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>가로내 온라인 연구실</title>
+    <meta name="description" content="가로내 온라인 연구실 - 교직원 업무 지원 및 학사일정 관리 시스템" />
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Inter:wght@300;400;600&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+     <!-- FullCalendar v6.1.15 -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+    <!-- SortableJS v1.15.0 -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <!-- lunar-javascript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lunar-javascript/1.7.4/lunar.min.js"></script>
+    <link rel="stylesheet" href="style.css?v=5" />
+    <link rel="stylesheet" href="src/components/buttons.css" />
+    <link rel="stylesheet" href="src/components/today_widget.css?v=6" />
+    <link rel="stylesheet" href="src/components/board_modal.css" />
+  </head>
+  <body>
+    <header>
+      <div class="header-container">
+        
+        <nav id="category-nav">
+          <button class="nav-item active" data-category="all">홈</button>
+          <button class="nav-item" data-category="status">학교현황</button>
+          <button class="nav-item" data-category="account">학교계정</button>
+          <button class="nav-item" data-category="curriculum">학사일정</button>
+          <button class="nav-item" data-category="bus">배차신청</button>
+          <button class="nav-item" data-category="shortcut">바로가기</button>
+          <button class="nav-item" data-category="datayard">자료마당</button>
+          <button class="nav-item" data-category="support">온학교 e지원</button>
+        </nav>
+
+        <!-- 시계가 위젯 위로 이동함 -->
+      </div>
+    </header>
+
+    <main>
+
+      <section id="intro-section" class="intro-section">
+        <canvas id="intro-canvas"></canvas>
+        <div class="intro-blobs">
+          <div class="blob b-1"></div>
+          <div class="blob b-2"></div>
+          <div class="blob b-3"></div>
+          <div class="blob b-4"></div>
+          <div class="blob b-5"></div>
+        </div>
+        <div class="intro-landing-container">
+          <!-- Edit controls remain at the top/corner -->
+            <div id="intro-edit-controls" class="intro-edit-controls hidden">
+              <!-- 기존 편집 컨트롤 숨김 또는 삭제 예정 -->
+            </div>
+            <!-- 삭제됨: 기존 인사 구역 -->
+
+          <!-- 1. Main Site Title (Now Center) -->
+          <div class="intro-hero-title">
+            가로내 온라인 연구실
+          </div>
+
+          <!-- 2. Naver Search (Middle) -->
+          <div class="intro-search-area">
+            <form class="intro-naver-search" action="https://search.naver.com/search.naver" method="get" target="_blank">
+              <input type="hidden" name="where" value="nexearch">
+              <span class="intro-naver-logo">N</span>
+              <input
+                type="text"
+                name="query"
+                placeholder="네이버 검색"
+                autocomplete="off"
+              />
+              <button type="submit" class="intro-search-btn"><i class="fas fa-search"></i></button>
+            </form>
+          </div>
+
+          <div class="intro-board-section">
+            <div class="board-header">
+              <h3 class="fun-title"><i class="fas fa-bullhorn"></i> 알립니다!</h3>
+              <span class="board-description">공유하고 싶은 소식을 남겨주세요.</span>
+            </div>
+            <div id="intro-board-grid" class="board-grid">
+              <!-- 게시물들이 여기에 렌더링됩니다 -->
+              <div class="board-loading">불러오는 중...</div>
+            </div>
+          </div>
+
+          <!-- 4. Unified Intro Footer -->
+          <div class="intro-mini-footer">
+            <p>&copy; 2026 가로내 온라인 연구실. 업무 지원 AI 비서 Gemini가 함께합니다.</p>
+          </div>
+        </div>
+      </section>
+      
+      <section id="links-grid" class="links-grid hidden">
+        <!-- JavaScript를 통해 카드가 여기에 렌더링됩니다 -->
+      </section>
+
+      <section id="status-section" class="status-section hidden">
+
+        <div id="status-header" class="status-header">
+          <div id="status-tabs-container" class="status-tabs">
+            <!-- JavaScript를 통해 탭이 여기에 렌더링됩니다 -->
+          </div>
+          <!-- Edit controls will be moved here by JS -->
+        </div>
+        <div id="status-panels-container">
+          <!-- JavaScript를 통해 활성화된 패널(표)이 여기에 렌더링됩니다 -->
+        </div>
+      </section>
+
+    <!-- SortableJS -->
+
+    <section id="shortcut-section" class="shortcut-section hidden">
+      <div class="shortcut-controls">
+        <button id="edit-mode-btn" class="btn-primary"><i class="fas fa-edit"></i> 바로가기 편집</button>
+        <div id="edit-actions" class="hidden">
+          <button id="add-group-btn" class="btn-secondary"><i class="fas fa-folder-plus"></i> 그룹 추가</button>
+          <button id="save-order-btn" class="btn-success"><i class="fas fa-save"></i> 저장 완료</button>
+          <button id="cancel-edit-btn" class="btn-cancel"><i class="fas fa-times"></i> 취소</button>
+        </div>
+      </div>
+      <div id="shortcut-container" class="shortcut-grid">
+        <!-- JavaScript를 통해 바로가기 그룹이 여기에 렌더링됩니다 -->
+      </div>
+    </section>
+
+    <!-- Shortcut Edit Modal -->
+    <div id="shortcutModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="shortcutModalTitle">바로가기 추가</h2>
+          <span class="close-modal close-shortcut-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+          <form id="shortcutForm">
+            <input type="hidden" id="shortcut-id">
+            <input type="hidden" id="shortcut-group-id">
+            <div class="form-group">
+              <label for="shortcut-title">이름</label>
+              <input type="text" id="shortcut-title" required placeholder="예: 네이버">
+            </div>
+            <div class="form-group">
+              <label for="shortcut-url">URL</label>
+              <input type="url" id="shortcut-url" required placeholder="https://example.com">
+            </div>
+            
+            <div class="form-group">
+              <label>아이콘 설정</label>
+              <div class="icon-type-tabs">
+                <button type="button" class="icon-tab active" data-tab="preset">아이콘 선택</button>
+                <button type="button" class="icon-tab" data-tab="custom">이미지 첨부</button>
+              </div>
+              
+              <!-- Tab 1: Preset Icons -->
+              <div id="icon-tab-preset" class="icon-tab-content active">
+                <div class="icon-selector" id="icon-selector">
+                  <div class="icon-option selected" data-icon="fa-link"><i class="fas fa-link"></i></div>
+                  <div class="icon-option" data-icon="fa-search"><i class="fas fa-search"></i></div>
+                  <div class="icon-option" data-icon="fa-home"><i class="fas fa-home"></i></div>
+                  <div class="icon-option" data-icon="fa-building"><i class="fas fa-building"></i></div>
+                  <div class="icon-option" data-icon="fa-book"><i class="fas fa-book"></i></div>
+                  <div class="icon-option" data-icon="fa-chalkboard"><i class="fas fa-chalkboard"></i></div>
+                  <div class="icon-option" data-icon="fa-desktop"><i class="fas fa-desktop"></i></div>
+                  <div class="icon-option" data-icon="fa-calendar"><i class="fas fa-calendar"></i></div>
+                  <div class="icon-option" data-icon="fa-users"><i class="fas fa-users"></i></div>
+                  <div class="icon-option" data-icon="fa-music"><i class="fas fa-music"></i></div>
+                  <div class="icon-option" data-icon="fa-video"><i class="fas fa-video"></i></div>
+                  <div class="icon-option" data-icon="fa-image"><i class="fas fa-image"></i></div>
+                  <div class="icon-option" data-icon="fa-file"><i class="fas fa-file"></i></div>
+                  <div class="icon-option" data-icon="fa-shopping-cart"><i class="fas fa-shopping-cart"></i></div>
+                </div>
+              </div>
+
+              <!-- Tab 2: Custom Image -->
+              <div id="icon-tab-custom" class="icon-tab-content">
+                 <div class="custom-icon-inputs">
+                    <p class="helper-text">* 권장 크기: 64x64px 이상 1:1 비율</p>
+                    <label class="radio-label">
+                        <input type="radio" name="image-source" value="url" checked> 이미지 주소(URL) 입력
+                    </label>
+                    <input type="url" id="shortcut-image-url" placeholder="https://example.com/icon.png">
+                    
+                    <label class="radio-label" style="margin-top: 10px;">
+                        <input type="radio" name="image-source" value="file"> 이미지 파일 업로드 (20KB 미만)
+                    </label>
+                    <input type="file" id="shortcut-image-file" accept="image/*">
+                    <input type="hidden" id="shortcut-image-base64">
+                    
+                    <div id="image-preview" class="image-preview hidden">
+                        <img src="" alt="Preview">
+                        <button type="button" id="clear-image">삭제</button>
+                    </div>
+                 </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-cancel close-shortcut-modal">취소</button>
+            <button type="submit" form="shortcutForm" class="btn-save">저장</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Board Post Modal (Refined) -->
+    <div id="boardPostModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="boardModalTitle">메모 작성</h2>
+          <span class="close-modal close-board-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+          <form id="boardPostForm">
+            <input type="hidden" id="post-id">
+            
+            <div class="form-group">
+              <label>내용</label>
+              <div id="post-content-editor" contenteditable="true" placeholder="무슨 생각을 하고 계신가요?"></div>
+            </div>
+
+            <div class="form-group">
+              <label>작성자</label>
+              <div id="post-author-chips" class="author-chips">
+                <!-- JS에서 버튼 칩들이 생성됩니다 -->
+              </div>
+              <input type="hidden" id="selected-post-author" value="">
+              <input type="text" id="post-author-custom" style="display: none;" placeholder="닉네임을 입력해주세요">
+            </div>
+
+            <div class="form-group">
+              <label>파일 첨부</label>
+              <div id="file-drop-zone" class="file-drop-zone">
+                <i class="fas fa-paperclip"></i>
+                <p>파일 선택 또는 드래그</p>
+                <input type="file" id="post-file-input" hidden>
+              </div>
+              <div id="file-preview-area" class="file-preview-area hidden">
+                <span id="file-name-display"></span>
+                <button type="button" id="remove-file-btn"><i class="fas fa-times"></i></button>
+              </div>
+            </div>
+
+            <div class="form-row" style="display: flex; justify-content: space-between; align-items: flex-end;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label>상태</label>
+                <div class="status-pill-group" id="post-status-selector">
+                  <input type="radio" name="post-status" id="status-normal" value="normal" class="status-check-tag" checked>
+                  <label for="status-normal" class="status-label normal">일반</label>
+                  
+                  <input type="radio" name="post-status" id="status-important" value="important" class="status-check-tag">
+                  <label for="status-important" class="status-label important">중요</label>
+                  
+                  <input type="radio" name="post-status" id="status-urgent" value="urgent" class="status-check-tag">
+                  <label for="status-urgent" class="status-label urgent">긴급</label>
+                </div>
+              </div>
+              
+              <div class="form-group" style="margin-bottom: 0;">
+                <label>색상</label>
+                <div class="color-picker-container">
+                  <div id="color-trigger" class="color-trigger" style="background-color: #fff9c4;">
+                    <i class="fas fa-palette" style="opacity: 0.5; font-size: 0.8rem;"></i>
+                  </div>
+                  <div id="color-popover" class="color-options-popover">
+                    <div class="color-option selected" data-color="#fff9c4" style="background-color: #fff9c4;"></div>
+                    <div class="color-option" data-color="#e3f2fd" style="background-color: #e3f2fd;"></div>
+                    <div class="color-option" data-color="#f3e5f5" style="background-color: #f3e5f5;"></div>
+                    <div class="color-option" data-color="#e8f5e9" style="background-color: #e8f5e9;"></div>
+                    <div class="color-option" data-color="#fff3e0" style="background-color: #fff3e0;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-memo-cancel close-board-modal">취소</button>
+            <button type="submit" form="boardPostForm" class="btn-memo-save">올리기</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group Edit Modal -->
+    <div id="groupModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="groupModalTitle">그룹 추가</h2>
+          <span class="close-modal close-group-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+          <form id="groupForm">
+            <input type="hidden" id="group-id">
+            <div class="form-group">
+              <label for="group-title">그룹명</label>
+              <input type="text" id="group-title" required placeholder="예: 자주 쓰는 사이트">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-cancel close-group-modal">취소</button>
+            <button type="submit" form="groupForm" class="btn-save">저장</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Datayard Group Modal -->
+    <div id="datayardGroupModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="datayardGroupModalTitle">그룹 추가</h2>
+          <span class="close-modal close-datayard-group-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+          <form id="datayardGroupForm">
+            <input type="hidden" id="datayard-group-id">
+            <div class="form-group">
+              <label for="datayard-group-title">그룹명</label>
+              <input type="text" id="datayard-group-title" required placeholder="예: 일반자료">
+            </div>
+            <div class="form-group">
+              <label>아이콘 선택</label>
+              <div class="icon-selector" id="datayard-group-icon-selector">
+                <div class="icon-option selected" data-icon="fa-folder"><i class="fas fa-folder"></i></div>
+                <div class="icon-option" data-icon="fa-folder-open"><i class="fas fa-folder-open"></i></div>
+                <div class="icon-option" data-icon="fa-file-alt"><i class="fas fa-file-alt"></i></div>
+                <div class="icon-option" data-icon="fa-archive"><i class="fas fa-archive"></i></div>
+                <div class="icon-option" data-icon="fa-book"><i class="fas fa-book"></i></div>
+                <div class="icon-option" data-icon="fa-graduation-cap"><i class="fas fa-graduation-cap"></i></div>
+                <div class="icon-option" data-icon="fa-chalkboard-teacher"><i class="fas fa-chalkboard-teacher"></i></div>
+                <div class="icon-option" data-icon="fa-user-clock"><i class="fas fa-user-clock"></i></div>
+                <div class="icon-option" data-icon="fa-calendar-check"><i class="fas fa-calendar-check"></i></div>
+                <div class="icon-option" data-icon="fa-balance-scale"><i class="fas fa-balance-scale"></i></div>
+                <div class="icon-option" data-icon="fa-briefcase"><i class="fas fa-briefcase"></i></div>
+                <div class="icon-option" data-icon="fa-tools"><i class="fas fa-tools"></i></div>
+                <div class="icon-option" data-icon="fa-cloud-download-alt"><i class="fas fa-cloud-download-alt"></i></div>
+                <div class="icon-option" data-icon="fa-info-circle"><i class="fas fa-info-circle"></i></div>
+              </div>
+              <input type="hidden" id="datayard-group-icon" value="fa-folder">
+            </div>
+            <div class="form-group">
+              <label for="datayard-group-color">테마 색상</label>
+              <select id="datayard-group-color" class="form-select">
+                <option value="blue">Blue</option>
+                <option value="green">Green</option>
+                <option value="purple">Purple</option>
+                <option value="red">Red</option>
+                <option value="yellow">Yellow</option>
+                <option value="emerald">Emerald</option>
+                <option value="pink">Pink</option>
+                <option value="amber">Amber</option>
+                <option value="violet">Violet</option>
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-cancel close-datayard-group-modal">취소</button>
+            <button type="submit" form="datayardGroupForm" class="btn-save">저장</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Datayard Item Modal -->
+    <div id="datayardItemModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="datayardItemModalTitle">자료 추가</h2>
+          <span class="close-modal close-datayard-item-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+          <form id="datayardItemForm">
+            <input type="hidden" id="datayard-item-id">
+            <input type="hidden" id="datayard-item-group-id">
+            <div class="form-group">
+              <label for="datayard-item-title">자료 이름</label>
+              <input type="text" id="datayard-item-title" required placeholder="예: 2026 교육계획">
+            </div>
+            <div class="form-group">
+              <label>파일 설정</label>
+              <div class="file-type-tabs">
+                <button type="button" class="item-tab active" data-tab="upload">파일 업로드</button>
+                <button type="button" class="item-tab" data-tab="url">URL 입력</button>
+              </div>
+              
+              <div id="item-tab-upload" class="item-tab-content active">
+                <div class="file-upload-area" id="datayard-file-drop-zone">
+                  <i class="fas fa-cloud-upload-alt"></i>
+                  <p>파일을 여기로 드래그하거나 클릭하여 선택하세요.</p>
+                  <input type="file" id="datayard-file-input" hidden>
+                </div>
+                <div id="datayard-file-preview" class="file-preview-area hidden">
+                  <span id="datayard-file-name-display"></span>
+                  <button type="button" id="datayard-remove-file-btn"><i class="fas fa-times"></i></button>
+                </div>
+                <input type="hidden" id="datayard-item-url">
+              </div>
+
+              <div id="item-tab-url" class="item-tab-content">
+                <div class="form-group">
+                  <label for="datayard-item-url-input">URL</label>
+                  <input type="url" id="datayard-item-url-input" placeholder="https://example.com/file.pdf">
+                </div>
+              </div>
+            </div>
+          </form>
+          <div id="datayard-upload-progress" class="hidden">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 0%;"></div>
+            </div>
+            <p class="progress-text">업로드 중... (0%)</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-cancel close-datayard-item-modal">취소</button>
+            <button type="submit" form="datayardItemForm" class="btn-save">저장</button>
+        </div>
+      </div>
+    </div>
+
+      <!-- Datayard Section -->
+    <section id="datayard-section" class="category-content hidden">
+      <div class="helppage-header">
+        <h2>횡천초등학교 업무 도움자료</h2>
+        <p>선생님들의 자료를 공유해주세요!</p>
+      </div>
+      <div class="datayard-controls">
+        <button id="datayard-edit-mode-btn" class="btn-primary"><i class="fas fa-edit"></i> 자료마당 편집</button>
+        <div id="datayard-edit-actions" class="hidden">
+          <button id="datayard-add-group-btn" class="btn-secondary"><i class="fas fa-folder-plus"></i> 그룹 추가</button>
+          <button id="datayard-save-order-btn" class="btn-success"><i class="fas fa-save"></i> 저장 완료</button>
+          <button id="datayard-cancel-edit-btn" class="btn-cancel"><i class="fas fa-times"></i> 취소</button>
+        </div>
+      </div>
+      <div id="datayard-container" class="helppage-grid">
+        <!-- JavaScript를 통해 자료마당 그룹이 여기에 렌더링됩니다 -->
+      </div>
+    </section>
+
+    <!-- Account Section (학교계정) -->
+    <section id="account-section" class="category-content hidden">
+
+      <div id="account-controls" class="section-controls">
+        <button id="account-edit-mode-btn" class="btn-primary"><i class="fas fa-edit"></i> 학교계정 편집</button>
+        <div id="account-edit-actions" class="hidden">
+          <button id="account-add-btn" class="btn-secondary"><i class="fas fa-plus"></i> 계정 추가</button>
+          <button id="account-import-btn" class="btn-secondary"><i class="fas fa-file-import"></i> 엑셀 가져오기</button>
+          <button id="account-template-btn" class="btn-secondary"><i class="fas fa-download"></i> 서식 다운로드</button>
+          <button id="account-save-btn" class="btn-success"><i class="fas fa-save"></i> 저장 완료</button>
+          <button id="account-cancel-btn" class="btn-cancel"><i class="fas fa-times"></i> 취소</button>
+          <input type="file" id="account-excel-input" accept=".xlsx, .xls, .csv" style="display:none;">
+        </div>
+      </div>
+
+      <div class="account-table-wrapper">
+        <table class="account-table">
+          <thead>
+            <tr>
+              <th style="width: 60px;">번호</th>
+              <th>서비스명</th>
+              <th>아이디</th>
+              <th>비밀번호</th>
+              <th>비고</th>
+              <th class="edit-col hidden" style="width: 100px;">관리</th>
+            </tr>
+          </thead>
+          <tbody id="account-table-body">
+            <!-- JavaScript에서 렌더링 -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Bus Section (배차신청) -->
+    <section id="bus-section" class="category-content hidden">
+      <div id="bus-controls" class="section-controls">
+        <button id="bus-add-row-btn" class="btn-primary"><i class="fas fa-plus-circle"></i> 행 추가</button>
+        <button id="bus-save-btn" class="btn-success"><i class="fas fa-save"></i> 전체 저장</button>
+        <button id="bus-cancel-btn" class="btn-cancel"><i class="fas fa-undo"></i> 초기화</button>
+      </div>
+
+      <div class="bus-table-wrapper spreadsheet-mode">
+        <table class="bus-table">
+          <thead>
+            <tr>
+              <th style="width: 40px;">선택</th>
+              <th style="width: 80px;">접수상황</th>
+              <th style="width: 115px; cursor: pointer;" data-sort="date">날짜 <i class="fas fa-sort"></i></th>
+              <th style="width: 110px; cursor: pointer;" data-sort="timeRange">시간 <i class="fas fa-sort"></i></th>
+              <th style="width: 75px; cursor: pointer;" data-sort="region">관내/외 <i class="fas fa-sort"></i></th>
+              <th style="width: 120px; cursor: pointer;" data-sort="busType">차형(인승) <i class="fas fa-sort"></i></th>
+              <th style="width: 50px; cursor: pointer;" data-sort="busCount">대수 <i class="fas fa-sort"></i></th>
+              <th style="width: 160px; cursor: pointer;" data-sort="destination">목적지 <i class="fas fa-sort"></i></th>
+              <th style="width: 70px; cursor: pointer;" data-sort="useSchoolBus">본교차량 <i class="fas fa-sort"></i></th>
+              <th style="width: 85px; cursor: pointer;" data-sort="leadTeacher">인솔교사 <i class="fas fa-sort"></i></th>
+              <th style="width: 45px; cursor: pointer;" data-sort="teacherCount">교사 <i class="fas fa-sort"></i></th>
+              <th style="width: 45px; cursor: pointer;" data-sort="studentCount">학생 <i class="fas fa-sort"></i></th>
+              <th style="width: 45px; cursor: pointer;" data-sort="total">계 <i class="fas fa-sort"></i></th>
+              <th style="width: 200px; cursor: pointer;" data-sort="purpose">신청 목적 <i class="fas fa-sort"></i></th>
+              <th style="width: 45px;">관리</th>
+            </tr>
+          </thead>
+          <tbody id="bus-table-body">
+            <!-- JavaScript 렌더링 -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Helppage Section (온학교 e지원) -->
+    <section id="helppage-section" class="category-content hidden"></section>
+<line_break_holder>
+
+
+    
+    <!-- Curriculum Section (학사일정) -->
+    <section id="curriculum-section" class="category-content hidden">
+      <div class="curriculum-container">
+        <!-- Header & Controls -->
+        <div class="curriculum-header-area">
+          <div class="curriculum-title-group">
+            <h2><i class="fas fa-book-open"></i> 학사일정</h2>
+          </div>
+
+          <div class="curriculum-nav-group">
+            <button id="curr-prev-btn" class="nav-arrow-btn"><i class="fas fa-chevron-left"></i></button>
+            <div id="curriculum-current-period" class="period-display">2026년 2월</div>
+            <button id="curr-next-btn" class="nav-arrow-btn"><i class="fas fa-chevron-right"></i></button>
+            <button id="curr-today-btn" class="nav-today-btn">오늘</button>
+            <div class="curr-export-group">
+                <button id="curr-excel-btn" class="export-btn excel" title="엑셀로 내려받기"><i class="fas fa-file-excel"></i> 엑셀</button>
+                <button id="curr-hwp-btn" class="export-btn hwp" title="한글파일로 내려받기"><i class="fas fa-file-word"></i> 한글</button>
+            </div>
+          </div>
+          
+          <div class="curriculum-actions">
+            <button id="curr-add-btn" class="btn-primary-gradient"><i class="fas fa-plus"></i> 일정 추가</button>
+            <div class="view-switcher">
+              <button class="view-btn active" data-curr-view="table" title="표 보기"><i class="fas fa-list"></i></button>
+              <button class="view-btn" data-curr-view="calendar" title="월별 달력"><i class="fas fa-calendar-alt"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Content Views -->
+        <div id="curriculum-content-wrapper" class="content-wrapper">
+          
+          <!-- Member Confirmation Bar -->
+          <div id="curr-member-confirm-bar" class="curr-member-confirm-bar">
+             <!-- JS Generated Table -->
+          </div>
+          
+          <!-- 1. Table View (Default) -->
+          <div id="curr-table-view" class="curr-view active">
+            <div class="curr-table-header">
+              <div class="th th-date">날짜</div>
+              <div class="th th-day">요일</div>
+              <div class="th th-life">특별일</div>
+              <div class="th th-edu">교육활동</div>
+              <div class="th th-staff">교직원 복무</div>
+              <div class="th th-doc">처리할 공문</div>
+            </div>
+            <div id="curr-table-body" class="curr-table-body">
+              <!-- JS Generated Rows -->
+            </div>
+          </div>
+
+          <!-- 2. Calendar View (FullCalendar) -->
+          <div id="curr-calendar-view" class="curr-view">
+            <div id="curr-fullcalendar"></div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Curriculum Event Modal -->
+    <div id="currModal" class="modal">
+      <div class="modal-content modal-lg">
+        <div class="modal-header">
+          <h2 id="currModalTitle">새 일정 등록</h2>
+          <span class="close-modal close-curr-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+          <!-- Type Selection Step -->
+          <div id="curr-type-selector" class="type-selector-step">
+            <h3>일정 유형을 선택하세요</h3>
+            <div class="type-cards">
+              <div class="type-card" data-type="edu">
+                <i class="fas fa-chalkboard-teacher"></i>
+                <span>교육활동</span>
+              </div>
+              <div class="type-card" data-type="staff">
+                <i class="fas fa-user-clock"></i>
+                <span>교직원 복무</span>
+              </div>
+              <div class="type-card" data-type="doc">
+                <i class="fas fa-file-signature"></i>
+                <span>처리할 공문</span>
+              </div>
+              <div class="type-card" data-type="life">
+                <i class="fas fa-sun"></i>
+                <span>특별일(절기/행사)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Input Form Step -->
+          <form id="currEventForm" class="hidden">
+            <input type="hidden" id="curr-event-id">
+            <input type="hidden" id="curr-event-type">
+            
+            <div class="form-header-bar">
+              <span id="curr-selected-type-badge" class="badge">교육활동</span>
+              <button type="button" id="curr-back-type-btn" class="btn-text">유형 변경</button>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>날짜</label>
+                    <input type="date" id="curr-date" required>
+                </div>
+                <!-- Time is optional or specific to type -->
+                <div class="form-group hidden" id="curr-time-group">
+                    <label>시간</label>
+                    <input type="time" id="curr-time">
+                </div>
+            </div>
+
+            <!-- Dynamic Fields Container -->
+            <div id="curr-dynamic-fields"></div>
+
+            <div class="form-group" id="curr-common-title-group">
+                <label id="curr-title-label">내용</label>
+                <input type="text" id="curr-title" required placeholder="내용을 입력하세요">
+            </div>
+
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="curr-delete-btn" class="btn-delete hidden"><i class="fas fa-trash"></i> 삭제</button>
+          <div class="right-btns">
+            <button type="button" class="curr-btn-secondary close-curr-modal">취소</button>
+            <button type="submit" form="currEventForm" class="curr-btn-primary">저장</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calendar Event Modal -->
+    <div id="eventModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="modalTitle">일정 등록</h2>
+          <span class="close-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+          <form id="eventForm">
+            <input type="hidden" id="event-id">
+            <div class="form-group">
+              <label for="event-title">일정명</label>
+              <input type="text" id="event-title" placeholder="일정 이름을 입력하세요" required>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="event-start">시작일</label>
+                <input type="date" id="event-start" required>
+              </div>
+              <div class="form-group">
+                <label for="event-end">종료일</label>
+                <input type="date" id="event-end">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="event-description">상세 내용</label>
+              <textarea id="event-description" placeholder="상세 내용을 입력하세요 (선택 사항)" rows="3"></textarea>
+            </div>
+            <div class="form-group checkbox-group">
+              <label class="checkbox-container">
+                <input type="checkbox" id="event-is-holiday">
+                <span class="checkmark"></span>
+                공휴일 또는 기념일 (날짜 빨간색 표시)
+              </label>
+            </div>
+            <div class="form-group">
+              <label for="event-color">색상 표시</label>
+              <div class="color-picker" id="event-color-picker">
+                <div class="color-option selected" data-color="#4a90e2" style="background-color: #4a90e2;"></div>
+                <div class="color-option" data-color="#10b981" style="background-color: #10b981;"></div>
+                <div class="color-option" data-color="#f59e0b" style="background-color: #f59e0b;"></div>
+                <div class="color-option" data-color="#ef4444" style="background-color: #ef4444;"></div>
+                <div class="color-option" data-color="#8b5cf6" style="background-color: #8b5cf6;"></div>
+                <div class="color-option" data-color="#ec4899" style="background-color: #ec4899;"></div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="deleteEventBtn" class="btn-delete hidden">삭제</button>
+          <div class="footer-right">
+            <button type="button" class="btn-cancel close-modal">취소</button>
+            <button type="submit" form="eventForm" class="btn-save">저장</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    </main>
+
+    <footer>
+      <p>&copy; 2026 가로내 온라인 연구실. All rights reserved.</p>
+    </footer>
+
+    <!-- Member Settings Modal -->
+    <div id="memberSettingsModal" class="modal">
+        <div class="modal-content member-settings-content">
+            <span class="close-modal" onclick="closeMemberSettingsModal()">&times;</span>
+            <div class="modal-header">
+                <h2>구성원 목록 설정</h2>
+            </div>
+            <div class="modal-body">
+                <p class="modal-desc">확인란에 표시할 구성원 이름을 콤마(,)로 구분하여 입력하세요.</p>
+                <textarea id="member-list-input" class="member-list-textarea" placeholder="예: 교장, 교감, 행정실장..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="curr-btn save-btn" onclick="saveMemberSettings()">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Modal -->
+    <div id="accountModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="accountModalTitle">계정 정보 등록</h2>
+          <span class="close-modal close-account-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+          <form id="accountForm">
+            <input type="hidden" id="account-id">
+            <div class="form-group">
+              <label for="account-service">서비스명</label>
+              <input type="text" id="account-service" required placeholder="예: 구글 워크스페이스">
+            </div>
+            <div class="form-group">
+              <label for="account-url">서비스 URL (선택)</label>
+              <input type="url" id="account-url" placeholder="https://example.com">
+            </div>
+            <div class="form-group">
+              <label for="account-username">아이디</label>
+              <input type="text" id="account-username" required placeholder="아이디를 입력하세요">
+            </div>
+            <div class="form-group">
+              <label for="account-password">비밀번호</label>
+              <input type="text" id="account-password" required placeholder="비밀번호를 입력하세요">
+            </div>
+            <div class="form-group">
+              <label for="account-note">비고</label>
+              <textarea id="account-note" rows="2" placeholder="참고사항을 입력하세요"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel close-account-modal">취소</button>
+          <button type="submit" form="accountForm" class="btn-save">저장</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= Digital Clock (New Location) ================= -->
+    <div class="clock-widget-container">
+        <div class="side-site-title">가로내 온라인 연구실</div>
+        <div id="digital-clock" class="modern-clock">
+            <!-- JS에서 동적으로 생성됨 -->
+        </div>
+    </div>
+
+    <!-- ================= Today Schedule Widget ================= -->
+    <div id="school-today-widget" class="today-widget">
+        <div class="widget-header">
+            <div class="widget-date">
+                <span id="today-month-day">--월 --일</span>
+                <span id="today-weekday" class="weekday">요일</span>
+            </div>
+            <button id="widget-add-btn" class="widget-add-btn" title="일정 추가">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+        <div class="widget-content">
+            <ul id="today-event-list" class="today-event-list">
+                <li class="no-event">데이터를 불러오는 중...</li>
+            </ul>
+        </div>
+        <div class="widget-footer">
+            <span class="pulse-icon"></span>
+            CALENDAR SYNC
+        </div>
+    </div>
+
+
+
+
+
+    
+    <!-- Firebase SDK & Config -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+      import { getFirestore, collection, getDocs, getDoc, setDoc, doc, deleteDoc, query, onSnapshot } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+      import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-storage.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyCQmDCL-PuN2A9AgOzIpObCeNtvIFDJmhU",
+        authDomain: "studio-8412089884-f8185.firebaseapp.com",
+        projectId: "studio-8412089884-f8185",
+        storageBucket: "studio-8412089884-f8185.firebasestorage.app",
+        messagingSenderId: "928283224778",
+        appId: "1:928283224778:web:01cb08827402140aace233"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      window.db = getFirestore(app);
+      window.storage = getStorage(app);
+      window.firestoreUtils = { collection, getDocs, getDoc, setDoc, doc, deleteDoc, query, onSnapshot };
+      window.storageUtils = { ref, uploadBytes, getDownloadURL, deleteObject };
+      
+      // Notify script.js that Firebase is ready
+      window.dispatchEvent(new Event('firebase-ready'));
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="data.js"></script>
+    <script src="helppageData.js"></script>
+    <script src="src/utils/holidays.js"></script>
+    <script src="src/utils/table-resizer.js"></script>
+    <script src="curriculum.js?v=24"></script>
+    <script src="script.js?v=9"></script>
+  </body>
+</html>
