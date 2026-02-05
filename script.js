@@ -3077,13 +3077,14 @@
               </div>
             </div>
             <div class="card-actions-group">
-               <button class="action-disk edit" onclick="event.stopPropagation(); window.editBoardPost('${post.id}')"><i class="fas fa-pen"></i></button>
-               <button class="action-disk delete" onclick="event.stopPropagation(); window.deleteBoardPost('${post.id}')"><i class="fas fa-trash"></i></button>
+               <button class="action-disk copy" onclick="event.stopPropagation(); window.copyBoardPost('${post.id}', this)" title="복사"><i class="fas fa-copy"></i></button>
+               <button class="action-disk edit" onclick="event.stopPropagation(); window.editBoardPost('${post.id}')" title="수정"><i class="fas fa-pen"></i></button>
+               <button class="action-disk delete" onclick="event.stopPropagation(); window.deleteBoardPost('${post.id}')" title="삭제"><i class="fas fa-trash"></i></button>
             </div>
           </div>
 
           <div class="card-body-section">
-             <div class="card-text-content">${post.content}</div>
+             <div class="card-text-content" onclick="window.copyBoardPost('${post.id}', this)" title="클릭하여 복사">${post.content}</div>
              ${post.fileUrl ? `
                 <a href="${post.fileUrl}" target="_blank" class="card-file-chip">
                     <i class="fas fa-paperclip"></i>
@@ -3578,4 +3579,39 @@
       if (homeBtn) homeBtn.click();
     });
   }
+
+  // --- Board Post Copy Function ---
+  window.copyBoardPost = (id, element) => {
+    const card = element.closest('.board-card');
+    const content = card.querySelector('.card-text-content').innerText;
+    
+    navigator.clipboard.writeText(content).then(() => {
+      // Visual feedback
+      const originalIcon = element.innerHTML;
+      if (element.tagName === 'BUTTON') {
+        element.innerHTML = '<i class="fas fa-check"></i>';
+        element.style.color = '#10b981';
+      } else {
+        // If text content was clicked
+        const toast = document.createElement('div');
+        toast.className = 'copy-toast';
+        toast.textContent = '메모가 복사되었습니다.';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.classList.add('active'), 10);
+        setTimeout(() => {
+          toast.classList.remove('active');
+          setTimeout(() => toast.remove(), 300);
+        }, 2000);
+      }
+      
+      if (element.tagName === 'BUTTON') {
+        setTimeout(() => {
+          element.innerHTML = originalIcon;
+          element.style.color = '';
+        }, 2000);
+      }
+    }).catch(err => {
+      console.error('Copy failed', err);
+    });
+  };
 });
