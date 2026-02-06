@@ -3786,4 +3786,55 @@
       header.classList.remove('scrolled');
     }
   }, { passive: true });
+  // --- Mobile Swipe Navigation ---
+  function initSwipeNavigation() {
+    let touchStartX = 0;
+    let touchStartY = 0;
+    const threshold = 70; // min distance for swipe
+    const maxVerticalOffset = 50; // max vertical distance to ignore scroll
+
+    document.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+      touchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+      // Only for mobile
+      if (window.innerWidth > 768) return;
+
+      const touchEndX = e.changedTouches[0].screenX;
+      const touchEndY = e.changedTouches[0].screenY;
+      
+      const diffX = touchEndX - touchStartX;
+      const diffY = touchEndY - touchStartY;
+
+      // Check if it's horizontal swipe and not a vertical scroll
+      if (Math.abs(diffX) > threshold && Math.abs(diffY) < maxVerticalOffset) {
+        
+        // Define tab order
+        const tabs = Array.from(document.querySelectorAll('.nav-item'));
+        const visibleTabs = tabs.filter(tab => {
+             return getComputedStyle(tab).display !== 'none';
+        });
+
+        // Find current active index
+        const currentIndex = visibleTabs.findIndex(tab => tab.classList.contains('active'));
+        if (currentIndex === -1) return;
+
+        if (diffX < 0) {
+          // Swipe Left -> Next Tab (Drag finger left, content moves left, next item comes from right)
+          if (currentIndex < visibleTabs.length - 1) {
+            visibleTabs[currentIndex + 1].click();
+          }
+        } else {
+          // Swipe Right -> Prev Tab
+          if (currentIndex > 0) {
+            visibleTabs[currentIndex - 1].click();
+          }
+        }
+      }
+    }, { passive: true });
+  }
+
+  initSwipeNavigation();
 });
