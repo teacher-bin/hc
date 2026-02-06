@@ -111,6 +111,7 @@
   // 바로가기 상태 관리
   let isEditMode = false;
   let localShortcutData = []; 
+  let collapsedGroups = new Set(); // Track collapsed group IDs
 
   // 자료마당 상태 관리
   let datayardEditMode = false;
@@ -158,6 +159,10 @@
         // order 필드 기준 정렬
         loadedData.sort((a, b) => a.order - b.order);
         localShortcutData = loadedData;
+        // Default: Collapse all groups on mobile
+        if (window.innerWidth <= 768) {
+            localShortcutData.forEach(g => collapsedGroups.add(g.id));
+        }
       } else {
         // 데이터가 없으면 초기 데이터(data.js)를 Firebase에 업로드
         localShortcutData = JSON.parse(JSON.stringify(shortcutData));
@@ -206,7 +211,7 @@
           ? `<button id="add-group-btn" class="btn-secondary"><i class="fas fa-folder-plus"></i> 그룹 추가</button>
              <button id="save-order-btn" class="btn-success"><i class="fas fa-save"></i> 저장 완료</button>
              <button id="cancel-edit-btn" class="btn-cancel"><i class="fas fa-times"></i> 취소</button>`
-          : `<button id="edit-mode-btn" class="btn-primary"><i class="fas fa-edit"></i> 바로가기 편집</button>`
+          : `<button id="edit-mode-btn" class="btn-primary mobile-hide"><i class="fas fa-edit"></i> 바로가기 편집</button>`
         }
       </div>
       <div id="shortcut-container" class="shortcut-grid ${isEditMode ? 'edit-mode' : ''}"></div>
@@ -268,6 +273,8 @@
         }).join("");
       }
 
+      const isCollapsed = collapsedGroups.has(group.id) && !isEditMode;
+
       groupEl.innerHTML = `
         ${isEditMode ? `
             <div class="group-actions">
@@ -275,8 +282,11 @@
                 <button class="group-action-btn delete" onclick="deleteGroup('${group.id}')"><i class="fas fa-trash"></i></button>
             </div>
         ` : ''}
-        <h3>${group.category}</h3>
-        <div class="shortcut-items" id="group-items-${group.id}">
+        <h3 class="group-header ${isCollapsed ? 'collapsed' : ''}" onclick="toggleGroupCollapse('${group.id}')">
+            ${group.category}
+            <i class="fas ${isCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'} toggle-icon"></i>
+        </h3>
+        <div class="shortcut-items ${isCollapsed ? 'hidden' : ''}" id="group-items-${group.id}">
             ${itemsHtml}
         </div>
         ${isEditMode ? `<button class="add-item-btn" onclick="addShortcut('${group.id}')"><i class="fas fa-plus"></i> 바로가기 추가</button>` : ''}
@@ -309,6 +319,20 @@
     }
   }
   
+  // 그룹 접기 토글 함수
+  window.toggleGroupCollapse = (groupId) => {
+      // Disable collapse on desktop
+      if (window.innerWidth > 768) return;
+
+      if (isEditMode) return;
+      if (collapsedGroups.has(groupId)) {
+          collapsedGroups.delete(groupId);
+      } else {
+          collapsedGroups.add(groupId);
+      }
+      renderShortcuts();
+  };
+
   // DOM 상태를 보고 localShortcutData 업데이트
   function updateLocalDataFromDOM() {
       const container = document.getElementById("shortcut-container");
@@ -634,7 +658,7 @@
       renderShortcuts();
   });
 
-  initShortcuts(); // 스크립트 로드 시 시작
+  // initShortcuts(); // 스크립트 로드 시 시작 (상단 64행에서 이미 호출됨)
 
   // ================= Status Section Editing Logic =================
   let isStatusEditMode = false;
