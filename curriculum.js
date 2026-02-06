@@ -466,7 +466,10 @@ document.addEventListener("DOMContentLoaded", () => {
             dateNum.textContent = d;
             dateCell.appendChild(dateNum);
             
-            dateCell.onclick = () => openCurrModal(dateStr); // Quick Add
+            dateCell.onclick = () => {
+                if (window.innerWidth <= 768) return; // Restrict modal on mobile
+                openCurrModal(dateStr); // Quick Add
+            };
             
             // 2. Day
             const dayCell = document.createElement("div");
@@ -489,6 +492,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 group: 'curr-events', // Shared group to move between cells
                 animation: 150,
                 draggable: '.curr-event-chip',
+                disabled: window.innerWidth <= 768, // Restrict drag on mobile
                 onEnd: async function (evt) {
                     const eventId = evt.item.dataset.id;
                     const targetCell = evt.to;
@@ -667,6 +671,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Note: openCurrModal needs to handle the second 'type' argument to pre-select it
         addBtn.onclick = (e) => {
             e.stopPropagation();
+            if (window.innerWidth <= 768) return; // Restrict modal on mobile
             window.openCurrModal(dateString, type); 
         };
         cell.appendChild(addBtn);
@@ -722,7 +727,7 @@ document.addEventListener("DOMContentLoaded", () => {
             locale: 'ko',
             headerToolbar: false, 
             height: 'auto',
-            editable: true,
+            editable: window.innerWidth > 768, // Disable editing on mobile
             events: function(info, successCallback) {
                 // 1. Get DB Events
                 const dbEvents = [...currEvents];
