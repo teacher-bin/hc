@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   --primary-color: #4a90e2;
   --bg-color: #f8fafc;
   --card-bg: #ffffff;
@@ -9,7 +9,103 @@
   --shadow-hover: 0 20px 35px rgba(0, 0, 0, 0.1);
   --border-radius: 16px;
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --border-color: #e2e8f0;
+  --header-bg: rgba(255, 255, 255, 0.82);
+  --widget-bg: rgba(255, 255, 255, 0.7);
+  --widget-bg-hover: rgba(255, 255, 255, 0.9);
+  --widget-border: rgba(255, 255, 255, 0.4);
+  --table-header: #f8fafc;
 }
+
+body.dark-mode {
+  --bg-color: #020617;
+  --bg-gradient: radial-gradient(circle at top right, #1e293b, #020617);
+  --card-bg: #1e293b;
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --shadow-soft: 0 10px 25px rgba(0, 0, 0, 0.3);
+  --shadow-hover: 0 20px 35px rgba(0, 0, 0, 0.5);
+  --border-color: #334155;
+  --header-bg: rgba(15, 23, 42, 0.85);
+  --widget-bg: rgba(30, 41, 59, 0.7);
+  --widget-bg-hover: rgba(30, 41, 59, 0.9);
+  --widget-border: rgba(255, 255, 255, 0.05);
+  --table-header: #334155;
+}
+
+/* Tab-Specific Night Themes (Dark Mode) */
+body.dark-mode[data-tab="status"] { --bg-gradient: radial-gradient(circle at 70% 20%, #1e1b4b, #020617); }
+body.dark-mode[data-tab="account"] { --bg-gradient: radial-gradient(circle at 70% 20%, #134e4a, #020617); }
+body.dark-mode[data-tab="curriculum"] { --bg-gradient: radial-gradient(circle at 70% 20%, #312e81, #020617); }
+body.dark-mode[data-tab="bus"] { --bg-gradient: radial-gradient(circle at 70% 20%, #451a03, #020617); }
+body.dark-mode[data-tab="datayard"] { --bg-gradient: radial-gradient(circle at 70% 20%, #064e3b, #020617); }
+body.dark-mode[data-tab="support"] { --bg-gradient: radial-gradient(circle at 70% 20%, #4c0519, #020617); }
+
+/* Theme Switch Styles */
+.theme-switch-wrapper {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.theme-switch {
+  display: inline-block;
+  height: 30px;
+  position: relative;
+  width: 60px;
+}
+
+.theme-switch input {
+  display: none;
+}
+
+.slider {
+  background-color: #e2e8f0;
+  bottom: 0;
+  cursor: pointer;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  transition: .4s;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 5px;
+}
+
+.slider i {
+  font-size: 14px;
+}
+
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  background-color: #fff;
+  bottom: 4px;
+  content: "";
+  height: 22px;
+  left: 4px;
+  position: absolute;
+  transition: .4s;
+  width: 22px;
+  border-radius: 50%;
+  z-index: 2;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+input:checked + .slider {
+  background-color: #334155;
+}
+
+input:checked + .slider:before {
+  transform: translateX(30px);
+}
+
+.slider .fa-sun { color: #f59e0b; }
+.slider .fa-moon { color: #94a3b8; }
 
 * {
   margin: 0;
@@ -27,11 +123,13 @@ body {
 
 body {
   font-family: "Inter", "Outfit", sans-serif;
-  background-color: var(--bg-color);
+  background: var(--bg-gradient, var(--bg-color));
   color: var(--text-main);
   line-height: 1.6;
   display: flex;
   flex-direction: column;
+  transition: background 0.6s ease, color 0.4s ease; /* Enhanced transition for rich feel */
+  background-attachment: fixed;
 }
 
 html {
@@ -53,18 +151,32 @@ header {
   top: 0;
   left: 0;
   width: 100%;
-  height: 140px;
+  height: 120px; /* Reduced base height */
   z-index: 5000;
-  transition: var(--transition);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
+}
+
+header.scrolled {
+  background: var(--header-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  height: 80px;
+  box-shadow: var(--shadow-soft);
+  border-bottom: 1px solid var(--border-color);
+}
+
+header.scrolled .header-container {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
 }
 
 .header-container {
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 1.2rem 2rem 1.2rem 220px;
+  padding: 1.2rem 2rem 1.2rem 260px; /* Increased padding-left (+40px) */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -90,7 +202,7 @@ header {
 .side-site-title {
     font-family: "Outfit", sans-serif;
     font-weight: 700;
-    font-size: 0.95rem;
+    font-size: 1.15rem; /* Increased from 0.95rem (~20% increase) */
     background: linear-gradient(
         135deg,
         var(--primary-color) 0%,
@@ -107,7 +219,7 @@ header {
     pointer-events: auto;
 }
 
-html:not(.intro-active) .side-site-title {
+html .side-site-title {
     opacity: 1;
     transform: translateY(0);
     pointer-events: auto;
@@ -126,7 +238,7 @@ html:not(.intro-active) .side-site-title {
     background: transparent;
     border: none;
     font-family: 'Outfit', sans-serif;
-    color: #1e293b;
+    color: var(--text-main);
     font-weight: 800;
     transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* 정교한 탄력 곡선 */
     cursor: default;
@@ -153,7 +265,7 @@ html:not(.intro-active) .side-site-title {
     display: flex;
     align-items: center;
     letter-spacing: -1px;
-    color: #1e293b;
+    color: var(--text-main);
 }
 
 .clock-colon {
@@ -218,22 +330,22 @@ main {
 .nav-item {
   pointer-events: auto;
   padding: 0.7rem 1.8rem;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--border-color);
+  background: var(--widget-bg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-radius: 50px;
   cursor: pointer;
   font-weight: 600;
-  color: #475569;
+  color: var(--text-muted);
   transition: var(--transition);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
 .nav-item:hover {
   transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  background: var(--widget-bg-hover);
+  box-shadow: var(--shadow-hover);
   color: var(--primary-color);
 }
 
@@ -249,9 +361,9 @@ main {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 2rem;
-  padding: calc(2rem - 20px) 5% 4rem; /* ???????????????????????????????????????????????????????산뭐??????? */
+  padding: calc(2rem - 20px) 5% 4rem; 
   max-width: 1400px;
-  margin: 0 auto;
+  margin: 0 auto 0 260px; /* Shifted grid +40px effectively via margin or padding - let's use margin-left explicitly or adjust container */
 }
 
 /* Card Style */
@@ -308,7 +420,7 @@ footer {
   width: fit-content;
   min-width: 900px; /* Ensure a decent visual width */
   max-width: calc(100vw - 460px); /* Safety to avoid overlapping right buttons (320px left + 140px buffer) */
-  margin: calc(2rem - 40px) auto 4rem 320px;
+  margin: calc(2rem - 40px) auto 4rem 360px; /* Shifted +40px from 320px */
   padding: 3rem; /* Balanced padding on all sides */
   background: var(--card-bg);
   border-radius: var(--border-radius);
@@ -336,11 +448,11 @@ footer {
 .status-tab {
   padding: 0.5rem 1.25rem;
   border-radius: 10px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   cursor: pointer;
   font-weight: 700;
-  color: #64748b;
+  color: var(--text-muted);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 0.95rem;
   display: flex;
@@ -350,18 +462,18 @@ footer {
 }
 
 .status-tab:hover {
-  background: #f8fafc;
-  color: #334155;
+  background: var(--bg-color);
+  color: var(--text-main);
   border-color: #cbd5e1;
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06); /* Enhanced hover shadow */
+  box-shadow: var(--shadow-hover); /* Enhanced hover shadow */
 }
 
 .status-tab.active {
-  background: #eff6ff;
-  color: #2563eb;
-  border-color: #3b82f6;
-  box-shadow: 0 4px 10px -1px rgba(37, 99, 235, 0.2); /* Enhanced active shadow */
+  background: var(--primary-color);
+  color: #fff;
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 10px -1px rgba(74, 144, 226, 0.3);
 }
 
 .status-panel {
@@ -374,39 +486,41 @@ footer {
 
 /* Wrapper for Shadow & Radius */
 .editable-table-wrapper {
-  background: #fff;
+  background: var(--card-bg);
   border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  overflow: hidden; /* Clips the table corners */
+  box-shadow: var(--shadow-soft);
+  overflow: hidden; 
   margin-bottom: 2rem;
-  border: 1px solid #f1f5f9;
+  border: 1px solid var(--border-color);
 }
 
 .status-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
-  background: #fff;
+  background: var(--card-bg) !important;
   table-layout: fixed;
-  margin-bottom: 0; /* Remove default margin if any */
+  margin-bottom: 0;
 }
 
 .status-table th,
 .status-table td {
-  border: 1px solid #e1e8ed;
+  border: 1px solid var(--border-color);
   padding: 0.85rem;
   text-align: center;
+  color: var(--text-main);
+  background: var(--card-bg); /* Explicitly set background */
 }
 
 .status-table th {
-  background: #f8fafc;
+  background: var(--table-header);
   font-weight: 700;
   color: var(--text-main);
   position: relative;
 }
 
 .status-table tr:hover {
-  background: #f8fafc;
+  background: var(--bg-color);
 }
 
 /* Status Controls & Edit Mode */
@@ -417,9 +531,9 @@ footer {
 }
 
 .status-tabs.edit-mode {
-  border: 2px dashed #cbd5e1;
+  border: 2px dashed var(--border-color);
   padding: 10px;
-  background: #f8fafc;
+  background: var(--bg-color);
 }
 
 .status-tabs.edit-mode .status-tab {
@@ -446,10 +560,10 @@ footer {
 
 .add-tab-btn {
   padding: 0.4rem 1rem;
-  border: 2px dashed #cbd5e1;
-  background: white;
+  border: 2px dashed var(--border-color);
+  background: var(--card-bg);
   border-radius: 50px;
-  color: #64748b;
+  color: var(--text-muted);
   font-weight: 600;
 }
 
@@ -460,10 +574,11 @@ footer {
   text-align: center;
   padding: 8px;
   border-radius: 4px;
+  color: inherit; /* Ensure text is visible in dark mode */
 }
 
 .editable-input:focus {
-  background: white;
+  background: var(--card-bg);
   border-color: var(--primary-color);
   outline: none;
 }
@@ -474,7 +589,7 @@ footer {
   gap: 1rem;
   margin-top: 1rem;
   padding: 0.85rem;
-  background: #f8fafc;
+  background: var(--bg-color);
   border-radius: 12px;
 }
 
@@ -482,10 +597,10 @@ footer {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: white;
+  background: var(--card-bg);
   padding: 0 0.8rem;
   border-radius: 6px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   height: 32px;
 }
 
@@ -504,11 +619,13 @@ footer {
 
 /* ================= Shortcut Section Redesign ================= */
 .shortcut-section {
-  max-width: 1350px; /* Increased by another 30px to 1350px */
-  margin: 0 40px 0 260px;
-  padding: calc(2rem - 20px) 5% 4rem;
+  width: 100%;
+  max-width: 1200px;
+  margin: -0.75rem auto 2rem; /* Adjusted from 0.5rem to pull up by ~20px */
+  padding: 0 1rem;
   position: relative;
-  z-index: 1;
+  z-index: 10;
+  text-align: left;
 }
 
 /* Controls Area - Flow Layout */
@@ -1029,12 +1146,6 @@ footer {
   }
 }
 
-/* Datayard Section */
-#datayard-section {
-  padding: calc(2rem - 20px) 5% 4rem; /* ??????????????????????????????????????????*/
-  max-width: 1400px;
-  margin: 0 auto;
-}
 
 .datayard-grid {
   display: grid;
@@ -1235,8 +1346,8 @@ footer {
 #helppage-section,
 #datayard-section {
   padding: calc(2rem - 20px) 5% 4rem;
-  max-width: 1340px;
-  margin: 0 auto 4rem 260px;
+  max-width: 1300px;
+  margin: 0 auto 4rem 350px; /* Increased left margin from 260px to 350px for balance */
 }
 
 .helppage-grid {
@@ -2355,16 +2466,17 @@ footer {
   border-color: #e2e8f0 !important; /* Crisp lines */
 }
 
-.fc-col-header-cell {
+
+#curr-fullcalendar .fc-col-header-cell {
   background: #f8fafc !important;
   padding: 12px 0 !important;
 }
 
-.fc-col-header-cell.fc-day-sun .fc-col-header-cell-cushion {
+#curr-fullcalendar .fc-col-header-cell.fc-day-sun .fc-col-header-cell-cushion {
   color: #ef4444 !important;
 }
 
-.fc-col-header-cell.fc-day-sat .fc-col-header-cell-cushion {
+#curr-fullcalendar .fc-col-header-cell.fc-day-sat .fc-col-header-cell-cushion {
   color: #3b82f6 !important;
 }
 
@@ -2894,9 +3006,24 @@ html.intro-active .intro-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
-  margin: 0 50px 0 340px; /* Increased left margin to clear fixed widget (292px) */
+  gap: 0.5rem; /* Reduced gap from 1.5rem to pull content up */
+  margin: -1.5rem 50px 0 340px; /* Reduced top margin to lift up entire container */
   animation: fadeInUp 1s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.intro-header-bar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  padding: 0 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.intro-header-bar::after {
+  content: "";
+  flex: 1;
 }
 
 /* Collaborative Board (Padlet Style) */
@@ -3556,20 +3683,37 @@ html.intro-active .intro-section {
 
 .color-options-popover {
   position: absolute;
-  top: -55px; /* Adjust distance */
-  right: 0;   /* Align to right so it expands to the left */
+  bottom: 100%; /* Show above the trigger */
+  top: auto;
+  right: -10px; /* Align to right edge with slight overflow offset */
+  left: auto;
+  margin-bottom: 12px;
   background: #ffffff;
-  padding: 0.6rem;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  padding: 0.8rem;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
   display: flex;
+  flex-wrap: wrap; /* Allow wrapping */
+  justify-content: center;
   gap: 0.6rem;
   z-index: 100;
   opacity: 0;
   visibility: hidden;
   transform: translateY(10px);
-  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.1);
-  min-width: max-content; /* Ensure all colors fit in one row */
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+  width: 180px; /* Limit width to act like a grid */
+}
+
+.color-options-popover::after {
+  /* Arrow pointing down */
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  right: 20px;
+  width: 12px;
+  height: 12px;
+  background: #ffffff;
+  transform: rotate(45deg);
 }
 
 .color-options-popover.active {
@@ -3642,6 +3786,7 @@ html.intro-active .intro-section {
 .status-pill-group {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: nowrap; /* Prevent wrapping in dark mode */
 }
 
 .status-check-tag {
@@ -3657,6 +3802,10 @@ html.intro-active .intro-section {
   color: #64748b;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap; /* Prevent text wrapping */
+  display: flex; /* Ensure content layout */
+  align-items: center;
+  justify-content: center;
 }
 
 .status-check-tag:checked + .status-label.normal { background: #e2e8f0; color: #1e293b; }
@@ -3688,8 +3837,8 @@ html.intro-active .intro-section {
 /* Center Areas */
 .intro-search-area {
   width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
+  max-width: 500px;
+  margin: 0;
 }
 
 .intro-naver-search {
@@ -3746,26 +3895,45 @@ html.intro-active .intro-section {
   box-shadow: 0 5px 15px rgba(3, 199, 90, 0.3);
 }
 
-.intro-hero-title {
+.intro-cheer-message {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-family: 'Gaegu', cursive;
+  cursor: default;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.intro-cheer-message:hover {
+  transform: scale(1.05) translateY(-5px);
+}
+
+.intro-cheer-message .line-1 {
   font-size: 2.2rem;
-  font-weight: 500;
-  background: linear-gradient(
-    135deg,
-    var(--primary-color) 0%,
-    var(--accent-color) 100%
-  );
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.1;
+}
+
+.intro-cheer-message .line-2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  letter-spacing: -1.2px;
-  margin-top: 1.5rem; /* ???????????????????????????????猷고???????????????????????????????????????????????熬곣뫖利당춯??쎾퐲???????????????????꿔꺂?㏘틠??怨몄젦????????????????????????거??????????????????????泥?????????????????????????????????????????????????????????????????????????????????????怨뺤떪???????????????????????????????????????????????????산뭐??????? */
-  margin-bottom: 0.5rem;
-  transition: transform 0.3s ease;
-  font-family: "Outfit", sans-serif;
+  letter-spacing: -0.5px;
 }
 
-.intro-hero-title:hover {
-  transform: scale(1.02);
+.intro-cheer-message:hover .line-1,
+.intro-cheer-message:hover .line-2 {
+  animation: bounceLittle 0.5s ease infinite alternate;
+}
+
+@keyframes bounceLittle {
+  from { transform: translateY(0); }
+  to { transform: translateY(-5px); }
 }
 
 .intro-clock-area {
@@ -5632,7 +5800,6 @@ body.hide-widget #school-today-widget {
 /* Base common style for background pseudo-elements */
 #status-section::before,
 #curriculum-section::before,
-#shortcut-section::before,
 #datayard-section::before,
 #helppage-section::before,
 #account-section::before,
@@ -5643,11 +5810,20 @@ body.hide-widget #school-today-widget {
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: -10; /* 최하단 레이어 */
+    z-index: -10;
     pointer-events: none;
     background-size: 400% 400%;
     animation: tabBgFlow 25s ease infinite;
-    opacity: 0.7; /* 흰색 배경과 조화롭도록 투명도 조절 */
+    opacity: 0.7;
+}
+
+body.dark-mode #status-section::before,
+body.dark-mode #curriculum-section::before,
+body.dark-mode #datayard-section::before,
+body.dark-mode #helppage-section::before,
+body.dark-mode #account-section::before,
+body.dark-mode #bus-section::before {
+    display: none !important;
 }
 
 /* Subtle Moving Background Animation */
@@ -5667,10 +5843,6 @@ body.hide-widget #school-today-widget {
     background: linear-gradient(-45deg, #f0fdf4, #dcfce7, #f0f9ff, #f0fdf4);
 }
 
-/* 3. 바로가기 (Shortcut) - Soft Amber & Sunset */
-#shortcut-section::before {
-    background: linear-gradient(-45deg, #fffbeb, #fef3c7, #fff7ed, #fffbeb);
-}
 
 /* 4. 자료마당 (Datayard) - Soft Lavender & Mist */
 #datayard-section::before {
@@ -5706,10 +5878,10 @@ body.hide-widget #school-today-widget {
 
 /* ================= School Account Section Styles ================= */
 #account-section {
-    max-width: 1300px;
-    margin-left: 320px;
+    max-width: 1250px; /* Reduced to maintain right alignment while shifting */
+    margin-left: 370px; /* Increased by 50px (320px -> 370px) */
     margin-right: auto;
-    padding: 10px 2% 4rem; /* 상단 여백 최소화 */
+    padding: 10px 2% 4rem;
 }
 
 .section-controls {
@@ -5721,10 +5893,10 @@ body.hide-widget #school-today-widget {
 }
 
 #account-section .account-table-wrapper {
-    background: white;
+    background: var(--card-bg);
     border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-    border: 1px solid #e2e8f0;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--border-color);
     margin-top: 0.5rem;
     overflow: visible; /* sticky 헤더를 위해 visible로 변경하거나 스크롤 컨테이너를 조정 */
 }
@@ -5739,34 +5911,27 @@ body.hide-widget #school-today-widget {
 
 #account-section .account-table th {
     position: sticky;
-    top: -1px; /* 메인 헤더 바로 아래에 딱 붙도록 설정 */
+    top: -1px;
     z-index: 100;
-    background: #f8fafc;
+    background: var(--table-header);
     padding: 0.8rem 1rem;
     font-weight: 700;
-    color: #475569;
+    color: var(--text-main);
     font-size: 0.9rem;
-    border-bottom: 2px solid #e2e8f0;
+    border-bottom: 2px solid var(--border-color);
     white-space: nowrap;
 }
 
-/* 컬럼별 너비 최적화 */
-#account-section .account-table th:nth-child(1) { width: 90px; }  /* 번호 */
-#account-section .account-table th:nth-child(2) { width: 28%; }  /* 서비스명 (넓게) */
-#account-section .account-table th:nth-child(3) { width: 18%; }  /* 아이디 */
-#account-section .account-table th:nth-child(4) { width: 18%; }  /* 비밀번호 */
-#account-section .account-table th:nth-child(5) { width: auto; } /* 비고 */
-
 #account-section .account-table td {
-    padding: 0.6rem 1rem; /* 가로폭을 유지하며 세로 높이 축소 */
-    border-bottom: 1px solid #f1f5f9;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border-color);
     font-size: 0.92rem;
-    color: #334155;
+    color: var(--text-main);
     vertical-align: middle;
 }
 
 #account-section .account-table tbody tr:hover {
-    background-color: #fbfcfe;
+    background-color: var(--bg-color);
 }
 
 #account-section .account-table tr td:first-child {
@@ -5777,10 +5942,10 @@ body.hide-widget #school-today-widget {
 
 /* 서비스명 링크 스타일 */
 #account-section .account-service-link {
-    color: #1e293b;
+    color: var(--primary-color);
     text-decoration: none;
     font-weight: 700;
-    border-bottom: 1px solid #cbd5e1;
+    border-bottom: 1px solid var(--border-color);
     padding-bottom: 2px;
     transition: all 0.2s;
 }
@@ -5788,6 +5953,7 @@ body.hide-widget #school-today-widget {
 #account-section .account-service-link:hover {
     color: var(--primary-color);
     border-bottom-color: var(--primary-color);
+    filter: brightness(1.1);
 }
 
 /* 계정 정보 복사 영역 - 직관적 효과 */
@@ -5796,8 +5962,8 @@ body.hide-widget #school-today-widget {
     align-items: center;
     justify-content: space-between;
     padding: 0.4rem 0.8rem;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
     border-radius: 6px;
     cursor: pointer;
     font-family: 'JetBrains Mono', monospace;
@@ -5805,6 +5971,7 @@ body.hide-widget #school-today-widget {
     transition: all 0.2s;
     width: 100%;
     margin: 0;
+    color: var(--text-main);
 }
 
 #account-section .copyable-field:hover {
@@ -5868,17 +6035,17 @@ body.hide-widget #school-today-widget {
 
 /* ================= Bus Request Section Styles ================= */
 #bus-section {
-    max-width: calc(100% - 320px - 90px); /* 왼쪽 위젯 320px, 오른쪽 여백 90px 확보 */
-    margin-left: 320px;
+    max-width: calc(100% - 370px - 90px); /* 왼쪽 위젯 공간 370px로 확대 (기존 320px) */
+    margin-left: 370px;
     margin-right: 90px;
     padding: 10px 0 4rem;
 }
 
 #bus-section .bus-table-wrapper {
-    background: white;
+    background: var(--card-bg);
     border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-    border: 1px solid #e2e8f0;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--border-color);
     margin-top: 0.5rem;
     overflow-x: auto; /* 가로 스크롤 허용 */
 }
@@ -5895,14 +6062,14 @@ body.hide-widget #school-today-widget {
     position: sticky;
     top: -1px;
     z-index: 100;
-    background: #f8fafc;
-    padding: 0.6rem 0.4rem; /* 패딩 축소 */
+    background: var(--table-header);
+    padding: 0.6rem 0.4rem;
     font-weight: 700;
-    color: #475569;
-    font-size: 0.8rem; /* 글꼴 크기 축소 */
-    border-bottom: 2px solid #e2e8f0;
+    color: var(--text-main);
+    font-size: 0.8rem;
+    border-bottom: 2px solid var(--border-color);
     white-space: nowrap;
-    text-align: center; /* 헤더 가운데 정렬 */
+    text-align: center;
     transition: background 0.2s;
 }
 
@@ -5927,12 +6094,13 @@ body.hide-widget #school-today-widget {
 }
 
 #bus-section .bus-table td {
-    padding: 0.4rem 0.3rem; /* 패딩 축소 */
-    border-bottom: 1px solid #f1f5f9;
-    font-size: 0.82rem; /* 글꼴 크기 축소 */
-    color: #334155;
+    padding: 0.4rem 0.3rem; 
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.82rem;
+    color: var(--text-main);
     vertical-align: middle;
-    text-align: center; /* 모든 셀 데이터 가운데 정렬 */
+    text-align: center;
+    background: var(--card-bg);
 }
 
 #bus-section .bus-table tbody tr:hover {
@@ -6170,3 +6338,2550 @@ body.hide-widget #school-today-widget {
     font-weight: 500;
     color: #cbd5e1;
 }
+
+/* ================= Mobile Responsive Styles ================= */
+/* ================= Common Form & Modal Styles ================= */
+.grid-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem; /* Reduced from 1.25rem */
+}
+
+.form-row {
+    display: flex;
+    gap: 0.8rem;
+    width: 100%;
+}
+
+.form-row > .form-group {
+    flex: 1;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.35rem; /* Reduced from 0.5rem */
+    font-size: 0.8rem; /* Slightly smaller */
+    font-weight: 700;
+    color: #475569;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    height: 40px; /* Added fixed height for consistency */
+    padding: 0 0.85rem; /* Adjusted padding for fixed height */
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.form-group textarea#bus-purpose {
+    resize: none; /* Disable manual resizing */
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.1);
+    outline: none;
+}
+
+.btn-icon {
+    width: 30px;
+    height: 30px;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-icon:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.btn-icon.btn-edit-sm:hover {
+    color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    background: #eff6ff !important;
+}
+
+.btn-icon.btn-delete-sm:hover {
+    color: #ef4444 !important;
+    border-color: #ef4444 !important;
+    background: #fef2f2 !important;
+}
+
+.bus-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+}
+
+.bus-purpose-cell {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Time Picker UI */
+.custom-time-picker-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: #f8fafc;
+    height: 40px; /* Fixed height to match other inputs */
+    padding: 0 0.6rem; /* Removed vertical padding */
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    width: 100%;
+    justify-content: space-between;
+}
+
+.time-select-group {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+}
+
+.minimal-select {
+    border: none !important;
+    padding: 0.1rem 0.2rem !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    background: transparent !important;
+    cursor: pointer;
+    width: auto !important;
+}
+
+.minimal-select:focus {
+    box-shadow: none !important;
+    color: var(--primary-color);
+}
+
+.time-sep {
+    font-weight: 700;
+    color: #94a3b8;
+    font-size: 0.9rem;
+}
+
+@media screen and (max-width: 768px) {
+  html, body {
+    overflow-y: auto !important; /* Allow body scrolling on mobile */
+    height: auto !important;
+  }
+
+  main {
+    margin-top: 180px !important; /* Adjusted for wrapped header */
+    height: auto !important;
+    overflow-y: visible !important;
+    display: block !important;
+  }
+
+  header {
+    height: auto !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 0.5rem 0 !important;
+  }
+
+  .header-container {
+    padding: 0.5rem 1rem !important;
+    flex-direction: column !important;
+    gap: 0.8rem !important;
+    min-height: auto !important;
+  }
+
+  #category-nav {
+    flex-wrap: wrap !important;
+    gap: 0.4rem 0.3rem !important;
+    justify-content: center !important;
+    width: 100% !important;
+  }
+
+  .nav-item {
+    padding: 0.4rem 0.8rem !important;
+    font-size: 0.75rem !important;
+    white-space: nowrap !important;
+  }
+
+  /* Clock & Site Title Adjustment */
+  .clock-widget-container {
+    position: relative !important;
+    left: 0 !important;
+    top: 0 !important;
+    margin: 0 auto 0.2rem auto !important;
+    align-items: center !important;
+    z-index: 5002 !important;
+  }
+
+  .side-site-title {
+    opacity: 1 !important;
+    transform: none !important;
+    margin-bottom: 2px !important;
+    font-size: 0.8rem !important;
+    pointer-events: auto !important;
+  }
+
+  .modern-clock {
+    transform: scale(0.85) !important;
+    margin: 0 auto !important;
+  }
+
+  .clock-time {
+    font-size: 1.8rem !important;
+  }
+
+  /* Major Page Sections Margin Reset */
+  #curriculum-section, 
+  #status-section, 
+  #account-section, 
+  #bus-section, 
+  #shortcut-section, 
+  #datayard-section, 
+  #helppage-section,
+  .links-grid {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding: 1rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    transform: none !important;
+  }
+
+  body.hide-widget #curriculum-section {
+    margin-left: 0 !important;
+  }
+
+  /* Intro Section Styles */
+  .intro-landing-container {
+    margin: 0 auto !important;
+    padding: 1rem !important;
+    width: 100% !important;
+    gap: 1.2rem !important;
+  }
+
+  .intro-header-bar {
+    flex-direction: column !important;
+    gap: 1rem !important;
+    padding: 0 !important;
+    align-items: center !important;
+  }
+
+  .intro-header-bar::after {
+    display: none;
+  }
+
+  .intro-cheer-message {
+    align-items: center !important;
+    text-align: center !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .intro-cheer-message .line-1 { font-size: 1.8rem !important; }
+  .intro-cheer-message .line-2 { font-size: 1.1rem !important; }
+
+  .intro-search-area {
+    width: 95% !important;
+    margin: 0 auto !important;
+  }
+  
+  .intro-naver-search {
+    width: 100% !important;
+  }
+
+  .intro-naver-search input {
+    width: 100% !important;
+    font-size: 0.9rem !important;
+  }
+
+  .board-grid {
+    grid-template-columns: 1fr !important; /* Stack cards on mobile */
+    gap: 1rem !important;
+    padding: 0.5rem !important;
+  }
+
+  .board-card {
+    min-height: auto !important;
+  }
+
+  /* Table View Scrollability */
+  .content-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 1rem !important;
+  }
+
+  .curr-table-header, .curr-row {
+    min-width: 900px !important; /* Fixed width to allow horizontal scroll */
+  }
+
+  /* Footer Adjustment */
+  .intro-mini-footer {
+    padding: 1rem !important;
+    font-size: 0.75rem !important;
+  }
+}
+
+/* ================= COMPREHENSIVE DARK MODE STYLES ================= */
+
+/* === 1. Base Dark Mode Containers === */
+body.dark-mode .category-content:not(#intro-section),
+body.dark-mode .status-section {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* === 2. Table Containers - Glass Morphism Effect === */
+body.dark-mode .content-wrapper,
+body.dark-mode .editable-table-wrapper,
+body.dark-mode .account-table-wrapper,
+body.dark-mode .bus-table-wrapper {
+  background: rgba(30, 41, 59, 0.4) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
+  border-radius: 16px !important;
+}
+
+body.dark-mode .curriculum-header-area {
+  background: rgba(30, 41, 59, 0.3) !important;
+  backdrop-filter: blur(15px) !important;
+  -webkit-backdrop-filter: blur(15px) !important;
+  border: 1px solid rgba(148, 163, 184, 0.1) !important;
+  border-radius: 16px !important;
+  padding: 1.5rem !important;
+  margin-bottom: 1.5rem !important;
+}
+
+/* 헤더 내부 제목 */
+body.dark-mode .curriculum-title-group h2 {
+  color: #f1f5f9 !important;
+}
+
+body.dark-mode .curriculum-title-group h2 i {
+  color: #60a5fa !important;
+}
+
+/* 네비게이션 그룹 배경 */
+body.dark-mode .curriculum-nav-group {
+  background: rgba(51, 65, 85, 0.4) !important;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+}
+
+/* 네비게이션 버튼들 (화살표, 오늘, 학년 선택 등) */
+body.dark-mode .curriculum-nav-group .nav-arrow-btn,
+body.dark-mode .curriculum-nav-group .nav-today-btn {
+  background: rgba(71, 85, 105, 0.6) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode .curriculum-nav-group .nav-arrow-btn:hover,
+body.dark-mode .curriculum-nav-group .nav-today-btn:hover {
+  background: rgba(59, 130, 246, 0.4) !important;
+  border-color: #3b82f6 !important;
+  color: #93c5fd !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4) !important;
+}
+
+/* Period Display (기간 표시) */
+body.dark-mode .period-display {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #e2e8f0 !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode .period-display:hover {
+  background: rgba(71, 85, 105, 0.8) !important;
+  border-color: #3b82f6 !important;
+  color: #60a5fa !important;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3) !important;
+}
+
+body.dark-mode .period-display::before,
+body.dark-mode .period-display::after {
+  color: #60a5fa !important;
+}
+
+/* View Switcher (보기 전환) */
+body.dark-mode .view-switcher {
+  background: rgba(51, 65, 85, 0.4) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+}
+
+body.dark-mode .view-switcher .view-btn {
+  background: transparent !important;
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .view-switcher .view-btn:hover {
+  background: rgba(71, 85, 105, 0.5) !important;
+  color: #cbd5e1 !important;
+}
+
+body.dark-mode .view-switcher .view-btn.active {
+  background: rgba(59, 130, 246, 0.3) !important;
+  color: #60a5fa !important;
+  border: 1px solid rgba(59, 130, 246, 0.4) !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Export Buttons */
+body.dark-mode .export-btn {
+  background: rgba(71, 85, 105, 0.6) !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode .export-btn.excel {
+  color: #6ee7b7 !important;
+}
+
+body.dark-mode .export-btn.excel:hover {
+  background: rgba(16, 185, 129, 0.3) !important;
+  border-color: #10b981 !important;
+  color: #6ee7b7 !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4) !important;
+}
+
+body.dark-mode .export-btn.hwp {
+  color: #93c5fd !important;
+}
+
+body.dark-mode .export-btn.hwp:hover {
+  background: rgba(59, 130, 246, 0.3) !important;
+  border-color: #3b82f6 !important;
+  color: #93c5fd !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4) !important;
+}
+
+/* 추가 버튼 (일정 추가 등) */
+body.dark-mode .btn-primary-gradient {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(59, 130, 246, 0.5) !important;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4) !important;
+}
+
+body.dark-mode .btn-primary-gradient:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6) !important;
+}
+
+/* === 3. Table Headers === */
+body.dark-mode .curr-table-header,
+body.dark-mode .status-table th,
+body.dark-mode .account-table th,
+body.dark-mode .bus-table th {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  font-weight: 800 !important;
+}
+
+body.dark-mode .th {
+  color: #e2e8f0 !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+/* === 4. Table Cells === */
+body.dark-mode .status-table td,
+body.dark-mode .account-table td,
+body.dark-mode .bus-table td,
+body.dark-mode .curr-cell {
+  background: transparent !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(148, 163, 184, 0.15) !important;
+}
+
+body.dark-mode .curr-row {
+  border-color: rgba(148, 163, 184, 0.15) !important;
+}
+
+body.dark-mode .curr-row:hover,
+body.dark-mode .status-table tbody tr:hover,
+body.dark-mode .account-table tbody tr:hover,
+body.dark-mode .bus-table tbody tr:hover {
+  background: rgba(51, 65, 85, 0.3) !important;
+}
+
+/* === 5. Date Cells & Special Days === */
+body.dark-mode .date-cell,
+body.dark-mode .day-cell {
+  color: #f1f5f9 !important;
+}
+
+body.dark-mode .day-sunday {
+  background: rgba(239, 68, 68, 0.15) !important;
+}
+
+body.dark-mode .day-sunday .date-cell,
+body.dark-mode .day-sunday .day-cell {
+  color: #fca5a5 !important;
+}
+
+body.dark-mode .day-saturday {
+  background: rgba(59, 130, 246, 0.15) !important;
+}
+
+body.dark-mode .day-saturday .date-cell,
+body.dark-mode .day-saturday .day-cell {
+  color: #93c5fd !important;
+}
+
+/* === 6. Event Chips & Badges === */
+body.dark-mode .curr-event-chip {
+  background: rgba(51, 65, 85, 0.8) !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+  color: #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode .curr-event-chip:hover {
+  background: rgba(71, 85, 105, 0.9) !important;
+  border-color: rgba(148, 163, 184, 0.5) !important;
+}
+
+/* === 7. Buttons === */
+body.dark-mode .btn-primary,
+body.dark-mode .btn-primary-gradient,
+body.dark-mode #curr-add-btn,
+body.dark-mode #account-edit-mode-btn,
+body.dark-mode #bus-request-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(59, 130, 246, 0.5) !important;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4) !important;
+}
+
+body.dark-mode .btn-primary:hover,
+body.dark-mode .btn-primary-gradient:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6) !important;
+}
+
+body.dark-mode .btn-secondary,
+body.dark-mode .curr-btn-secondary {
+  background: rgba(71, 85, 105, 0.8) !important;
+  color: #e2e8f0 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .btn-secondary:hover {
+  background: rgba(100, 116, 139, 0.9) !important;
+  border-color: rgba(148, 163, 184, 0.5) !important;
+}
+
+body.dark-mode .btn-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(16, 185, 129, 0.5) !important;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4) !important;
+}
+
+body.dark-mode .btn-cancel {
+  background: rgba(71, 85, 105, 0.6) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .btn-delete,
+body.dark-mode .btn-icon.btn-delete-sm {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #fca5a5 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+body.dark-mode .btn-delete:hover,
+body.dark-mode .btn-icon.btn-delete-sm:hover {
+  background: rgba(239, 68, 68, 0.3) !important;
+  border-color: rgba(239, 68, 68, 0.5) !important;
+  color: #fecaca !important;
+}
+
+/* === 8. Input Fields === */
+body.dark-mode .editable-input,
+body.dark-mode .bus-input,
+body.dark-mode .bus-select,
+body.dark-mode input[type="text"],
+body.dark-mode input[type="date"],
+body.dark-mode input[type="time"],
+body.dark-mode input[type="number"],
+body.dark-mode input[type="url"],
+body.dark-mode textarea,
+body.dark-mode select {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .editable-input:focus,
+body.dark-mode .bus-input:focus,
+body.dark-mode .bus-select:focus,
+body.dark-mode input:focus,
+body.dark-mode textarea:focus,
+body.dark-mode select:focus {
+  background: rgba(51, 65, 85, 0.8) !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
+  color: #f1f5f9 !important;
+}
+
+/* === 9. Status Tabs === */
+body.dark-mode .status-tab {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #94a3b8 !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .status-tab:hover {
+  background: rgba(71, 85, 105, 0.8) !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(148, 163, 184, 0.5) !important;
+}
+
+body.dark-mode .status-tab.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: #ffffff !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5) !important;
+}
+
+/* === 10. View Switcher === */
+body.dark-mode .view-switcher {
+  background: rgba(51, 65, 85, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .view-switcher .view-btn {
+  background: transparent !important;
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .view-switcher .view-btn.active {
+  background: rgba(59, 130, 246, 0.3) !important;
+  color: #60a5fa !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* === 11. Period Display === */
+body.dark-mode .period-display {
+  background: rgba(51, 65, 85, 0.8) !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .period-display:hover {
+  background: rgba(71, 85, 105, 0.9) !important;
+  border-color: #3b82f6 !important;
+  color: #60a5fa !important;
+}
+
+/* === 12. Badges & Status Pills === */
+body.dark-mode .badge-region.관내 {
+  background: rgba(16, 185, 129, 0.25) !important;
+  color: #6ee7b7 !important;
+  border: 1px solid rgba(16, 185, 129, 0.4) !important;
+}
+
+body.dark-mode .badge-region.관외 {
+  background: rgba(59, 130, 246, 0.25) !important;
+  color: #93c5fd !important;
+  border: 1px solid rgba(59, 130, 246, 0.4) !important;
+}
+
+body.dark-mode .badge-bus-status.pending {
+  background: rgba(251, 146, 60, 0.25) !important;
+  color: #fdba74 !important;
+  border: 1px solid rgba(251, 146, 60, 0.4) !important;
+}
+
+body.dark-mode .badge-bus-status.completed {
+  background: rgba(34, 197, 94, 0.25) !important;
+  color: #86efac !important;
+  border: 1px solid rgba(34, 197, 94, 0.4) !important;
+}
+
+body.dark-mode .badge-use-school.Y {
+  background: rgba(59, 130, 246, 0.25) !important;
+  color: #93c5fd !important;
+  border: 1px solid rgba(59, 130, 246, 0.4) !important;
+}
+
+body.dark-mode .badge-use-school.N {
+  background: rgba(239, 68, 68, 0.25) !important;
+  color: #fca5a5 !important;
+  border: 1px solid rgba(239, 68, 68, 0.4) !important;
+}
+
+/* === 13. Copyable Fields === */
+body.dark-mode .copyable-field {
+  background: rgba(51, 65, 85, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+  color: #cbd5e1 !important;
+}
+
+body.dark-mode .copyable-field:hover {
+  background: rgba(59, 130, 246, 0.2) !important;
+  border-color: #3b82f6 !important;
+  color: #93c5fd !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+}
+
+body.dark-mode .copyable-field::after {
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .copyable-field:hover::after {
+  color: #60a5fa !important;
+}
+
+/* === 14. Account Service Links === */
+body.dark-mode .account-service-link {
+  color: #60a5fa !important;
+  border-bottom-color: rgba(96, 165, 250, 0.3) !important;
+}
+
+body.dark-mode .account-service-link:hover {
+  color: #93c5fd !important;
+  border-bottom-color: #60a5fa !important;
+}
+
+/* === 15. Help/Data Section Cards === */
+body.dark-mode .helppage-main-card,
+body.dark-mode .helppage-sub-card,
+body.dark-mode .helppage-item-card {
+  background: rgba(30, 41, 59, 0.4) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark-mode .search-wrapper,
+body.dark-mode .relative-search input {
+  background: rgba(51, 65, 85, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+  color: #e2e8f0 !important;
+}
+
+/* === 16. Time Picker === */
+body.dark-mode .custom-time-picker-wrapper {
+  background: rgba(51, 65, 85, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .time-select-group {
+  background: rgba(71, 85, 105, 0.8) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .minimal-select {
+  color: #e2e8f0 !important;
+}
+
+body.dark-mode .time-sep {
+  color: #94a3b8 !important;
+}
+
+/* === 17. Status Chips === */
+body.dark-mode .status-chip {
+  background: rgba(51, 65, 85, 0.8) !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .status-chip:hover {
+  background: rgba(71, 85, 105, 0.9) !important;
+  border-color: rgba(148, 163, 184, 0.5) !important;
+}
+
+body.dark-mode .status-chip.active {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 3px 12px rgba(16, 185, 129, 0.5) !important;
+}
+
+/* === 18. Cell Add Button === */
+body.dark-mode .cell-add-btn {
+  background: rgba(51, 65, 85, 0.9) !important;
+  color: #60a5fa !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+}
+
+body.dark-mode .cell-add-btn:hover {
+  background: #3b82f6 !important;
+  color: #ffffff !important;
+  border-color: #2563eb !important;
+}
+
+/* === 19. Chip Controls === */
+body.dark-mode .chip-controls {
+  background: rgba(30, 41, 59, 0.95) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.dark-mode .chip-btn {
+  background: rgba(51, 65, 85, 0.9) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .chip-btn.edit {
+  color: #60a5fa !important;
+}
+
+body.dark-mode .chip-btn.delete {
+  color: #fca5a5 !important;
+}
+
+body.dark-mode .chip-btn:hover {
+  background: rgba(71, 85, 105, 1) !important;
+  border-color: rgba(148, 163, 184, 0.5) !important;
+}
+
+/* === 20. Table Controls & Layout Selector === */
+body.dark-mode .table-controls {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+}
+
+body.dark-mode .layout-selector {
+  background: rgba(51, 65, 85, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+/* === 21. Export Buttons === */
+body.dark-mode .export-btn {
+  background: rgba(51, 65, 85, 0.8) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .export-btn:hover {
+  background: rgba(71, 85, 105, 0.9) !important;
+  border-color: rgba(148, 163, 184, 0.5) !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark-mode .export-btn.excel:hover {
+  background: rgba(16, 185, 129, 0.3) !important;
+  border-color: #10b981 !important;
+  color: #6ee7b7 !important;
+}
+
+body.dark-mode .export-btn.hwp:hover {
+  background: rgba(59, 130, 246, 0.3) !important;
+  border-color: #3b82f6 !important;
+  color: #93c5fd !important;
+}
+
+/* === 22. Navigation Arrows === */
+body.dark-mode .nav-arrow-btn,
+body.dark-mode .nav-today-btn {
+  background: rgba(51, 65, 85, 0.8) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .nav-arrow-btn:hover,
+body.dark-mode .nav-today-btn:hover {
+  background: rgba(71, 85, 105, 0.9) !important;
+  border-color: rgba(148, 163, 184, 0.5) !important;
+  color: #e2e8f0 !important;
+}
+
+/* === 23. Type Cards (Modal) === */
+body.dark-mode .type-card {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .type-card span {
+  color: #cbd5e1 !important;
+}
+
+body.dark-mode .type-card[data-type="edu"]:hover {
+  background: rgba(59, 130, 246, 0.2) !important;
+  border-color: #3b82f6 !important;
+}
+
+body.dark-mode .type-card[data-type="staff"]:hover {
+  background: rgba(16, 185, 129, 0.2) !important;
+  border-color: #10b981 !important;
+}
+
+body.dark-mode .type-card[data-type="doc"]:hover {
+  background: rgba(139, 92, 246, 0.2) !important;
+  border-color: #8b5cf6 !important;
+}
+
+body.dark-mode .type-card[data-type="life"]:hover {
+  background: rgba(245, 158, 11, 0.2) !important;
+  border-color: #f59e0b !important;
+}
+
+/* === 24. Form Labels === */
+body.dark-mode .form-group label,
+body.dark-mode label {
+  color: #cbd5e1 !important;
+}
+
+/* === 25. Tooltips === */
+body.dark-mode .calendar-html-tooltip {
+  background: rgba(15, 23, 42, 0.98) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+/* === 26. Account Note === */
+body.dark-mode .account-note {
+  color: #94a3b8 !important;
+}
+
+/* === 27. Total Display === */
+body.dark-mode .total-display {
+  color: #60a5fa !important;
+}
+
+/* === 28. Milky Way Star Effect === */
+body.dark-mode::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(1px 1px at 20px 30px, #fff, rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 100px 100px, #fff, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 150px 50px, #fff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 250px 200px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+    radial-gradient(1.2px 1.2px at 350px 150px, #fff, rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 450px 300px, #fff, rgba(0,0,0,0));
+  background-repeat: repeat;
+  background-size: 500px 500px;
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: -1;
+  animation: starsTwinkle 8s infinite ease-in-out;
+}
+
+@keyframes starsTwinkle {
+  0%, 100% { opacity: 0.08; transform: scale(1); }
+  50% { opacity: 0.2; transform: scale(1.03); }
+}
+
+/* === 29. Section Controls === */
+body.dark-mode .section-controls button,
+body.dark-mode .status-controls button,
+body.dark-mode .shortcut-controls button,
+body.dark-mode .datayard-controls button {
+  background: rgba(51, 65, 85, 0.8) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .section-controls button:hover,
+body.dark-mode .status-controls button:hover {
+  background: rgba(71, 85, 105, 0.9) !important;
+  border-color: rgba(148, 163, 184, 0.5) !important;
+}
+
+/* === 30. FullCalendar Dark Mode === */
+body.dark-mode #curr-fullcalendar .fc-daygrid-event {
+  background-color: rgba(59, 130, 246, 0.3) !important;
+  border-left-color: #60a5fa !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+}
+
+body.dark-mode #curr-fullcalendar .fc-daygrid-event:hover {
+  background-color: rgba(59, 130, 246, 0.4) !important;
+  border-color: rgba(59, 130, 246, 0.6) !important;
+}
+
+body.dark-mode #curr-fullcalendar .fc-event-title {
+  color: #e0f2fe !important;
+}
+
+body.dark-mode .fc-day-today {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+body.dark-mode .fc-day-sun .fc-daygrid-day-number {
+  color: #fca5a5 !important;
+}
+
+body.dark-mode .fc-day-sat .fc-daygrid-day-number {
+  color: #93c5fd !important;
+}
+
+body.dark-mode .fc-special-day-item {
+  color: #60a5fa !important;
+}
+
+/* 요일 헤더 다크모드 - 주변 배경과 조화 (최고 우선순위 - 범위 확장) */
+body.dark-mode #curr-fullcalendar .fc-col-header,
+body.dark-mode #curr-fullcalendar .fc-col-header-cell,
+body.dark-mode #curr-fullcalendar .fc-scrollgrid-section-header,
+body.dark-mode #curr-fullcalendar .fc-scrollgrid-section-header > div,
+body.dark-mode #curr-fullcalendar .fc-scrollgrid-section-header table,
+body.dark-mode #curr-fullcalendar th {
+  background: transparent !important;
+  background-color: transparent !important;
+  border-color: rgba(148, 163, 184, 0.15) !important;
+}
+
+body.dark-mode #curr-fullcalendar .fc-col-header-cell {
+  border-bottom: 2px solid rgba(148, 163, 184, 0.25) !important;
+  padding: 1rem 0 !important;
+}
+
+body.dark-mode #curr-fullcalendar .fc-col-header-cell-cushion {
+  color: #e2e8f0 !important;
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+  letter-spacing: 0.5px !important;
+  text-transform: uppercase !important;
+}
+
+body.dark-mode #curr-fullcalendar .fc-col-header-cell.fc-day-sun {
+  background: rgba(239, 68, 68, 0.08) !important;
+}
+
+body.dark-mode #curr-fullcalendar .fc-col-header-cell.fc-day-sun .fc-col-header-cell-cushion {
+  color: #fca5a5 !important;
+  font-weight: 800 !important;
+  text-shadow: 0 0 10px rgba(252, 165, 165, 0.3) !important;
+}
+
+body.dark-mode #curr-fullcalendar .fc-col-header-cell.fc-day-sat {
+  background: rgba(59, 130, 246, 0.08) !important;
+}
+
+body.dark-mode #curr-fullcalendar .fc-col-header-cell.fc-day-sat .fc-col-header-cell-cushion {
+  color: #93c5fd !important;
+  font-weight: 800 !important;
+  text-shadow: 0 0 10px rgba(147, 197, 253, 0.3) !important;
+}
+
+/* 테두리 색상 - 더 은은하게 */
+body.dark-mode #curr-fullcalendar .fc-theme-standard td,
+body.dark-mode #curr-fullcalendar .fc-theme-standard th {
+  border-color: rgba(148, 163, 184, 0.12) !important;
+}
+
+body.dark-mode #curr-fullcalendar .fc-scrollgrid {
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  background: transparent !important;
+}
+
+/* 달력 배경 - 완전 투명 */
+body.dark-mode #curr-fullcalendar .fc-daygrid-day-frame {
+  background: transparent !important;
+}
+
+body.dark-mode #curr-fullcalendar .fc-daygrid-day {
+  background: transparent !important;
+}
+
+/* 일요일/공휴일 배경 - 더 미묘하게 */
+body.dark-mode #curr-fullcalendar .fc-day-sun,
+body.dark-mode #curr-fullcalendar .fc-day-has-holiday {
+  background-color: rgba(239, 68, 68, 0.05) !important;
+}
+
+/* 토요일 배경 추가 */
+body.dark-mode #curr-fullcalendar .fc-day-sat {
+  background-color: rgba(59, 130, 246, 0.04) !important;
+}
+
+/* 오늘 날짜 강조 */
+body.dark-mode #curr-fullcalendar .fc-day-today {
+  background-color: rgba(59, 130, 246, 0.12) !important;
+  position: relative;
+}
+
+body.dark-mode #curr-fullcalendar .fc-day-today::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+  opacity: 0.6;
+}
+
+/* === 31. Modals & Popups (Enhanced Dark Mode) === */
+body.dark-mode .modal-content {
+  background: rgba(15, 23, 42, 0.98) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7) !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark-mode .modal-header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15) !important;
+}
+
+body.dark-mode .modal-header h2 {
+  color: #f1f5f9 !important;
+}
+
+body.dark-mode .close-modal {
+  color: #94a3b8 !important;
+  transition: color 0.2s;
+}
+
+body.dark-mode .close-modal:hover {
+  color: #f1f5f9 !important;
+}
+
+body.dark-mode .modal-footer {
+  background: transparent !important;
+  border-top: 1px solid rgba(148, 163, 184, 0.15) !important;
+}
+
+/* === 32. Form Elements in Modals & Autofill Fix === */
+body.dark-mode .curr-input,
+body.dark-mode .form-control,
+body.dark-mode input[type="text"],
+body.dark-mode input[type="number"],
+body.dark-mode input[type="date"],
+body.dark-mode textarea,
+body.dark-mode select {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  color: #e2e8f0 !important;
+  color-scheme: dark; /* 달력 아이콘 등 브라우저 UI 다크모드 */
+}
+
+/* Autofill 배경색 제거 트릭 */
+body.dark-mode input:-webkit-autofill,
+body.dark-mode input:-webkit-autofill:hover, 
+body.dark-mode input:-webkit-autofill:focus, 
+body.dark-mode input:-webkit-autofill:active{
+  -webkit-box-shadow: 0 0 0 30px #1e293b inset !important;
+  -webkit-text-fill-color: #e2e8f0 !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* 다크모드 상태별 Select 색상 (교직원 확인 등) */
+body.dark-mode .confirm-select.status-unconfirmed,
+body.dark-mode select.status-unconfirmed {
+  background-color: rgba(127, 29, 29, 0.3) !important; /* 어두운 빨강 배경 */
+  color: #fca5a5 !important; /* 밝은 빨강 텍스트 */
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+body.dark-mode .confirm-select.status-confirmed,
+body.dark-mode select.status-confirmed {
+  background-color: rgba(20, 83, 45, 0.3) !important; /* 어두운 초록 배경 */
+  color: #86efac !important; /* 밝은 초록 텍스트 */
+  border: 1px solid rgba(34, 197, 94, 0.3) !important;
+}
+
+body.dark-mode .curr-input:focus,
+body.dark-mode .form-control:focus,
+body.dark-mode input:focus,
+body.dark-mode textarea:focus,
+body.dark-mode select:focus {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+  color: white !important;
+}
+
+body.dark-mode input::placeholder,
+body.dark-mode textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* === 33. Status Picker & Doc Bulk (Dark Mode Fix) === */
+
+/* 근무상황 선택 컨테이너 배경 제거/투명화 */
+body.dark-mode .status-picker-container,
+body.dark-mode .status-chips {
+  background: transparent !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 근무상황 버튼 스타일 */
+body.dark-mode .status-chip {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+}
+
+body.dark-mode .status-chip:hover {
+  background: rgba(71, 85, 105, 0.8) !important;
+  color: white !important;
+  border-color: rgba(148, 163, 184, 0.4) !important;
+}
+
+body.dark-mode .status-chip.active {
+  background: rgba(59, 130, 246, 0.2) !important;
+  color: #93c5fd !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* 공문 목록 컨테이너 */
+body.dark-mode .doc-bulk-container {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  color: #e2e8f0 !important;
+}
+
+/* 공문 입력 행 */
+body.dark-mode .curr-doc-bulk-row {
+  background: rgba(51, 65, 85, 0.4) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+}
+
+/* 문서 추가 버튼 */
+body.dark-mode .add-doc-row-btn {
+  background: rgba(51, 65, 85, 0.2) !important;
+  border: 2px dashed rgba(148, 163, 184, 0.3) !important;
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .add-doc-row-btn:hover {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-color: #3b82f6 !important;
+  color: #60a5fa !important;
+}
+
+/* 문서 삭제 버튼 */
+body.dark-mode .doc-row-remove-btn {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #fca5a5 !important;
+}
+
+body.dark-mode .doc-row-remove-btn:hover {
+  background: rgba(239, 68, 68, 0.3) !important;
+  color: #fca5a5 !important;
+}
+
+/* Type Selector Tabs in Modal */
+body.dark-mode .curr-type-tabs {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+}
+
+body.dark-mode .curr-type-tab {
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .curr-type-tab:hover {
+  color: #cbd5e1 !important;
+  background: rgba(148, 163, 184, 0.1) !important;
+}
+
+body.dark-mode .curr-type-tab.active {
+  background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+  color: white !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Time Selector Container */
+body.dark-mode .time-selector-container {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+}
+
+body.dark-mode .time-mode-tabs {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15) !important;
+}
+
+body.dark-mode .time-mode-tab {
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .time-mode-tab:hover {
+  background: rgba(148, 163, 184, 0.1) !important;
+  color: #cbd5e1 !important;
+}
+
+body.dark-mode .time-mode-tab.active {
+  background: rgba(59, 130, 246, 0.15) !important;
+  color: #60a5fa !important;
+  box-shadow: none !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Input Group Text / Separator */
+body.dark-mode .time-separator {
+  color: #94a3b8 !important;
+}
+
+/* Checkbox Wrappers */
+body.dark-mode .holiday-check-wrapper {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+}
+
+body.dark-mode .holiday-check-wrapper span {
+  color: #cbd5e1 !important;
+}
+
+/* Modal Buttons */
+body.dark-mode .curr-btn-secondary {
+  background: rgba(71, 85, 105, 0.6) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+}
+
+body.dark-mode .curr-btn-secondary:hover {
+  background: rgba(100, 116, 139, 0.7) !important;
+  color: white !important;
+}
+
+/* Labels */
+body.dark-mode .curr-label {
+  color: #cbd5e1 !important;
+}
+
+body.dark-mode .badge {
+  background: rgba(59, 130, 246, 0.2) !important;
+  color: #93c5fd !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+}
+
+/* === 33. Icon Selectors === */
+body.dark-mode .icon-selector {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  border-radius: 12px !important;
+  padding: 1rem !important;
+}
+
+body.dark-mode .icon-option {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .icon-option:hover {
+  background: rgba(71, 85, 105, 0.8) !important;
+  border-color: rgba(148, 163, 184, 0.5) !important;
+}
+
+body.dark-mode .icon-option.selected {
+  background: rgba(59, 130, 246, 0.3) !important;
+  border-color: #3b82f6 !important;
+  color: #93c5fd !important;
+}
+
+/* === 34. Color Pickers === */
+body.dark-mode .color-picker-container,
+body.dark-mode .color-trigger {
+  background: rgba(51, 65, 85, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .color-popover,
+body.dark-mode .color-options-popover {
+  background: rgba(15, 23, 42, 0.98) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* === 35. File Upload Areas === */
+body.dark-mode .file-drop-zone,
+body.dark-mode .file-upload-area {
+  background: rgba(51, 65, 85, 0.4) !important;
+  border: 2px dashed rgba(148, 163, 184, 0.4) !important;
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .file-drop-zone:hover,
+body.dark-mode .file-upload-area:hover {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-color: #3b82f6 !important;
+  color: #60a5fa !important;
+}
+
+body.dark-mode .file-preview-area {
+  background: rgba(51, 65, 85, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+  color: #cbd5e1 !important;
+}
+
+/* === 36. Author Chips & Status Pills === */
+body.dark-mode .author-chips {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border-radius: 12px !important;
+  padding: 0.8rem !important;
+}
+
+body.dark-mode .status-pill-group {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border-radius: 12px !important;
+  padding: 0.8rem !important;
+}
+
+body.dark-mode .status-label {
+  background: rgba(51, 65, 85, 0.8) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .status-check-tag:checked + .status-label {
+  background: rgba(59, 130, 246, 0.4) !important;
+  border-color: #3b82f6 !important;
+  color: #93c5fd !important;
+}
+
+body.dark-mode .status-label.important:checked {
+  background: rgba(245, 158, 11, 0.4) !important;
+  border-color: #f59e0b !important;
+  color: #fbbf24 !important;
+}
+
+body.dark-mode .status-label.urgent:checked {
+  background: rgba(239, 68, 68, 0.4) !important;
+  border-color: #ef4444 !important;
+  color: #fca5a5 !important;
+}
+
+/* === 37. Checkbox & Radio Inputs === */
+body.dark-mode .checkbox-container {
+  color: #cbd5e1 !important;
+}
+
+body.dark-mode .checkmark {
+  background: rgba(51, 65, 85, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .checkbox-container input:checked ~ .checkmark {
+  background: #3b82f6 !important;
+  border-color: #2563eb !important;
+}
+
+/* === 38. Tab Content Sections === */
+body.dark-mode #datayard-section,
+body.dark-mode #helppage-section {
+  color: #e2e8f0 !important;
+}
+
+body.dark-mode .helppage-header h2 {
+  color: #f1f5f9 !important;
+}
+
+body.dark-mode .helppage-header p {
+  color: #94a3b8 !important;
+}
+
+/* === 39. Drag Handles === */
+body.dark-mode .drag-handle {
+  color: #64748b !important;
+}
+
+body.dark-mode .drag-handle:hover {
+  color: #94a3b8 !important;
+}
+
+/* === 40. Progress Bars === */
+body.dark-mode .progress-bar {
+  background: rgba(51, 65, 85, 0.6) !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .progress-fill {
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%) !important;
+}
+
+body.dark-mode .progress-text {
+  color: #cbd5e1 !important;
+}
+
+/* === 41. Member Confirmation Bar === */
+body.dark-mode .curr-member-confirm-bar {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  backdrop-filter: blur(15px) !important;
+  -webkit-backdrop-filter: blur(15px) !important;
+}
+
+/* === 42. Scrollbars === */
+body.dark-mode ::-webkit-scrollbar {
+  background: rgba(30, 41, 59, 0.4) !important;
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.6) !important;
+  border: 2px solid rgba(30, 41, 59, 0.4) !important;
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.8) !important;
+}
+
+/* === 43. Hover States for Bus Table === */
+body.dark-mode #bus-section .bus-table th[data-sort]:hover {
+  background: rgba(71, 85, 105, 0.6) !important;
+}
+
+/* === 44. Icon Tabs === */
+body.dark-mode .icon-type-tabs button,
+body.dark-mode .file-type-tabs button,
+body.dark-mode .item-tab {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #94a3b8 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .icon-type-tabs button.active,
+body.dark-mode .file-type-tabs button.active,
+body.dark-mode .item-tab.active {
+  background: rgba(59, 130, 246, 0.3) !important;
+  color: #93c5fd !important;
+  border-color: #3b82f6 !important;
+}
+
+/* === 45. Helper Text === */
+body.dark-mode .helper-text,
+body.dark-mode .modal-desc {
+  color: #94a3b8 !important;
+}
+
+/* === 46. Image Preview === */
+body.dark-mode .image-preview {
+  background: rgba(51, 65, 85, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+/* === 47. Radio Labels === */
+body.dark-mode .radio-label {
+  color: #cbd5e1 !important;
+}
+
+/* === 48. Form Select === */
+body.dark-mode .form-select {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .form-select:focus {
+  background: rgba(51, 65, 85, 0.8) !important;
+  border-color: #3b82f6 !important;
+}
+
+/* === 49. Add Tab Button === */
+body.dark-mode .add-tab-btn {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #94a3b8 !important;
+  border-color: rgba(148, 163, 184, 0.4) !important;
+}
+
+body.dark-mode .add-tab-btn:hover {
+  background: rgba(71, 85, 105, 0.8) !important;
+  border-color: rgba(148, 163, 184, 0.6) !important;
+  color: #cbd5e1 !important;
+}
+
+/* === 50. Delete Tab Button === */
+body.dark-mode .delete-tab-btn {
+  background: rgba(239, 68, 68, 0.8) !important;
+  color: #ffffff !important;
+}
+
+body.dark-mode .delete-tab-btn:hover {
+  background: rgba(220, 38, 38, 1) !important;
+}
+
+/* === 51. Holiday Rows (공휴일 행) === */
+body.dark-mode .is-holiday-row {
+  background-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+body.dark-mode .is-holiday-row .curr-cell {
+  color: #fca5a5 !important;
+}
+
+body.dark-mode .is-holiday-row .date-cell,
+body.dark-mode .is-holiday-row .day-cell {
+  color: #fca5a5 !important;
+  font-weight: 800 !important;
+}
+
+body.dark-mode .is-holiday-row:hover {
+  background-color: rgba(239, 68, 68, 0.25) !important;
+}
+
+/* === 52. Datayard & Helppage Sections === */
+/* 카드 컨테이너 */
+body.dark-mode #datayard-section .card,
+body.dark-mode #helppage-section .card,
+body.dark-mode #datayard-section .group-card,
+body.dark-mode #helppage-section .group-card,
+body.dark-mode #datayard-section .resource-card,
+body.dark-mode #helppage-section .resource-card {
+  background: rgba(30, 41, 59, 0.4) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  color: #e2e8f0 !important;
+}
+
+/* 펼쳐진 하위 메뉴 (흰색 배경 문제 해결) */
+body.dark-mode #datayard-section .card-body,
+body.dark-mode #helppage-section .card-body,
+body.dark-mode #datayard-section .menu-list,
+body.dark-mode #helppage-section .menu-list,
+body.dark-mode #datayard-section .sub-menu,
+body.dark-mode #helppage-section .sub-menu,
+body.dark-mode #datayard-section .resource-list,
+body.dark-mode #helppage-section .resource-list,
+body.dark-mode #datayard-section ul,
+body.dark-mode #helppage-section ul,
+body.dark-mode #datayard-section .items-list,
+body.dark-mode #helppage-section .items-list {
+  background: rgba(15, 23, 42, 0.6) !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+/* 리스트 아이템 */
+body.dark-mode #datayard-section li,
+body.dark-mode #helppage-section li,
+body.dark-mode #datayard-section .list-item,
+body.dark-mode #helppage-section .list-item,
+body.dark-mode #datayard-section .resource-item,
+body.dark-mode #helppage-section .resource-item {
+  background: transparent !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(148, 163, 184, 0.15) !important;
+}
+
+body.dark-mode #datayard-section li:hover,
+body.dark-mode #helppage-section li:hover,
+body.dark-mode #datayard-section .list-item:hover,
+body.dark-mode #helppage-section .list-item:hover {
+  background: rgba(51, 65, 85, 0.4) !important;
+}
+
+/* 링크 */
+body.dark-mode #datayard-section a,
+body.dark-mode #helppage-section a {
+  color: #93c5fd !important;
+}
+
+body.dark-mode #datayard-section a:hover,
+body.dark-mode #helppage-section a:hover {
+  color: #bfdbfe !important;
+}
+
+/* 카드 헤더 */
+body.dark-mode #datayard-section .card-header,
+body.dark-mode #helppage-section .card-header,
+body.dark-mode #datayard-section .group-header,
+body.dark-mode #helppage-section .group-header {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #f1f5f9 !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+/* 아이콘 색상 */
+body.dark-mode #datayard-section i,
+body.dark-mode #helppage-section i,
+body.dark-mode #datayard-section .fa,
+body.dark-mode #helppage-section .fa,
+body.dark-mode #datayard-section .fas,
+body.dark-mode #helppage-section .fas {
+  color: #94a3b8 !important;
+}
+
+body.dark-mode #datayard-section .card-header i,
+body.dark-mode #helppage-section .card-header i {
+  color: #cbd5e1 !important;
+}
+
+/* 파일 아이콘 */
+body.dark-mode #datayard-section .file-icon,
+body.dark-mode #helppage-section .file-icon {
+  color: #60a5fa !important;
+}
+
+/* 외부 링크 아이콘 */
+body.dark-mode #datayard-section .external-link-icon,
+body.dark-mode #helppage-section .external-link-icon,
+body.dark-mode #datayard-section .fa-external-link-alt,
+body.dark-mode #helppage-section .fa-external-link-alt {
+  color: #94a3b8 !important;
+}
+
+/* 제목 */
+body.dark-mode #datayard-section h3,
+body.dark-mode #helppage-section h3,
+body.dark-mode #datayard-section h4,
+body.dark-mode #helppage-section h4 {
+  color: #f1f5f9 !important;
+}
+
+/* 설명 텍스트 */
+body.dark-mode #datayard-section p,
+body.dark-mode #helppage-section p,
+body.dark-mode #datayard-section .description,
+body.dark-mode #helppage-section .description {
+  color: #94a3b8 !important;
+}
+
+/* 구분선 */
+body.dark-mode #datayard-section hr,
+body.dark-mode #helppage-section hr {
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+/* 토글 버튼 (아코디언) */
+body.dark-mode #datayard-section .toggle-btn,
+body.dark-mode #helppage-section .toggle-btn,
+body.dark-mode #datayard-section .accordion-toggle,
+body.dark-mode #helppage-section .accordion-toggle {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode #datayard-section .toggle-btn:hover,
+body.dark-mode #helppage-section .toggle-btn:hover {
+  background: rgba(71, 85, 105, 0.8) !important;
+}
+
+/* 검색창 */
+body.dark-mode #datayard-section input[type="search"],
+body.dark-mode #helppage-section input[type="search"],
+body.dark-mode #datayard-section .search-input,
+body.dark-mode #helppage-section .search-input {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+/* 배지 */
+body.dark-mode #datayard-section .badge,
+body.dark-mode #helppage-section .badge,
+body.dark-mode #datayard-section .tag,
+body.dark-mode #helppage-section .tag {
+  background: rgba(59, 130, 246, 0.3) !important;
+  color: #93c5fd !important;
+  border: 1px solid rgba(59, 130, 246, 0.4) !important;
+}
+
+/* === 53. Curriculum Incharge Text (담당자 텍스트) === */
+/* 라이트모드: 기본 파란색 유지 */
+.chip-incharge {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+/* 다크모드: 밝은 하늘색으로 변경 */
+body.dark-mode .chip-incharge {
+  color: #7dd3fc !important;
+  font-weight: 600;
+}
+
+/* === 54. 자료마당 & 온학교 e지원 - 하위 토글 메뉴 다크모드 최적화 === */
+
+/* 메인 카드 토글 버튼 */
+body.dark-mode .helppage-main-toggle {
+  background: rgba(30, 41, 59, 0.5) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  color: #e2e8f0 !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.dark-mode .helppage-main-toggle:hover {
+  background: rgba(51, 65, 85, 0.7) !important;
+  border-color: rgba(148, 163, 184, 0.35) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* 아이콘 박스 */
+body.dark-mode .icon-box {
+  background: rgba(51, 65, 85, 0.6) !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 제목 그룹 */
+body.dark-mode .title-group h3 {
+  color: #f1f5f9 !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .title-group p {
+  color: #94a3b8 !important;
+}
+
+/* 펼쳐진 컨텐츠 영역 */
+body.dark-mode .hidden-content {
+  background: rgba(15, 23, 42, 0.7) !important;
+  backdrop-filter: blur(25px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  border-radius: 16px !important;
+  box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 검색 래퍼 */
+body.dark-mode .search-wrapper {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border-radius: 12px !important;
+  padding: 1rem !important;
+  margin-bottom: 1rem !important;
+}
+
+body.dark-mode .relative-search {
+  position: relative;
+}
+
+body.dark-mode .category-search-input {
+  background: rgba(51, 65, 85, 0.7) !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+  color: #e2e8f0 !important;
+  padding: 0.75rem 1rem 0.75rem 2.5rem !important;
+  border-radius: 10px !important;
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .category-search-input:focus {
+  background: rgba(51, 65, 85, 0.9) !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25) !important;
+  outline: none;
+}
+
+body.dark-mode .category-search-input::placeholder {
+  color: #64748b !important;
+}
+
+body.dark-mode .search-icon {
+  color: #94a3b8 !important;
+}
+
+/* 하위 섹션 컨테이너 */
+body.dark-mode .sub-sections-container {
+  background: transparent !important;
+}
+
+/* 하위 섹션 아이템 */
+body.dark-mode .sub-section-item {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  border-radius: 12px !important;
+  margin-bottom: 0.75rem !important;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.dark-mode .sub-section-item:hover {
+  background: rgba(51, 65, 85, 0.5) !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+  transform: translateX(4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* 하위 섹션 토글 버튼 */
+body.dark-mode .sub-section-toggle {
+  background: rgba(51, 65, 85, 0.5) !important;
+  border: none !important;
+  color: #f1f5f9 !important;
+  padding: 1rem 1.25rem !important;
+  transition: all 0.3s ease;
+  font-weight: 600 !important;
+}
+
+body.dark-mode .sub-section-toggle:hover {
+  background: rgba(71, 85, 105, 0.6) !important;
+  color: #ffffff !important;
+}
+
+/* 하위 헤더 왼쪽 */
+body.dark-mode .sub-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+body.dark-mode .sub-header-left span {
+  color: #f1f5f9 !important;
+  font-weight: 600 !important;
+}
+
+/* 하위 아이콘 박스 */
+body.dark-mode .sub-icon-box {
+  background: rgba(71, 85, 105, 0.5) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  padding: 0.5rem !important;
+  border-radius: 8px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+}
+
+/* 색상별 아이콘 박스 - 다크모드 최적화 */
+body.dark-mode .sub-icon-box.blue-100-bg { background: rgba(59, 130, 246, 0.2) !important; }
+body.dark-mode .sub-icon-box.green-100-bg { background: rgba(16, 185, 129, 0.2) !important; }
+body.dark-mode .sub-icon-box.purple-100-bg { background: rgba(139, 92, 246, 0.2) !important; }
+body.dark-mode .sub-icon-box.red-100-bg { background: rgba(239, 68, 68, 0.2) !important; }
+body.dark-mode .sub-icon-box.yellow-100-bg { background: rgba(245, 158, 11, 0.2) !important; }
+body.dark-mode .sub-icon-box.emerald-100-bg { background: rgba(16, 185, 129, 0.2) !important; }
+body.dark-mode .sub-icon-box.pink-100-bg { background: rgba(236, 72, 153, 0.2) !important; }
+body.dark-mode .sub-icon-box.amber-100-bg { background: rgba(245, 158, 11, 0.2) !important; }
+body.dark-mode .sub-icon-box.violet-100-bg { background: rgba(139, 92, 246, 0.2) !important; }
+body.dark-mode .sub-icon-box.cyan-100-bg { background: rgba(6, 182, 212, 0.2) !important; }
+body.dark-mode .sub-icon-box.lime-100-bg { background: rgba(132, 204, 22, 0.2) !important; }
+body.dark-mode .sub-icon-box.teal-100-bg { background: rgba(20, 184, 166, 0.2) !important; }
+body.dark-mode .sub-icon-box.indigo-100-bg { background: rgba(99, 102, 241, 0.2) !important; }
+body.dark-mode .sub-icon-box.fuchsia-100-bg { background: rgba(217, 70, 239, 0.2) !important; }
+body.dark-mode .sub-icon-box.rose-100-bg { background: rgba(244, 63, 94, 0.2) !important; }
+body.dark-mode .sub-icon-box.orange-100-bg { background: rgba(249, 115, 22, 0.2) !important; }
+body.dark-mode .sub-icon-box.sky-100-bg { background: rgba(14, 165, 233, 0.2) !important; }
+
+/* 색상별 아이콘 텍스트 - 다크모드 최적화 */
+body.dark-mode .blue-600-text { color: #60a5fa !important; }
+body.dark-mode .green-600-text { color: #34d399 !important; }
+body.dark-mode .purple-600-text { color: #a78bfa !important; }
+body.dark-mode .red-600-text { color: #f87171 !important; }
+body.dark-mode .yellow-600-text { color: #fbbf24 !important; }
+body.dark-mode .emerald-600-text { color: #34d399 !important; }
+body.dark-mode .pink-600-text { color: #f472b6 !important; }
+body.dark-mode .amber-600-text { color: #fbbf24 !important; }
+body.dark-mode .violet-600-text { color: #a78bfa !important; }
+body.dark-mode .cyan-600-text { color: #22d3ee !important; }
+body.dark-mode .lime-600-text { color: #a3e635 !important; }
+body.dark-mode .teal-600-text { color: #2dd4bf !important; }
+body.dark-mode .indigo-600-text { color: #818cf8 !important; }
+body.dark-mode .fuchsia-600-text { color: #e879f9 !important; }
+body.dark-mode .rose-600-text { color: #fb7185 !important; }
+body.dark-mode .orange-600-text { color: #fb923c !important; }
+body.dark-mode .sky-600-text { color: #38bdf8 !important; }
+
+/* 하위 쉐브론 아이콘 */
+body.dark-mode .sub-chevron {
+  color: #94a3b8 !important;
+  transition: all 0.3s ease;
+}
+
+/* 하위 아이템 리스트 */
+body.dark-mode .sub-items-list {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border-top: 1px solid rgba(148, 163, 184, 0.15) !important;
+  padding: 0.75rem !important;
+}
+
+/* 파일 아이템 */
+body.dark-mode .file-item {
+  background: rgba(51, 65, 85, 0.4) !important;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  color: #cbd5e1 !important;
+  padding: 0.75rem 1rem !important;
+  border-radius: 8px !important;
+  margin-bottom: 0.5rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  text-decoration: none !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.dark-mode .file-item:hover {
+  background: rgba(59, 130, 246, 0.25) !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  color: #93c5fd !important;
+  transform: translateX(6px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+}
+
+body.dark-mode .file-item:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* 파일 아이템 아이콘 */
+body.dark-mode .file-item .fa-file-alt {
+  color: #60a5fa !important;
+  font-size: 1rem;
+}
+
+body.dark-mode .file-item:hover .fa-file-alt {
+  color: #93c5fd !important;
+}
+
+/* 외부 링크 아이콘 */
+body.dark-mode .file-item .link-icon,
+body.dark-mode .file-item .fa-external-link-alt {
+  color: #64748b !important;
+  font-size: 0.85rem;
+  margin-left: auto;
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .file-item:hover .link-icon,
+body.dark-mode .file-item:hover .fa-external-link-alt {
+  color: #60a5fa !important;
+  transform: translateX(3px) translateY(-3px);
+}
+
+/* 메인 쉐브론 */
+body.dark-mode .main-chevron {
+  color: #94a3b8 !important;
+  transition: transform 0.3s ease;
+}
+
+/* 푸터 */
+body.dark-mode .helppage-footer {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border-top: 1px solid rgba(148, 163, 184, 0.15) !important;
+  color: #94a3b8 !important;
+  padding: 1.5rem !important;
+  margin-top: 2rem !important;
+  border-radius: 12px !important;
+}
+
+body.dark-mode .helppage-footer a {
+  color: #60a5fa !important;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(96, 165, 250, 0.3);
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .helppage-footer a:hover {
+  color: #93c5fd !important;
+  border-bottom-color: #60a5fa;
+}
+
+/* 그리드 레이아웃 */
+body.dark-mode .helppage-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+/* 카드 컨테이너 */
+body.dark-mode .helppage-card-container {
+  background: transparent !important;
+}
+
+/* 스크롤바 커스터마이징 (하위 메뉴용) */
+body.dark-mode .sub-items-list::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+body.dark-mode .sub-items-list::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 4px;
+}
+
+body.dark-mode .sub-items-list::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.6);
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+body.dark-mode .sub-items-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.8);
+}
+
+
+
+/* === 34. Intro Section Dark Mode Fixes (Naver Search & Greeting) === */
+
+/* 네이버 검색창 다크모드 최적화 (이질적인 배경색 제거 & 투명도 개선) */
+body.dark-mode .intro-naver-search {
+  background: rgba(30, 41, 59, 0.3) !important; /* 더 투명하게 */
+  border: 1px solid rgba(148, 163, 184, 0.2) !important; /* 테두리는 얇게 유지하되 은은하게 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2) !important;
+}
+
+body.dark-mode .intro-naver-search input {
+  background-color: transparent !important; /* 입력창 배경 완전 투명 */
+  border: none !important; /* 입력창 테두리 제거 (요청사항) */
+  color: #f1f5f9 !important;
+  box-shadow: none !important;
+}
+
+/* Autofill 시 배경색 제거 트릭 for 네이버 검색창 */
+body.dark-mode .intro-naver-search input:-webkit-autofill,
+body.dark-mode .intro-naver-search input:-webkit-autofill:hover, 
+body.dark-mode .intro-naver-search input:-webkit-autofill:focus, 
+body.dark-mode .intro-naver-search input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px rgba(30, 41, 59, 0.0) inset !important; /* 투명 트릭이 안먹힐 수 있어 어두운 색으로 */
+  -webkit-text-fill-color: #f1f5f9 !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+body.dark-mode .intro-naver-search input::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* 검색 버튼 */
+body.dark-mode .intro-search-btn {
+  background-color: transparent !important;
+  color: #cbd5e1 !important;
+}
+body.dark-mode .intro-search-btn:hover {
+  color: #60a5fa !important;
+}
+
+/* 인사말 명도 상향 (가독성 개선) */
+body.dark-mode .intro-cheer-message .line-1 {
+  color: #f1f5f9 !important; /* 기존보다 더 밝게 */
+  text-shadow: 0 2px 8px rgba(0,0,0,0.6) !important;
+}
+
+body.dark-mode .intro-cheer-message .line-2 {
+  color: #e2e8f0 !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.6) !important;
+}
+
+
+/* === 35. Unified Action Buttons (All Tabs) === */
+/* 
+   적용 대상:
+   - 홈: 바로가기 편집 (#edit-mode-btn)
+   - 학교현황: 현황 편집 (#status-section .btn-primary)
+   - 학교계정: 학교계정 편집 (#account-edit-mode-btn)
+   - 배차신청: 배차 신청 (#bus-request-btn)
+   - 자료마당: 자료마당 편집 (#datayard-edit-mode-btn)
+   - 학사일정: 일정 추가 (#curr-add-btn)
+*/
+
+#edit-mode-btn,
+#account-edit-mode-btn,
+#status-section .btn-primary,
+#bus-request-btn,
+#datayard-edit-mode-btn,
+#curr-add-btn {
+  background: linear-gradient(135deg, #4f46e5, #8b5cf6) !important; /* Indigo to Violet Gradient */
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 50px !important; /* Pill Shape */
+  padding: 0.65rem 1.5rem !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  letter-spacing: 0.3px !important;
+}
+
+/* Hover State */
+#edit-mode-btn:hover,
+#account-edit-mode-btn:hover,
+#status-section .btn-primary:hover,
+#bus-request-btn:hover,
+#datayard-edit-mode-btn:hover,
+#curr-add-btn:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5) !important;
+  filter: brightness(1.1);
+  background: linear-gradient(135deg, #4338ca, #7c3aed) !important;
+}
+
+/* Active/Processing State */
+#edit-mode-btn:active,
+#account-edit-mode-btn:active,
+#status-section .btn-primary:active,
+#bus-request-btn:active,
+#datayard-edit-mode-btn:active,
+#curr-add-btn:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3) !important;
+}
+
+/* FontAwesome Icon Style Adjustment */
+#edit-mode-btn i,
+#account-edit-mode-btn i,
+#status-section .btn-primary i,
+#bus-request-btn i,
+#datayard-edit-mode-btn i,
+#curr-add-btn i {
+  font-size: 1rem !important;
+  margin: 0 !important; /* gap으로 간격 조정하므로 마진 제거 */
+}
+
+/* Fix: 학교 계정 편집 버튼 강제 적용 (CSS 우선순위 확보) */
+#account-section #account-edit-mode-btn {
+  background: linear-gradient(135deg, #4f46e5, #8b5cf6) !important; /* Indigo to Violet Gradient */
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 50px !important;
+  padding: 0.65rem 1.5rem !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+#account-section #account-edit-mode-btn:hover {
+  background: linear-gradient(135deg, #4338ca, #7c3aed) !important;
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5) !important;
+  filter: brightness(1.1) !important;
+}
+
+
+/* === 36. Notice Widget Dark Mode (Clean & Unified) === */
+body.dark-mode .notice-item {
+  background: rgba(30, 41, 59, 0.5) !important; /* 어두운 반투명 배경 */
+  border: 1px solid rgba(148, 163, 184, 0.1) !important;
+  /* 기존 왼쪽 보더 색상은 유지됨 (CSS 우선순위 주의) */
+  border-left-width: 4px !important; 
+  color: #e2e8f0 !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.3s ease !important;
+}
+
+body.dark-mode .notice-item:hover {
+  background: rgba(51, 65, 85, 0.6) !important;
+  transform: translateX(4px) translateY(-2px) !important;
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode .notice-content-preview {
+  color: #cbd5e1 !important; /* 밝은 회색 텍스트 */
+}
+
+body.dark-mode .notice-author {
+  background: rgba(148, 163, 184, 0.2) !important;
+  color: #f1f5f9 !important;
+  font-weight: 600 !important;
+}
+
+body.dark-mode .notice-date {
+  color: #94a3b8 !important;
+}
+
+/* Notice Status Pills (Important/Urgent) Override */
+body.dark-mode .notice-item.status-important {
+  border-left-color: #f59e0b !important;
+  background: rgba(245, 158, 11, 0.1) !important; /* 은은한 앰버 배경 */
+}
+
+body.dark-mode .notice-item.status-urgent {
+  border-left-color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.1) !important; /* 은은한 레드 배경 */
+}
+
+body.dark-mode .pill-important {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+
+body.dark-mode .pill-urgent {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+
+/* === 37. Shortcut Groups Glassmorphism (Dark Mode) === */
+body.dark-mode .shortcut-group-card {
+  background: rgba(255, 255, 255, 0.05) !important; /* 아주 희미한 흰색 필터 */
+  backdrop-filter: blur(20px) saturate(180%) !important; /* 강력한 블러 효과 */
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important; /* 얇고 투명한 유리 테두리 */
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important; /* 깊은 그림자 */
+  border-radius: 20px !important;
+  transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1) !important;
+}
+
+body.dark-mode .shortcut-group-title {
+  color: #f8fafc !important; /* 거의 흰색 타이틀 */
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important; /* 텍스트 가독성 */
+}
+
+body.dark-mode .shortcut-group-card:hover {
+  background: rgba(255, 255, 255, 0.1) !important; /* 호버 시 조금 더 밝게 */
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  transform: translateY(-8px) !important;
+  box-shadow: 0 15px 45px 0 rgba(0, 0, 0, 0.45) !important;
+}
+
+/* 내부 아이템들 */
+body.dark-mode .shortcut-item-wrapper {
+  transition: all 0.2s ease !important;
+  border-radius: 12px;
+}
+
+body.dark-mode .shortcut-item-wrapper:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(5px);
+}
+
+body.dark-mode .shortcut-title {
+  color: #e2e8f0 !important;
+  font-weight: 500 !important;
+}
+
+
+/* === 38. Board Post Modal Dark Mode Fix === */
+body.dark-mode #boardPostModal .modal-content {
+  background: #1e293b !important; /* Deep Dark Blue Background */
+  color: #f1f5f9 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.dark-mode #boardPostModal .modal-header {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1) !important;
+  background: transparent !important;
+}
+
+body.dark-mode #boardPostModal .modal-header h2 {
+  color: #f1f5f9 !important;
+}
+
+body.dark-mode #boardPostModal .close-modal {
+  color: #94a3b8 !important;
+}
+body.dark-mode #boardPostModal .close-modal:hover {
+  color: #f1f5f9 !important;
+}
+
+body.dark-mode #boardPostModal .modal-body {
+  background: transparent !important;
+}
+
+body.dark-mode #boardPostModal .modal-footer {
+  background: rgba(15, 23, 42, 0.3) !important; /* Slightly darker for footer */
+  border-top: 1px solid rgba(148, 163, 184, 0.1) !important;
+}
+
+/* 입력창 수정 */
+body.dark-mode #post-content-editor {
+  background: rgba(15, 23, 42, 0.6) !important; /* Very dark input bg */
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  color: #e2e8f0 !important;
+}
+
+/* 라벨 색상 */
+body.dark-mode #boardPostModal label {
+  color: #94a3b8 !important;
+}
+
+
+/* === 38-1. Extended Dark Mode Styles (Components) === */
+/* 작성자 칩 */
+body.dark-mode .author-chip {
+  background: rgba(51, 65, 85, 0.4) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.1) !important;
+}
+body.dark-mode .author-chip:hover {
+  background: rgba(71, 85, 105, 0.6) !important;
+  color: #ffffff !important;
+}
+body.dark-mode .author-chip.selected {
+  background: linear-gradient(135deg, #4f46e5, #8b5cf6) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4) !important;
+}
+
+/* 파일 첨부 영역 */
+body.dark-mode #file-drop-zone {
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  background: rgba(15, 23, 42, 0.3) !important;
+}
+body.dark-mode #file-drop-zone p { color: #94a3b8 !important; }
+body.dark-mode #file-drop-zone i { color: #64748b !important; }
+
+/* 상태 선택 라벨 */
+body.dark-mode .status-label {
+  background: rgba(51, 65, 85, 0.4) !important;
+  color: #94a3b8 !important;
+}
+
+/* 체크된 상태의 라벨 */
+body.dark-mode .status-check-tag:checked + .status-label.normal {
+  background: #334155 !important;
+  color: #e2e8f0 !important;
+}
+body.dark-mode .status-check-tag:checked + .status-label.important {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+body.dark-mode .status-check-tag:checked + .status-label.urgent {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+/* 모달 하단 버튼 */
+body.dark-mode .btn-memo-cancel {
+  background: rgba(51, 65, 85, 0.4) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+}
+body.dark-mode .btn-memo-cancel:hover {
+  background: rgba(71, 85, 105, 0.8) !important;
+  color: #fff !important;
+}
+
+/* 직접 입력 인풋 */
+body.dark-mode #post-author-custom {
+  background: rgba(15, 23, 42, 0.6) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  color: #e2e8f0 !important;
+}
+
+
+/* === 39. Table Header Styling Fix (Final) === */
+
+/* [다크모드] 헤더 이중 배경 및 겹침 문제 해결 */
+/* thead 컨테이너는 투명하게 처리 (필수) */
+body.dark-mode .curr-table-header,
+body.dark-mode .account-table thead,
+body.dark-mode .bus-table thead,
+body.dark-mode .status-table thead {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* 실제 셀(th)에만 배경 적용하여 깔끔하게 처리 */
+body.dark-mode .account-table th,
+body.dark-mode .bus-table th,
+body.dark-mode .status-table th,
+body.dark-mode .curr-table-header > div,
+body.dark-mode .curr-row.header {
+  background: #1e293b !important; /* 투명도 없는 불투명 색상 사용으로 비침 방지 */
+  backdrop-filter: none !important; 
+  -webkit-backdrop-filter: none !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2) !important;
+  color: #e2e8f0 !important;
+  box-shadow: none !important;
+  border-right: none !important;
+  border-left: none !important;
+}
+
+/* [공통] 테이블 헤더 높이 통일 및 스타일 */
+.bus-table thead th {
+  height: 50px !important;
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
+  vertical-align: middle !important;
+  position: relative !important;
+  background-clip: padding-box;
+}
+/* === 40 & 41. Bus Request Badge Fix (Final V2) === */
+
+/* 뱃지 스타일 - 위치 상향 조정 */
+.driver-badge {
+  position: absolute;
+  top: -28px; /* 텍스트와 5px 이상 간격 확보를 위해 더 위로 올림 */
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.5);
+  z-index: 9999 !important;
+  animation: bounceBadge 2s infinite ease-in-out;
+  pointer-events: none;
+}
+
+.driver-badge::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  margin-left: -4px;
+  border-width: 4px 4px 0;
+  border-style: solid;
+  border-color: #ff8e53 transparent transparent transparent;
+}
+
+@keyframes bounceBadge {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-3px); }
+}
+
+/* 첫 번째 셀("확인") 오버플로우 완전 해제 */
+/* 배경색 제거 (라이트모드 영향 방지) */
+.bus-table thead th:first-child {
+  overflow: visible !important;
+  z-index: 9999 !important;
+}
+
+/* [다크모드] 둥근 모서리 깨짐 방지 (Overflow visible 부작용 해결) */
+/* 좌상단 */
+body.dark-mode .bus-table thead th:first-child {
+  background: #1e293b !important;
+  border-top-left-radius: 12px !important;
+}
+/* 우상단 (명시적 지정) */
+body.dark-mode .bus-table thead th:last-child {
+  border-top-right-radius: 12px !important;
+}
+
+/* 테이블 래퍼 오버플로우 해제 */
+.bus-table-wrapper {
+  overflow: visible !important;
+  margin-top: 35px !important;
+  position: relative;
+  z-index: 5 !important;
+  background: transparent !important; /* 이중 배경 제거 */
+}
+
+/* 테이블 자체 둥근 모서리 처리 (내용 튀어나옴 방지) */
+.bus-table {
+  border-collapse: separate !important; /* Radius 적용을 위해 필수 */
+  border-spacing: 0;
+  border-radius: 12px;
+}
+
+/* 하단 둥근 모서리 처리 */
+.bus-table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 12px !important;
+}
+.bus-table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 12px !important;
+}
+
