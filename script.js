@@ -60,6 +60,9 @@
   setInterval(updateClock, 1000);
   updateClock();
 
+  // Initialize Shortcuts Logic on Load (Moved from Tab click)
+  initShortcuts();
+
   // Helper: Format Date (YYYY-MM-DD)
   function formatDate(date, offsetDays = 0) {
     let d = new Date(date);
@@ -2487,12 +2490,12 @@
       navItems.forEach((nav) => nav.classList.remove("active"));
       item.classList.add("active");
       currentCategory = item.getAttribute("data-category");
+      document.body.setAttribute('data-tab', currentCategory); // Added for theme backgrounds
 
       // 모든 섹션 숨기기
       const allSections = [
         linksGrid, 
         statusSection, 
-        shortcutSection, 
         curriculumSection,
         datayardSection, 
         helppageSection, 
@@ -2510,9 +2513,6 @@
       if (currentCategory === "status") {
         statusSection.classList.remove("hidden");
         initStatusEditing(); // Call dynamic init
-      } else if (currentCategory === "shortcut") {
-        shortcutSection.classList.remove("hidden");
-        renderShortcuts();
       } else if (currentCategory === "curriculum") {
         curriculumSection.classList.remove("hidden");
         // 향후 renderCurriculum() 호출 가능
@@ -2698,8 +2698,39 @@
     const todayWeekday = document.getElementById('today-weekday');
     const eventList = document.getElementById('today-event-list');
     const addBtn = document.getElementById('widget-add-btn');
+    const todayWidget = document.getElementById('school-today-widget');
+    const toggleBtn = document.getElementById('today-toggle-btn');
+    const header = document.getElementById('today-widget-header');
 
     if (!todayMonthDay || !eventList) return;
+    
+    // Toggle Logic
+    const toggleCollapse = (e) => {
+        // Prevent toggling when clicking buttons inside header
+        if (e && e.target.closest('button')) return;
+        
+        todayWidget.classList.toggle('collapsed');
+        const icon = toggleBtn.querySelector('i');
+        if (todayWidget.classList.contains('collapsed')) {
+            icon.className = 'fas fa-chevron-down';
+        } else {
+            icon.className = 'fas fa-chevron-up';
+        }
+    };
+    
+    if (toggleBtn) {
+        toggleBtn.onclick = (e) => {
+            e.stopPropagation();
+            // Manually trigger logic directly for the button
+            todayWidget.classList.toggle('collapsed');
+            const icon = toggleBtn.querySelector('i');
+            icon.className = todayWidget.classList.contains('collapsed') ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
+        };
+    }
+    
+    if (header) {
+        header.onclick = toggleCollapse;
+    }
 
     // Data Store
     let allRawEvents = [];
@@ -2794,21 +2825,22 @@
                         
                         li.innerHTML = `<i class="fas ${ev.isHoliday ? 'fa-flag' : 'fa-check'}"></i> ${displayText}`;
 
-                        // Tooltip Construction
+                        // Tooltip Construction (HTML List)
                         let info = [];
                         if (ev.eventType === 'edu') {
-                            if (ev.time) info.push(`시간: ${ev.time}`);
-                            if (ev.place) info.push(`장소: ${ev.place}`);
-                            if (ev.target) info.push(`대상: ${ev.target}`);
-                            if (ev.inCharge) info.push(`담당: ${ev.inCharge}`);
+                            if (ev.time) info.push(`<li><b>시간:</b> ${ev.time}</li>`);
+                            if (ev.place) info.push(`<li><b>장소:</b> ${ev.place}</li>`);
+                            if (ev.target) info.push(`<li><b>대상:</b> ${ev.target}</li>`);
+                            if (ev.inCharge) info.push(`<li><b>담당:</b> ${ev.inCharge}</li>`);
                         } else if (ev.eventType === 'staff') {
-                            info.push(`복무: ${ev.staffStatus || '미정'}`);
-                            if (ev.time) info.push(`시간: ${ev.time}`);
+                            info.push(`<li><b>이름:</b> ${ev.title}</li>`); // Title is name in staff
+                            info.push(`<li><b>복무:</b> ${ev.staffStatus || '미정'}</li>`);
+                            if (ev.time) info.push(`<li><b>시간:</b> ${ev.time}</li>`);
                         } else if (ev.eventType === 'doc') {
-                            if (ev.inCharge) info.push(`담당: ${ev.inCharge}`);
+                            if (ev.inCharge) info.push(`<li><b>담당:</b> ${ev.inCharge}</li>`);
                         }
                         
-                        const tooltipContent = info.length > 0 ? info.join('\n') : "상세 내용 없음";
+                        const tooltipContent = info.length > 0 ? `<ul class="tooltip-list">${info.join('')}</ul>` : "";
                         
                         li.onmouseenter = (e) => showFloatingTooltip(e, tooltipContent);
                         li.onmouseleave = hideFloatingTooltip;
@@ -2849,15 +2881,30 @@
 
     function showFloatingTooltip(e, content) {
         if(!content) return;
-        tooltipEl.textContent = content;
-        tooltipEl.classList.add('active');
-        const rect = e.target.getBoundingClientRect();
-        tooltipEl.style.left = (rect.right + 15) + 'px';
-        tooltipEl.style.top = (rect.top + rect.height / 2) + 'px';
+        tooltipEl.innerHTML = content; // Changed to innerHTML for HTML content
+        tooltipEl.style.display = 'block'; 
+        
+        // Measure tooltip
+        const tooltipRect = tooltipEl.getBoundingClientRect();
+        const targetRect = e.target.getBoundingClientRect();
+        
+        // Position: Right of the target, Vertically centered
+        // targetRect.right + gap
+        const x = targetRect.right + 12; 
+        // targetRect.top + half_height - half_tooltip_height
+        const y = targetRect.top + (targetRect.height / 2) - (tooltipRect.height / 2);
+        
+        tooltipEl.style.left = x + 'px';
+        tooltipEl.style.top = y + 'px';
+        
+        requestAnimationFrame(() => {
+           tooltipEl.classList.add('active');
+        });
     }
 
     function hideFloatingTooltip() {
         tooltipEl.classList.remove('active');
+        tooltipEl.style.display = 'none';
     }
 
     // Init
@@ -2880,10 +2927,14 @@
     window.updateTodayWidget = renderTodayWidget;
   }
 
-  // ================= Padlet-Style Collaborative Board Logic =================
-  async function initIntroBoard() {
-    const boardGrid = document.getElementById('intro-board-grid');
-    const addPostBtn = document.getElementById('add-post-btn');
+  // ================= Notice Widget Logic =================
+  async function initNoticeBoard() {
+    const noticeWidget = document.getElementById('notice-widget');
+    const noticeContent = document.getElementById('notice-widget-content');
+    const addPostBtn = document.getElementById('notice-add-btn');
+    const toggleBtn = document.getElementById('notice-toggle-btn');
+    const header = document.getElementById('notice-widget-header');
+
     const modal = document.getElementById('boardPostModal');
     const form = document.getElementById('boardPostForm');
     const closeModalBtns = document.querySelectorAll('.close-board-modal');
@@ -2903,7 +2954,27 @@
     let selectedColor = '#fff9c4';
     let selectedFile = null;
 
-    if (!boardGrid) return;
+    if (!noticeContent) return;
+
+    // Toggle Collapse
+    const toggleCollapse = (e) => {
+        // Prevent if clicking add button
+        if (e && e.target.closest('#notice-add-btn')) return;
+        
+        noticeWidget.classList.toggle('collapsed');
+        const icon = toggleBtn.querySelector('i');
+        if (noticeWidget.classList.contains('collapsed')) {
+            icon.className = 'fas fa-chevron-down';
+        } else {
+            icon.className = 'fas fa-chevron-up';
+        }
+    };
+    
+    toggleBtn.onclick = (e) => {
+        e.stopPropagation();
+        toggleCollapse(e);
+    };
+    header.onclick = toggleCollapse; // Click anywhere on header to toggle
 
     // --- 2. Author Chips Population ---
     const authors = ["교장", "행정실장", "1·2학년", "3학년", "4학년", "5학년", "6학년", "유치원", "교무", "영양", "차장", "운전주무관", "교무행정원", "직접 입력"];
@@ -3014,114 +3085,96 @@
 
     let sortableInstance = null;
     const initSortable = () => {
+      const list = noticeContent.querySelector('.notice-list');
+      if (!list) return;
+      
       if (sortableInstance) sortableInstance.destroy();
-      sortableInstance = new Sortable(boardGrid, {
-        animation: 150,
-        ghostClass: 'sortable-ghost',
-        chosenClass: 'sortable-chosen',
-        filter: '.board-add-card',
-        onStart: () => boardGrid.classList.add('sorting'),
-        onEnd: async (evt) => {
-          boardGrid.classList.remove('sorting');
-          if (evt.oldIndex === evt.newIndex) return;
-          
-          const cards = Array.from(boardGrid.querySelectorAll('.board-card:not(.board-add-card)'));
-          const { db, firestoreUtils } = window;
-          
-          try {
-            const promises = cards.map((card, index) => {
-              const id = card.dataset.id;
-              return firestoreUtils.setDoc(firestoreUtils.doc(db, "boardPosts", id), { order: index }, { merge: true });
-            });
-            await Promise.all(promises);
-          } catch (err) {
-            console.error("Order save error:", err);
-          }
-        }
-      });
+      
+      if (window.Sortable) {
+          sortableInstance = new Sortable(list, {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            onStart: () => list.classList.add('sorting'),
+            onEnd: async (evt) => {
+              list.classList.remove('sorting');
+              if (evt.oldIndex === evt.newIndex) return;
+              
+              const items = Array.from(list.querySelectorAll('.notice-item'));
+              const { db, firestoreUtils } = window;
+              
+              try {
+                // Batch update or individual updates
+                // For simplicity here, individual updates
+                const promises = items.map((item, index) => {
+                  const id = item.dataset.id;
+                  return firestoreUtils.setDoc(firestoreUtils.doc(db, "boardPosts", id), { order: index }, { merge: true });
+                });
+                await Promise.all(promises);
+              } catch (err) {
+                console.error("Order save error:", err);
+              }
+            }
+          });
+      }
     };
 
     const renderPosts = (posts) => {
-      boardGrid.innerHTML = '';
+      noticeContent.innerHTML = '<div class="notice-list"></div>';
+      const list = noticeContent.querySelector('.notice-list');
+      
       if (posts.length === 0) {
-        boardGrid.innerHTML = '<div class="board-loading">등록된 메모가 없습니다. 첫 메모를 남겨보세요!</div>';
+        list.innerHTML = '<div class="no-event">등록된 소식이 없습니다.</div>';
         return;
       }
       
       posts.forEach(post => {
-        const card = document.createElement('div');
-        // Status class for border/glow effects
-        card.className = `board-card status-${post.status || 'normal'}`;
-        card.dataset.id = post.id;
-        card.style.backgroundColor = post.color || '#fff9c4';
+        const item = document.createElement('div');
+        item.className = `notice-item status-${post.status || 'normal'}`;
+        item.dataset.id = post.id;
+        if (post.color) item.style.backgroundColor = post.color;
         
-        const date = post.createdAt ? new Date(post.createdAt).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+        // Date parsing helper
+        const date = post.createdAt ? new Date(post.createdAt).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit' }) : '';
         const author = post.author || '익명';
-        
+        const strippedContent = post.content.replace(/<[^>]*>?/gm, ''); // stripped html
+
         // Tag Generation
         let statusTag = '';
         if (post.status === 'important') statusTag = '<span class="status-pill pill-important"><i class="fas fa-star"></i> 중요</span>';
         if (post.status === 'urgent') statusTag = '<span class="status-pill pill-urgent"><i class="fas fa-exclamation-circle"></i> 긴급</span>';
 
-        card.innerHTML = `
-          <div class="card-top-section">
-            <div class="author-profile">
-              <div class="profile-details">
-                <div class="profile-name">
-                  ${author}
-                  ${statusTag}
+        item.innerHTML = `
+            <div class="notice-header-row">
+                <div class="notice-profile-wrapper">
+                    <span class="notice-author">${author}</span>
+                    ${statusTag}
                 </div>
-                <div class="profile-meta">
-                  <span class="meta-date">${date}</span>
+                <span class="notice-date">${date}</span>
+                <div class="notice-actions">
+                    <button class="notice-action-btn copy" title="복사" onclick="event.stopPropagation(); window.copyBoardPost('${post.id}', this)"><i class="fas fa-copy"></i></button>
+                    <button class="notice-action-btn delete" title="삭제" onclick="event.stopPropagation(); window.deleteBoardPost('${post.id}')"><i class="fas fa-trash"></i></button>
                 </div>
-              </div>
             </div>
-            <div class="card-actions-group">
-               <button class="action-disk edit" onclick="event.stopPropagation(); window.editBoardPost('${post.id}')"><i class="fas fa-pen"></i></button>
-               <button class="action-disk delete" onclick="event.stopPropagation(); window.deleteBoardPost('${post.id}')"><i class="fas fa-trash"></i></button>
+            <div class="notice-content-preview">
+                ${strippedContent}
             </div>
-          </div>
-
-          <div class="card-body-section">
-             <div class="card-text-content">${post.content}</div>
-             ${post.fileUrl ? `
-                <a href="${post.fileUrl}" target="_blank" class="card-file-chip">
-                    <i class="fas fa-paperclip"></i>
-                    <span>${post.fileName}</span>
-                </a>
-             ` : ''}
-          </div>
-
-          <div class="card-footer-section">
-             <div class="comment-area" id="comments-${post.id}">
-               ${(post.comments || []).map(c => `
-                 <div class="mini-comment">
-                   <span class="mini-comment-author">${c.author}</span>
-                   <span class="mini-comment-text">${c.text}</span>
-                 </div>
-               `).join('')}
-             </div>
-             <div class="comment-input-box">
-               <input type="text" class="input-mini-name" id="comment-author-${post.id}" placeholder="이름">
-               <input type="text" class="input-mini-text" id="comment-input-${post.id}" placeholder="댓글..." onkeypress="if(event.key === 'Enter') window.addBoardComment('${post.id}')">
-               <button class="btn-mini-send" onclick="window.addBoardComment('${post.id}')"><i class="fas fa-paper-plane"></i></button>
-             </div>
-          </div>
+            <div class="notice-footer-row">
+                <div class="notice-meta-info">
+                   ${post.fileUrl ? `<span class="notice-meta-item"><i class="fas fa-paperclip"></i> 파일</span>` : ''}
+                   ${(post.comments && post.comments.length > 0) ? `<span class="notice-meta-item"><i class="fas fa-comment"></i> ${post.comments.length}</span>` : ''}
+                </div>
+            </div>
         `;
-        boardGrid.appendChild(card);
+        
+        // Click to view/edit
+        item.onclick = (e) => {
+             // Avoid triggering if clicking actions (handled by stopPropagation, but safe guard)
+             if (e.target.closest('.notice-action-btn')) return;
+             window.editBoardPost(post.id);
+        };
+        
+        list.appendChild(item);
       });
-
-      // Add New Card Button
-      const addCard = document.createElement('div');
-      addCard.className = 'board-card board-add-card';
-      addCard.innerHTML = `
-        <div class="add-card-wrapper">
-          <div class="add-icon-box"><i class="fas fa-plus"></i></div>
-          <span class="add-text">새 메모</span>
-        </div>
-      `;
-      addCard.onclick = () => openAddModal(); 
-      boardGrid.appendChild(addCard);
     };
 
     // 5. Modal Controls
@@ -3308,7 +3361,7 @@
     window.addEventListener('firebase-ready', loadBoard);
   }
 
-  initIntroBoard();
+  initNoticeBoard();
 
   // ================= Bus Request Section Logic (Spreadsheet Version) =================
   let localBusData = [];
@@ -3427,36 +3480,23 @@
                 ${statusText}
             </span>
         </td>
-        <td><input type="date" class="bus-input" value="${req.date}" onchange="updateBusField('${req.id}', 'date', this.value)"></td>
-        <td><input type="text" class="bus-input" value="${req.timeRange || (req.startTime && req.endTime ? (req.startTime + '~' + req.endTime) : '')}" placeholder="08:00~16:00" onchange="updateBusField('${req.id}', 'timeRange', this.value)"></td>
-        <td>
-          <select class="bus-select" onchange="updateBusField('${req.id}', 'region', this.value)">
-            <option value="관내" ${req.region === '관내' ? 'selected' : ''}>관내</option>
-            <option value="관외" ${req.region === '관외' ? 'selected' : ''}>관외</option>
-          </select>
-        </td>
-        <td>
-          <select class="bus-select" onchange="updateBusField('${req.id}', 'busType', this.value)">
-            <option value="소형(15인 이하)" ${req.busType === '소형(15인 이하)' ? 'selected' : ''}>소형(15인 이하)</option>
-            <option value="중형(16~35인)" ${req.busType === '중형(16~35인)' ? 'selected' : ''}>중형(16~35인)</option>
-            <option value="대형(36인 이상)" ${req.busType === '대형(36인 이상)' ? 'selected' : ''}>대형(36인 이상)</option>
-          </select>
-        </td>
-        <td><input type="number" class="bus-input" value="${req.busCount}" min="1" onchange="updateBusField('${req.id}', 'busCount', this.value)"></td>
-        <td><input type="text" class="bus-input" value="${req.destination}" placeholder="목적지" onchange="updateBusField('${req.id}', 'destination', this.value)"></td>
-        <td>
-          <select class="bus-select" onchange="updateBusField('${req.id}', 'useSchoolBus', this.value)">
-            <option value="Y" ${req.useSchoolBus === 'Y' ? 'selected' : ''}>Y</option>
-            <option value="N" ${req.useSchoolBus === 'N' ? 'selected' : ''}>N</option>
-          </select>
-        </td>
-        <td><input type="text" class="bus-input" value="${req.leadTeacher}" placeholder="인솔교사" onchange="updateBusField('${req.id}', 'leadTeacher', this.value)"></td>
-        <td><input type="number" class="bus-input" value="${req.teacherCount}" min="0" onchange="updateBusTotal('${req.id}', 'teacherCount', this.value)"></td>
-        <td><input type="number" class="bus-input" value="${req.studentCount}" min="0" onchange="updateBusTotal('${req.id}', 'studentCount', this.value)"></td>
-        <td><span class="total-display" id="total-${req.id}">${total}</span></td>
-        <td><input type="text" class="bus-input" value="${req.purpose}" placeholder="신청 목적" onchange="updateBusField('${req.id}', 'purpose', this.value)"></td>
+        <td class="text-center">${req.date}</td>
+        <td class="text-center">${req.timeRange || ""}</td>
+        <td class="text-center">${req.region || ""}</td>
+        <td class="text-center">${req.busType || ""}</td>
+        <td class="text-center">${req.busCount || ""}</td>
+        <td>${req.destination || ""}</td>
+        <td class="text-center">${req.useSchoolBus || ""}</td>
+        <td class="text-center">${req.leadTeacher || ""}</td>
+        <td class="text-center">${req.teacherCount || "0"}</td>
+        <td class="text-center">${req.studentCount || "0"}</td>
+        <td class="text-center"><span class="total-display">${total}</span></td>
+        <td class="bus-purpose-cell">${req.purpose || ""}</td>
         <td class="text-center">
-          <button class="btn-delete-sm" onclick="removeBusRow('${req.id}')"><i class="fas fa-trash"></i></button>
+          <div class="bus-actions">
+            <button class="btn-icon btn-edit-sm" onclick="window.openBusModal('${req.id}')" title="수정"><i class="fas fa-edit"></i></button>
+            <button class="btn-icon btn-delete-sm" onclick="removeBusRow('${req.id}')" title="삭제"><i class="fas fa-trash"></i></button>
+          </div>
         </td>
       `;
       tableBody.appendChild(tr);
@@ -3494,74 +3534,152 @@
   };
 
   function initBusEditing() {
-    const addRowBtn = document.getElementById("bus-add-row-btn");
-    const saveBtn = document.getElementById("bus-save-btn");
-    const cancelBtn = document.getElementById("bus-cancel-btn");
+    const busForm = document.getElementById("busForm");
+    const busModal = document.getElementById("busModal");
+    const closeBusModalBtns = document.querySelectorAll(".close-bus-modal");
 
-    if (addRowBtn) {
-      addRowBtn.onclick = () => {
+    // Populate Time Selects
+    const hours = Array.from({length: 24}, (_, i) => i.toString().padStart(2, '0'));
+    const mins = ['00', '10', '20', '30', '40', '50'];
+    
+    const hSelects = ['bus-start-hour', 'bus-end-hour'];
+    const mSelects = ['bus-start-min', 'bus-end-min'];
+    
+    hSelects.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = hours.map(h => `<option value="${h}">${h}</option>`).join('');
+    });
+    mSelects.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = mins.map(m => `<option value="${m}">${m}</option>`).join('');
+    });
+
+    // Modal Close
+    closeBusModalBtns.forEach(btn => {
+      btn.onclick = () => busModal.classList.remove("active");
+    });
+
+    // Form Submit
+    if (busForm) {
+      busForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const id = document.getElementById("bus-id").value || "bus-" + Date.now();
+        
+        const sh = document.getElementById("bus-start-hour").value;
+        const sm = document.getElementById("bus-start-min").value;
+        const eh = document.getElementById("bus-end-hour").value;
+        const em = document.getElementById("bus-end-min").value;
+        
+        const startTime = `${sh}:${sm}`;
+        const endTime = `${eh}:${em}`;
+        
         const newReq = {
-          id: "bus-" + Date.now(),
-          date: new Date().toISOString().split('T')[0],
-          timeRange: "09:00~16:00",
-          region: "관내",
-          busType: "중형(16~35인)",
-          busCount: "1",
-          destination: "",
-          useSchoolBus: "Y",
-          leadTeacher: "",
-          teacherCount: "0",
-          studentCount: "0",
-          purpose: "",
-          note: "",
+          id: id,
+          date: document.getElementById("bus-date").value,
+          startTime: startTime,
+          endTime: endTime,
+          timeRange: `${startTime}~${endTime}`,
+          region: document.getElementById("bus-region").value,
+          busType: document.getElementById("bus-type").value,
+          busCount: document.getElementById("bus-count").value,
+          destination: document.getElementById("bus-destination").value,
+          useSchoolBus: document.getElementById("bus-use-school").value,
+          leadTeacher: document.getElementById("bus-teacher-name").value,
+          teacherCount: document.getElementById("bus-teacher-count").value,
+          studentCount: document.getElementById("bus-student-count").value,
+          purpose: document.getElementById("bus-purpose").value,
           isAccepted: false,
           status: "접수중"
         };
-        localBusData.unshift(newReq); // 상단에 추가
-        renderBusTable();
-      };
-    }
 
-    if (saveBtn) {
-      saveBtn.onclick = async () => {
-        if (!window.db) {
-          alert("로컬 모드에서는 저장할 수 없습니다.");
-          return;
-        }
-        const { db, firestoreUtils } = window;
-        try {
-          // 일괄 업데이트 (비효율적일 수 있으나 단순 위젯용이므로 허용)
-          for (const req of localBusData) {
-            await firestoreUtils.setDoc(firestoreUtils.doc(db, "busRequests", req.id), req);
+        // Firebase 즉시 저장
+        if (window.db) {
+          const { db, firestoreUtils } = window;
+          try {
+            await firestoreUtils.setDoc(firestoreUtils.doc(db, "busRequests", id), newReq);
+          } catch (err) {
+            console.error("Save error:", err);
+            alert("저장 중 오류가 발생했습니다.");
+            return;
           }
-          // 삭제된 항목 처리 로직은 건너뜀 (실제 운영시는 필요)
-          alert("모든 변경사항이 저장되었습니다.");
-          loadBusRequestsFromFirebase(); // 리로드하여 서버와 동기화
-        } catch (err) {
-          console.error(err);
-          alert("저장 중 오류가 발생했습니다.");
         }
-      };
-    }
 
-    if (cancelBtn) {
-      cancelBtn.onclick = () => {
-        if (confirm("저장하지 않은 모든 변경사항을 되돌리시겠습니까?")) {
-          loadBusRequestsFromFirebase();
+        const existingIdx = localBusData.findIndex(r => r.id === id);
+        if (existingIdx !== -1) {
+            localBusData[existingIdx] = { ...localBusData[existingIdx], ...newReq };
+        } else {
+            localBusData.unshift(newReq);
         }
+
+        busModal.classList.remove("active");
+        renderBusTable();
       };
     }
   }
 
-  window.removeBusRow = (id) => {
+  window.openBusModal = (id = null) => {
+    const modal = document.getElementById("busModal");
+    const form = document.getElementById("busForm");
+    const title = document.getElementById("busModalTitle");
+    
+    form.reset();
+    document.getElementById("bus-id").value = id || "";
+    
+    if (id) {
+      title.textContent = "배차 신청 수정";
+      const data = localBusData.find(r => r.id === id);
+      if (data) {
+        document.getElementById("bus-date").value = data.date;
+        
+        if (data.startTime) {
+          const [sh, sm] = data.startTime.split(':');
+          document.getElementById("bus-start-hour").value = sh;
+          document.getElementById("bus-start-min").value = sm;
+        }
+        if (data.endTime) {
+          const [eh, em] = data.endTime.split(':');
+          document.getElementById("bus-end-hour").value = eh;
+          document.getElementById("bus-end-min").value = em;
+        }
+
+        document.getElementById("bus-region").value = data.region || "관내";
+        document.getElementById("bus-type").value = data.busType || "중형(16~35인)";
+        document.getElementById("bus-count").value = data.busCount || "1";
+        document.getElementById("bus-destination").value = data.destination || "";
+        document.getElementById("bus-use-school").value = data.useSchoolBus || "Y";
+        document.getElementById("bus-teacher-name").value = data.leadTeacher || "";
+        document.getElementById("bus-teacher-count").value = data.teacherCount || "0";
+        document.getElementById("bus-student-count").value = data.studentCount || "0";
+        document.getElementById("bus-purpose").value = data.purpose || "";
+      }
+    } else {
+      title.textContent = "배차 신청";
+      document.getElementById("bus-date").value = new Date().toISOString().split('T')[0];
+      document.getElementById("bus-start-hour").value = "08";
+      document.getElementById("bus-start-min").value = "30";
+      document.getElementById("bus-end-hour").value = "16";
+      document.getElementById("bus-end-min").value = "30";
+    }
+    
+    modal.classList.add("active");
+  };
+
+  window.removeBusRow = async (id) => {
     if (confirm("해당 행을 삭제하시겠습니까?")) {
       const idx = localBusData.findIndex(r => r.id === id);
       if (idx !== -1) {
+        if (window.db) {
+          const { db, firestoreUtils } = window;
+          try {
+            await firestoreUtils.deleteDoc(firestoreUtils.doc(db, "busRequests", id));
+          } catch (err) {
+            console.error("Delete error:", err);
+            alert("삭제 중 오류가 발생했습니다.");
+            return;
+          }
+        }
         localBusData.splice(idx, 1);
         renderBusTable();
-        // Firebase 실제 삭제는 '전체 저장' 시 서버에 없는 항목을 골라내거나, 
-        // 여기서 즉시 삭제 처리를 할 수 있습니다. 
-        // 여기서는 사용자 편의를 위해 즉시 반영만 하고 실제 저장은 [전체 저장]에서 유도합니다.
       }
     }
   };
@@ -3578,4 +3696,70 @@
       if (homeBtn) homeBtn.click();
     });
   }
+
+  // --- Board Post Copy Function ---
+  window.copyBoardPost = (id, element) => {
+    const card = element.closest('.board-card');
+    const content = card.querySelector('.card-text-content').innerText;
+    
+    navigator.clipboard.writeText(content).then(() => {
+      // Visual feedback
+      const originalIcon = element.innerHTML;
+      if (element.tagName === 'BUTTON') {
+        element.innerHTML = '<i class="fas fa-check"></i>';
+        element.style.color = '#10b981';
+      } else {
+        // If text content was clicked
+        const toast = document.createElement('div');
+        toast.className = 'copy-toast';
+        toast.textContent = '메모가 복사되었습니다.';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.classList.add('active'), 10);
+        setTimeout(() => {
+          toast.classList.remove('active');
+          setTimeout(() => toast.remove(), 300);
+        }, 2000);
+      }
+      
+      if (element.tagName === 'BUTTON') {
+        setTimeout(() => {
+          element.innerHTML = originalIcon;
+          element.style.color = '';
+        }, 2000);
+      }
+    }).catch(err => {
+      console.error('Copy failed', err);
+    });
+  };
+
+  // --- Theme Toggle Logic ---
+  const themeToggle = document.querySelector('#checkbox');
+  const currentTheme = localStorage.getItem('theme');
+
+  if (currentTheme === 'dark-mode') {
+    document.body.classList.add('dark-mode');
+    if (themeToggle) themeToggle.checked = true;
+  }
+
+  if (themeToggle) {
+    themeToggle.addEventListener('change', function(e) {
+      if (e.target.checked) {
+        document.body.classList.add('dark-mode');
+        localStorage.setItem('theme', 'dark-mode');
+      } else {
+        document.body.classList.remove('dark-mode');
+        localStorage.setItem('theme', 'light-mode');
+      }
+    });
+  }
+
+  // --- Header Scroll Effect ---
+  const header = document.querySelector('header');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 20) {
+      header.classList.add('scrolled');
+    } else {
+      header.classList.remove('scrolled');
+    }
+  }, { passive: true });
 });

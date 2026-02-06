@@ -5,11 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>가로내 온라인 연구실</title>
     <meta name="description" content="가로내 온라인 연구실 - 교직원 업무 지원 및 학사일정 관리 시스템" />
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="./favicon.png" />
     <!-- Google Fonts: Outfit & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Inter:wght@300;400;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Inter:wght@300;400;600&family=Gaegu:wght@400;700&display=swap"
       rel="stylesheet"
     />
     <!-- Font Awesome -->
@@ -25,8 +27,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lunar-javascript/1.7.4/lunar.min.js"></script>
     <link rel="stylesheet" href="style.css?v=5" />
     <link rel="stylesheet" href="src/components/buttons.css" />
-    <link rel="stylesheet" href="src/components/today_widget.css?v=6" />
+    <link rel="stylesheet" href="src/components/sidebar_widgets.css?v=1" />
     <link rel="stylesheet" href="src/components/board_modal.css" />
+    <link rel="stylesheet" href="src/components/curriculum_confirm.css" />
   </head>
   <body>
     <header>
@@ -38,12 +41,19 @@
           <button class="nav-item" data-category="account">학교계정</button>
           <button class="nav-item" data-category="curriculum">학사일정</button>
           <button class="nav-item" data-category="bus">배차신청</button>
-          <button class="nav-item" data-category="shortcut">바로가기</button>
           <button class="nav-item" data-category="datayard">자료마당</button>
           <button class="nav-item" data-category="support">온학교 e지원</button>
         </nav>
 
-        <!-- 시계가 위젯 위로 이동함 -->
+        <div class="theme-switch-wrapper">
+          <label class="theme-switch" for="checkbox">
+            <input type="checkbox" id="checkbox" />
+            <div class="slider round">
+              <i class="fas fa-sun"></i>
+              <i class="fas fa-moon"></i>
+            </div>
+          </label>
+        </div>
       </div>
     </header>
 
@@ -63,40 +73,45 @@
             <div id="intro-edit-controls" class="intro-edit-controls hidden">
               <!-- 기존 편집 컨트롤 숨김 또는 삭제 예정 -->
             </div>
-            <!-- 삭제됨: 기존 인사 구역 -->
 
-          <!-- 1. Main Site Title (Now Center) -->
-          <div class="intro-hero-title">
-            가로내 온라인 연구실
-          </div>
-
-          <!-- 2. Naver Search (Middle) -->
-          <div class="intro-search-area">
-            <form class="intro-naver-search" action="https://search.naver.com/search.naver" method="get" target="_blank">
-              <input type="hidden" name="where" value="nexearch">
-              <span class="intro-naver-logo">N</span>
-              <input
-                type="text"
-                name="query"
-                placeholder="네이버 검색"
-                autocomplete="off"
-              />
-              <button type="submit" class="intro-search-btn"><i class="fas fa-search"></i></button>
-            </form>
-          </div>
-
-          <div class="intro-board-section">
-            <div class="board-header">
-              <h3 class="fun-title"><i class="fas fa-bullhorn"></i> 알립니다!</h3>
-              <span class="board-description">공유하고 싶은 소식을 남겨주세요.</span>
+          <!-- 1 & 2. Top Header Bar (Title + Search) -->
+          <div class="intro-header-bar">
+            <div class="intro-cheer-message">
+              <span class="line-1">오늘도 힘내세요!</span>
+              <span class="line-2">가로내 선생님들을 응원합니다.</span>
             </div>
-            <div id="intro-board-grid" class="board-grid">
-              <!-- 게시물들이 여기에 렌더링됩니다 -->
-              <div class="board-loading">불러오는 중...</div>
+
+            <div class="intro-search-area">
+              <form class="intro-naver-search" action="https://search.naver.com/search.naver" method="get" target="_blank">
+                <input type="hidden" name="where" value="nexearch">
+                <span class="intro-naver-logo">N</span>
+                <input
+                  type="text"
+                  name="query"
+                  placeholder="네이버 검색"
+                  autocomplete="off"
+                />
+                <button type="submit" class="intro-search-btn"><i class="fas fa-search"></i></button>
+              </form>
             </div>
           </div>
 
-          <!-- 4. Unified Intro Footer -->
+          <!-- 3. Shortcuts (Moved from separate tab) -->
+          <section id="shortcut-section" class="shortcut-section">
+            <div class="shortcut-controls">
+              <button id="edit-mode-btn" class="btn-primary"><i class="fas fa-edit"></i> 바로가기 편집</button>
+              <div id="edit-actions" class="hidden">
+                <button id="add-group-btn" class="btn-secondary"><i class="fas fa-folder-plus"></i> 그룹 추가</button>
+                <button id="save-order-btn" class="btn-success"><i class="fas fa-save"></i> 저장 완료</button>
+                <button id="cancel-edit-btn" class="btn-cancel"><i class="fas fa-times"></i> 취소</button>
+              </div>
+            </div>
+            <div id="shortcut-container" class="shortcut-grid">
+              <!-- JavaScript를 통해 바로가기 그룹이 여기에 렌더링됩니다 -->
+            </div>
+          </section>
+
+          <!-- 3. Mini Footer -->
           <div class="intro-mini-footer">
             <p>&copy; 2026 가로내 온라인 연구실. 업무 지원 AI 비서 Gemini가 함께합니다.</p>
           </div>
@@ -122,19 +137,7 @@
 
     <!-- SortableJS -->
 
-    <section id="shortcut-section" class="shortcut-section hidden">
-      <div class="shortcut-controls">
-        <button id="edit-mode-btn" class="btn-primary"><i class="fas fa-edit"></i> 바로가기 편집</button>
-        <div id="edit-actions" class="hidden">
-          <button id="add-group-btn" class="btn-secondary"><i class="fas fa-folder-plus"></i> 그룹 추가</button>
-          <button id="save-order-btn" class="btn-success"><i class="fas fa-save"></i> 저장 완료</button>
-          <button id="cancel-edit-btn" class="btn-cancel"><i class="fas fa-times"></i> 취소</button>
-        </div>
-      </div>
-      <div id="shortcut-container" class="shortcut-grid">
-        <!-- JavaScript를 통해 바로가기 그룹이 여기에 렌더링됩니다 -->
-      </div>
-    </section>
+
 
     <!-- Shortcut Edit Modal -->
     <div id="shortcutModal" class="modal">
@@ -485,30 +488,33 @@
     <!-- Bus Section (배차신청) -->
     <section id="bus-section" class="category-content hidden">
       <div id="bus-controls" class="section-controls">
-        <button id="bus-add-row-btn" class="btn-primary"><i class="fas fa-plus-circle"></i> 행 추가</button>
-        <button id="bus-save-btn" class="btn-success"><i class="fas fa-save"></i> 전체 저장</button>
-        <button id="bus-cancel-btn" class="btn-cancel"><i class="fas fa-undo"></i> 초기화</button>
+        <button id="bus-request-btn" class="btn-primary" onclick="window.openBusModal()"><i class="fas fa-plus-circle"></i> 배차 신청</button>
       </div>
 
       <div class="bus-table-wrapper spreadsheet-mode">
         <table class="bus-table">
           <thead>
             <tr>
-              <th style="width: 40px;">선택</th>
-              <th style="width: 80px;">접수상황</th>
-              <th style="width: 115px; cursor: pointer;" data-sort="date">날짜 <i class="fas fa-sort"></i></th>
-              <th style="width: 110px; cursor: pointer;" data-sort="timeRange">시간 <i class="fas fa-sort"></i></th>
-              <th style="width: 75px; cursor: pointer;" data-sort="region">관내/외 <i class="fas fa-sort"></i></th>
-              <th style="width: 120px; cursor: pointer;" data-sort="busType">차형(인승) <i class="fas fa-sort"></i></th>
-              <th style="width: 50px; cursor: pointer;" data-sort="busCount">대수 <i class="fas fa-sort"></i></th>
-              <th style="width: 160px; cursor: pointer;" data-sort="destination">목적지 <i class="fas fa-sort"></i></th>
-              <th style="width: 70px; cursor: pointer;" data-sort="useSchoolBus">본교차량 <i class="fas fa-sort"></i></th>
-              <th style="width: 85px; cursor: pointer;" data-sort="leadTeacher">인솔교사 <i class="fas fa-sort"></i></th>
-              <th style="width: 45px; cursor: pointer;" data-sort="teacherCount">교사 <i class="fas fa-sort"></i></th>
-              <th style="width: 45px; cursor: pointer;" data-sort="studentCount">학생 <i class="fas fa-sort"></i></th>
-              <th style="width: 45px; cursor: pointer;" data-sort="total">계 <i class="fas fa-sort"></i></th>
-              <th style="width: 200px; cursor: pointer;" data-sort="purpose">신청 목적 <i class="fas fa-sort"></i></th>
-              <th style="width: 45px;">관리</th>
+              <th style="width: 40px;">
+                <div style="position: relative; display: inline-flex; justify-content: center; align-items: center; overflow: visible;">
+                  확인
+                  <span class="driver-badge">운전주무관님♡</span>
+                </div>
+              </th>
+              <th style="width: 75px;">접수상황</th>
+              <th style="width: 105px; cursor: pointer;" data-sort="date">날짜 <i class="fas fa-sort"></i></th>
+              <th style="width: 100px; cursor: pointer;" data-sort="timeRange">시간 <i class="fas fa-sort"></i></th>
+              <th style="width: 65px; cursor: pointer;" data-sort="region">관내/외 <i class="fas fa-sort"></i></th>
+              <th style="width: 110px; cursor: pointer;" data-sort="busType">차형(인승) <i class="fas fa-sort"></i></th>
+              <th style="width: 45px; cursor: pointer;" data-sort="busCount">대수 <i class="fas fa-sort"></i></th>
+              <th style="width: 140px; cursor: pointer;" data-sort="destination">목적지 <i class="fas fa-sort"></i></th>
+              <th style="width: 65px; cursor: pointer;" data-sort="useSchoolBus">본교차량 <i class="fas fa-sort"></i></th>
+              <th style="width: 80px; cursor: pointer;" data-sort="leadTeacher">인솔교사 <i class="fas fa-sort"></i></th>
+              <th style="width: 40px; cursor: pointer;" data-sort="teacherCount">교사 <i class="fas fa-sort"></i></th>
+              <th style="width: 40px; cursor: pointer;" data-sort="studentCount">학생 <i class="fas fa-sort"></i></th>
+              <th style="width: 40px; cursor: pointer;" data-sort="total">계 <i class="fas fa-sort"></i></th>
+              <th style="width: 160px; cursor: pointer;" data-sort="purpose">신청 목적 <i class="fas fa-sort"></i></th>
+              <th style="width: 40px;">관리</th>
             </tr>
           </thead>
           <tbody id="bus-table-body">
@@ -777,6 +783,105 @@
       </div>
     </div>
 
+    <!-- Bus Request Modal -->
+    <div id="busModal" class="modal">
+      <div class="modal-content" style="max-width: 520px;">
+        <div class="modal-header" style="padding: 1.2rem 1.5rem;">
+          <h2 id="busModalTitle" style="font-size: 1.25rem;">배차 신청</h2>
+          <span class="close-modal close-bus-modal">&times;</span>
+        </div>
+        <div class="modal-body" style="padding: 1.5rem;">
+          <form id="busForm" class="grid-form">
+            <input type="hidden" id="bus-id">
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="bus-date">사용 날짜</label>
+                <input type="date" id="bus-date" required>
+              </div>
+              <div class="form-group">
+                <label>시간</label>
+                <div class="custom-time-picker-wrapper">
+                  <div class="time-select-group">
+                    <select id="bus-start-hour" class="minimal-select"></select>
+                    <span>:</span>
+                    <select id="bus-start-min" class="minimal-select"></select>
+                  </div>
+                  <span class="time-sep">~</span>
+                  <div class="time-select-group">
+                    <select id="bus-end-hour" class="minimal-select"></select>
+                    <span>:</span>
+                    <select id="bus-end-min" class="minimal-select"></select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="bus-region">관내/관외</label>
+                <select id="bus-region" required>
+                  <option value="관내">관내</option>
+                  <option value="관외">관외</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="bus-type">차형(인승)</label>
+                <select id="bus-type" required>
+                  <option value="소형(15인 이하)">소형(15인 이하)</option>
+                  <option value="중형(16~35인)">중형(16~35인)</option>
+                  <option value="대형(36인 이상)">대형(36인 이상)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="bus-count">신청 대수</label>
+                <input type="number" id="bus-count" value="1" min="1" required>
+              </div>
+              <div class="form-group">
+                <label for="bus-use-school">본교차량 사용</label>
+                <select id="bus-use-school">
+                  <option value="Y">예 (Y)</option>
+                  <option value="N">아니오 (N)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="bus-destination">목적지</label>
+              <input type="text" id="bus-destination" placeholder="목적지명을 입력하세요" required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="bus-teacher-name">인솔교사</label>
+                <input type="text" id="bus-teacher-name" placeholder="인솔교사 성함" required>
+              </div>
+              <div class="form-group">
+                <label for="bus-teacher-count">교사 인원</label>
+                <input type="number" id="bus-teacher-count" value="0" min="0">
+              </div>
+              <div class="form-group">
+                <label for="bus-student-count">학생 인원</label>
+                <input type="number" id="bus-student-count" value="0" min="0">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="bus-purpose">신청 목적</label>
+              <input type="text" id="bus-purpose" placeholder="체험학습, 대회 참가 등">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer" style="padding: 1rem 1.5rem;">
+          <button type="button" class="btn-cancel close-bus-modal">취소</button>
+          <button type="submit" form="busForm" class="btn-save">신청하기</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ================= Digital Clock (New Location) ================= -->
     <div class="clock-widget-container">
         <div class="side-site-title">가로내 온라인 연구실</div>
@@ -785,27 +890,45 @@
         </div>
     </div>
 
-    <!-- ================= Today Schedule Widget ================= -->
-    <div id="school-today-widget" class="today-widget">
-        <div class="widget-header">
-            <div class="widget-date">
-                <span id="today-month-day">--월 --일</span>
-                <span id="today-weekday" class="weekday">요일</span>
+    <!-- ================= Left Sidebar Widgets ================= -->
+    <div id="left-sidebar" class="sidebar-container">
+        
+        <!-- Today Schedule Widget -->
+        <div id="school-today-widget" class="today-widget sidebar-widget">
+            <div class="widget-header clickable" id="today-widget-header">
+                <div class="widget-date">
+                    <span id="today-month-day">--월 --일</span>
+                    <span id="today-weekday" class="weekday">요일</span>
+                </div>
+                <div class="header-actions">
+                    <button id="today-toggle-btn" class="widget-action-btn"><i class="fas fa-chevron-up"></i></button>
+                    <button id="widget-add-btn" class="widget-add-btn" title="일정 추가">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
             </div>
-            <button id="widget-add-btn" class="widget-add-btn" title="일정 추가">
-                <i class="fas fa-plus"></i>
-            </button>
+            <div class="widget-content">
+                <ul id="today-event-list" class="today-event-list"></ul>
+            </div>
         </div>
-        <div class="widget-content">
-            <ul id="today-event-list" class="today-event-list">
-                <li class="no-event">데이터를 불러오는 중...</li>
-            </ul>
+
+        <!-- Notice Widget -->
+        <div id="notice-widget" class="sidebar-widget notice-widget">
+            <div class="widget-header clickable" id="notice-widget-header">
+                <div class="widget-title"><i class="fas fa-bullhorn"></i> 알립니다</div>
+                <div class="header-actions">
+                    <button id="notice-toggle-btn" class="widget-action-btn"><i class="fas fa-chevron-up"></i></button>
+                    <button id="notice-add-btn" class="widget-add-btn" title="메모 작성"><i class="fas fa-plus"></i></button>
+                </div>
+            </div>
+            <div class="widget-content" id="notice-widget-content">
+                <!-- Items rendered here -->
+                <div class="board-loading" style="font-size: 0.8rem; text-align: center; color: #94a3b8;">불러오는 중...</div>
+            </div>
         </div>
-        <div class="widget-footer">
-            <span class="pulse-icon"></span>
-            CALENDAR SYNC
-        </div>
+
     </div>
+
 
 
 

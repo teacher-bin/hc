@@ -401,6 +401,8 @@ document.addEventListener("DOMContentLoaded", () => {
             if(calendarInstance) {
                 calendarInstance.refetchEvents();
                 calendarInstance.gotoDate(currDate); // Ensure view moves to currDate (Today)
+                // Reapply dark mode styles after calendar updates
+                if(window.applyCalendarDarkMode) window.applyCalendarDarkMode();
             } else {
                 renderFullCalendar();
             }
@@ -816,7 +818,93 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
         calendarInstance.render();
+        
+        // Apply dark mode styles to calendar headers
+        applyCalendarDarkMode();
     }
+    
+    // Global function to apply dark mode styles to FullCalendar headers
+    let calendarObserver = null;
+
+    window.applyCalendarDarkMode = function() {
+        const calendarEl = document.getElementById('curr-fullcalendar');
+        if (!calendarEl) return;
+
+        // Function to apply styles
+        const applyStyles = () => {
+            if (!document.body.classList.contains('dark-mode')) return;
+
+            // Target ALL potential wrapper elements in the header
+            const targets = calendarEl.querySelectorAll(
+                '.fc-col-header, .fc-col-header-cell, .fc-scrollgrid-section-header, .fc-scrollgrid-section-header table, .fc-scrollgrid-section-header > div, th'
+            );
+            
+            targets.forEach(el => {
+                // Remove inline background styles that might override classes
+                el.style.background = '';
+                el.style.backgroundColor = '';
+                
+                // Force transparent background via direct property
+                el.style.setProperty('background', 'transparent', 'important');
+                el.style.setProperty('background-color', 'transparent', 'important');
+                el.style.setProperty('border-color', 'rgba(148, 163, 184, 0.15)', 'important');
+            });
+
+            // Specific Border & Padding for cells
+            calendarEl.querySelectorAll('.fc-col-header-cell').forEach(cell => {
+                cell.style.setProperty('border-bottom', '2px solid rgba(148, 163, 184, 0.25)', 'important');
+                cell.style.setProperty('padding', '1rem 0', 'important');
+            });
+
+            // Text Styles
+            calendarEl.querySelectorAll('.fc-col-header-cell-cushion').forEach(el => {
+                el.style.setProperty('color', '#e2e8f0', 'important');
+                el.style.setProperty('font-weight', '700', 'important');
+            });
+
+            // Special Days (Sun/Sat) - Apply colored background
+            calendarEl.querySelectorAll('.fc-col-header-cell.fc-day-sun').forEach(cell => {
+                cell.style.setProperty('background', 'rgba(239, 68, 68, 0.08)', 'important');
+                cell.style.setProperty('background-color', 'rgba(239, 68, 68, 0.08)', 'important');
+                const cushion = cell.querySelector('.fc-col-header-cell-cushion');
+                if(cushion) {
+                    cushion.style.setProperty('color', '#fca5a5', 'important');
+                    cushion.style.setProperty('font-weight', '800', 'important');
+                }
+            });
+
+            calendarEl.querySelectorAll('.fc-col-header-cell.fc-day-sat').forEach(cell => {
+                cell.style.setProperty('background', 'rgba(59, 130, 246, 0.08)', 'important');
+                cell.style.setProperty('background-color', 'rgba(59, 130, 246, 0.08)', 'important');
+                const cushion = cell.querySelector('.fc-col-header-cell-cushion');
+                if(cushion) {
+                    cushion.style.setProperty('color', '#93c5fd', 'important');
+                    cushion.style.setProperty('font-weight', '800', 'important');
+                }
+            });
+        };
+
+        // 1. Apply immediately
+        applyStyles();
+
+        // 2. Setup Observer to catch re-renders (month change, view change)
+        if (calendarObserver) calendarObserver.disconnect();
+        
+        calendarObserver = new MutationObserver((mutations) => {
+            // Apply debounce if needed, but for styling, immediate is better to avoid flash
+            applyStyles();
+        });
+
+        calendarObserver.observe(calendarEl, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['class', 'style']
+        });
+    };
+
+
+
 
     // --- Modal & Form Logic ---
     window.openCurrModal = (dateStr = null, typeOrEdit = null) => {
