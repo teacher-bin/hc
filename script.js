@@ -2511,12 +2511,29 @@
   // 카테고리 클릭 이벤트
   navItems.forEach((item) => {
     item.addEventListener("click", () => {
+      // 1. 방향 결정 (Direction Calculation)
+      const oldActive = document.querySelector('.nav-item.active');
+      let direction = 'none';
+      
+      if (oldActive && oldActive !== item) {
+          const allTabs = Array.from(document.querySelectorAll('.nav-item'));
+          const visibleTabs = allTabs.filter(t => getComputedStyle(t).display !== 'none');
+          
+          const oldIndex = visibleTabs.indexOf(oldActive);
+          const newIndex = visibleTabs.indexOf(item);
+          
+          if (oldIndex !== -1 && newIndex !== -1) {
+             if (newIndex > oldIndex) direction = 'right'; // Next Tab (Swipe Left)
+             else direction = 'left'; // Prev Tab (Swipe Right)
+          }
+      }
+
       navItems.forEach((nav) => nav.classList.remove("active"));
       item.classList.add("active");
       currentCategory = item.getAttribute("data-category");
       document.body.setAttribute('data-tab', currentCategory); // Added for theme backgrounds
 
-      // 모든 섹션 숨기기
+      // 모든 섹션 숨기기 및 애니메이션 클래스 초기화
       const allSections = [
         linksGrid, 
         statusSection, 
@@ -2528,39 +2545,67 @@
         calendarSection,
         document.getElementById("intro-section")
       ];
+      
       allSections.forEach(sec => {
-        if (sec) sec.classList.add("hidden");
+        if (sec) {
+            sec.classList.add("hidden");
+            sec.classList.remove('animate-slide-in-right', 'animate-slide-in-left');
+        }
       });
+      
       document.documentElement.classList.remove("intro-active");
       document.body.classList.toggle('hide-widget', currentCategory === 'curriculum');
 
+      let targetSection = null;
+
       if (currentCategory === "status") {
         statusSection.classList.remove("hidden");
-        initStatusEditing(); // Call dynamic init
+        targetSection = statusSection;
+        initStatusEditing(); 
       } else if (currentCategory === "curriculum") {
         curriculumSection.classList.remove("hidden");
-        // 향후 renderCurriculum() 호출 가능
+        targetSection = curriculumSection;
       } else if (currentCategory === "datayard") {
         datayardSection.classList.remove("hidden");
+        targetSection = datayardSection;
         initDatayard();
       } else if (currentCategory === "support") {
         helppageSection.classList.remove("hidden");
+        targetSection = helppageSection;
         renderHelppage();
       } else if (currentCategory === "account") {
         accountSection.classList.remove("hidden");
+        targetSection = accountSection;
         initAccount();
       } else if (currentCategory === "bus") {
         busSection.classList.remove("hidden");
+        targetSection = busSection;
         initBus();
       } else if (currentCategory === "calendar") {
         calendarSection.classList.remove("hidden");
+        targetSection = calendarSection;
         initCalendar();
       } else if (currentCategory === "all") {
-        document.getElementById("intro-section").classList.remove("hidden");
+        const intro = document.getElementById("intro-section");
+        intro.classList.remove("hidden");
+        targetSection = intro;
         document.documentElement.classList.add("intro-active");
       } else {
         linksGrid.classList.remove("hidden");
+        targetSection = linksGrid;
         renderCards();
+      }
+      
+      // 2. 애니메이션 적용 (Apply Animation) - 모바일 전용
+      if (targetSection && direction !== 'none' && window.innerWidth <= 768) {
+          // Force Reflow
+          void targetSection.offsetWidth;
+          
+          if (direction === 'right') {
+              targetSection.classList.add('animate-slide-in-right');
+          } else {
+              targetSection.classList.add('animate-slide-in-left');
+          }
       }
     });
   });

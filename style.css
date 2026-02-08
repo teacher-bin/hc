@@ -4689,7 +4689,7 @@ body.hide-widget #school-today-widget {
   color: #475569;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 200;
 }
 
 .th {
@@ -4712,13 +4712,21 @@ body.hide-widget #school-today-widget {
   display: grid;
   grid-template-columns: 50px 45px 10.8fr 36fr 13.2fr 30fr; /* Match header columns */
   border-bottom: 1px solid #cbd5e1;
-  transition: background 0.1s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative; /* For z-index to work */
   overflow: visible;
 }
 
 .curr-row:hover {
-  z-index: 101; /* Higher than header z-index: 100 */
+  z-index: 101;
+}
+
+body:not(.dark-mode) .curr-row:hover {
+  background-color: #f0f9ff;
+  transform: translateY(-2px) scale(1.005);
+  box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.15);
+  border-radius: 8px; /* Slightly rounded corners for block feel */
+  border-bottom-color: transparent; /* Seamless look */
 }
 
 .curr-cell {
@@ -8931,3 +8939,36 @@ body.dark-mode .bus-table thead th:last-child {
   border-bottom-right-radius: 12px !important;
 }
 
+
+/* --- Mobile Screen Transition Animation --- */
+@keyframes slideInRight {
+  from { 
+      transform: translateX(20%); 
+      opacity: 0; 
+  }
+  to { 
+      transform: translateX(0); 
+      opacity: 1; 
+  }
+}
+
+@keyframes slideInLeft {
+  from { 
+      transform: translateX(-20%); 
+      opacity: 0; 
+  }
+  to { 
+      transform: translateX(0); 
+      opacity: 1; 
+  }
+}
+
+@media (max-width: 768px) {
+  .animate-slide-in-right {
+      animation: slideInRight 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  }
+
+  .animate-slide-in-left {
+      animation: slideInLeft 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  }
+}

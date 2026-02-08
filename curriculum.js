@@ -424,7 +424,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
 
         const autoEvents = (window.KoreanHolidayService ? window.KoreanHolidayService.getAutoEvents(y, m) : []);
-        const combinedEvents = [...currEvents, ...autoEvents];
+        
+        // De-duplicate: If an event with same ID exists in DB (currEvents), prefer DB version.
+        // Also handle "tombstones" (events recorded in DB just to say they are deleted).
+        const dbEventMap = new Map();
+        currEvents.forEach(e => dbEventMap.set(e.id, e));
+
+        const filteredAutoEvents = autoEvents.filter(auto => !dbEventMap.has(auto.id));
+        const combinedEvents = [...currEvents, ...filteredAutoEvents];
 
         for(let d = 1; d <= lastDateOfMonth; d++) {
             const dateObj = new Date(y, m, d);
@@ -437,7 +444,7 @@ document.addEventListener("DOMContentLoaded", () => {
             else if (dayOfWeek === 6) dayClass = "day-saturday";
 
             // Filter events for this day
-            const dayEvents = combinedEvents.filter(e => e.start === dateStr);
+            const dayEvents = combinedEvents.filter(e => e.start === dateStr && !e.isDeleted);
 
             // Create Row
             const row = document.createElement("div");
@@ -582,6 +589,9 @@ document.addEventListener("DOMContentLoaded", () => {
             .forEach(ev => {
             const chip = document.createElement("div");
             chip.className = `curr-event-chip chip-type-${type} ${ev.isAuto ? 'is-auto-chip' : ''}`;
+            // Remove 'is-auto-chip' class effect via JS if needed, or rely on CSS removal. 
+            // We want them to look editable.
+            if (ev.isAuto) chip.classList.remove('is-auto-chip');
             chip.dataset.id = ev.id; // Critical for Sortable
             
             // Apply custom colors if exist
@@ -652,11 +662,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 ${prefixHtml}
                 <span class="chip-text ${ev.isCompleted ? 'completed-text' : ''}">${displayTitle}</span>
                 <div class="chip-controls">
-                    ${ev.isAuto ? '' : `
                     <button class="chip-btn edit" onclick="window.editCurrEvent('${ev.id}')" title="수정"><i class="fas fa-pencil-alt"></i></button>
                     <button class="chip-btn duplicate" onclick="window.duplicateCurrEvent('${ev.id}')" title="복제"><i class="fas fa-copy"></i></button>
                     <button class="chip-btn delete" onclick="window.deleteCurrEventBubble('${ev.id}')" title="삭제"><i class="fas fa-trash"></i></button>
-                    `}
                 </div>
             `;
             cell.appendChild(chip);
@@ -1410,9 +1418,8 @@ document.addEventListener("DOMContentLoaded", () => {
             eventData.textColor = textColor;
         }
 
-        // Holiday Style Override (Only if specifically marked and not manually colored?) 
-        // Or let holiday override if isHoliday is checked.
-        if (isHoliday && bgColor === "#ffffff") { 
+        // Holiday Style Override (Only if specifically marked and not manually colored)
+        if (isHoliday && eventData.backgroundColor === "#ffffff") { 
             eventData.backgroundColor = "#fff5f5";
             eventData.textColor = "#ef4444";
             eventData.borderColor = "#fecaca";
@@ -1527,7 +1534,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Global exposure for onClick handlers in HTML strings
     window.editCurrEvent = (id) => {
-        const ev = currEvents.find(e => e.id === id);
+        let ev = currEvents.find(e => e.id === id);
+        if (!ev) {
+            // Check if it's an auto event for current view
+            const y = currDate.getFullYear();
+            const m = currDate.getMonth();
+            const autoEvents = (window.KoreanHolidayService ? window.KoreanHolidayService.getAutoEvents(y, m) : []);
+            ev = autoEvents.find(e => e.id === id);
+        }
+        
         if(ev) openCurrModal(null, ev);
     };
 
@@ -1536,8 +1551,24 @@ document.addEventListener("DOMContentLoaded", () => {
         if(!confirm("바로 삭제하시겠습니까?")) return;
         
         const { db, firestoreUtils } = window;
+        const isAuto = !currEvents.find(e => e.id === id); // If not in loaded DB events, it's auto
+
         try {
-            await firestoreUtils.deleteDoc(firestoreUtils.doc(db, "curriculum_events", id));
+            if (isAuto) {
+                // Determine start date to preserve it for query efficiency if needed, 
+                // but ID is enough for doc creation.
+                // We create a "Tombstone" - a document that exists just to say "I am deleted"
+                // The deduplication logic in renderTable will see this DB entry (which has isDeleted: true)
+                // and prefer it over the generated auto event.
+                await firestoreUtils.setDoc(firestoreUtils.doc(db, "curriculum_events", id), {
+                    id: id,
+                    isDeleted: true,
+                    updatedAt: new Date().toISOString()
+                });
+            } else {
+                await firestoreUtils.deleteDoc(firestoreUtils.doc(db, "curriculum_events", id));
+            }
+            
             await loadCurriculumEvents();
             renderCurrentView(); // Crucial: Refresh the UI
             // Update Today Widget
@@ -1548,7 +1579,13 @@ document.addEventListener("DOMContentLoaded", () => {
     window.duplicateCurrEvent = async (id) => {
         if (window.event) window.event.stopPropagation();
         
-        const originalEvent = currEvents.find(e => e.id === id);
+        let originalEvent = currEvents.find(e => e.id === id);
+        if (!originalEvent) {
+             const y = currDate.getFullYear();
+             const m = currDate.getMonth();
+             const autoEvents = (window.KoreanHolidayService ? window.KoreanHolidayService.getAutoEvents(y, m) : []);
+             originalEvent = autoEvents.find(e => e.id === id);
+        }
         if (!originalEvent) return;
 
         if(!confirm("이 일정을 복제하시겠습니까?")) return;
@@ -1864,19 +1901,26 @@ document.addEventListener("DOMContentLoaded", () => {
             const bgColor = isHoliday ? "#fff5f5" : (dayOfWeek === 0 ? "#fafafa" : "#ffffff");
 
             const getEventTexts = (type) => {
-                return dayEvents
+                const events = dayEvents
                     .filter(e => e.eventType === type)
-                    .sort((a,b) => (a.orderIndex||0) - (b.orderIndex||0))
-                    .map(e => {
-                        let t = e.title;
-                        if (type === 'edu') {
-                            const details = [e.time, e.place, e.target, e.inCharge].filter(Boolean).join(', ');
-                            if (details) t += ` - <span style="color:#666; font-size:8pt;">[${details}]</span>`;
-                        } else if (type === 'staff' && e.staffStatus) {
-                            t += `(${e.staffStatus})`;
-                        }
-                        return `<div class="item-container"><span class="bullet">●</span>${t}</div>`;
-                    }).join('');
+                    .sort((a,b) => (a.orderIndex||0) - (b.orderIndex||0));
+
+                if (events.length === 0) return '';
+
+                return events.map(e => {
+                    let t = e.title;
+                    if (type === 'edu') {
+                        const details = [e.time, e.place, e.target, e.inCharge].filter(Boolean).join(', ');
+                        if (details) t += ` <span style="color:#555; font-size:8pt;">[${details}]</span>`;
+                    } else if (type === 'staff') {
+                        if (e.staffStatus) t += `(${e.staffStatus})`;
+                        const details = [e.reason, e.place, e.time].filter(Boolean).join(', ');
+                        if (details) t += ` <span style="color:#555; font-size:8pt;">- ${details}</span>`;
+                    } else if (type === 'doc') {
+                        if (e.inCharge) t += `(${e.inCharge})`;
+                    }
+                    return `<div class="item-container"><span class="bullet" style="margin-right:2px;">•</span>${t}</div>`;
+                }).join('');
             };
 
             const lifeText = dayEvents
