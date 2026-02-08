@@ -613,3 +613,48 @@
         font-size: 0.85rem !important;
     }
 }
+
+/* Dark Mode Overrides for Mobile Shortcuts */
+@media (max-width: 768px) {
+    body.dark-mode .shortcut-group {
+        background: rgba(30, 41, 59, 0.6) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+    }
+    
+    body.dark-mode .shortcut-group h3 {
+        color: #f1f5f9 !important;
+    }
+    
+    body.dark-mode .group-header .toggle-icon {
+        color: #818cf8 !important;
+    }
+
+    body.dark-mode .shortcut-item span {
+        color: #e2e8f0 !important;
+    }
+    
+    /* Ensure icons look good on mobile dark mode too */
+    body.dark-mode .shortcut-icon {
+        background: rgba(255, 255, 255, 0.08) !important;
+        color: #94a3b8 !important;
+    }
+
+    /* Override dynamic colors for mobile dark mode too */
+    body.dark-mode .shortcut-group:nth-child(4n + 1) .shortcut-icon {
+        background: rgba(59, 130, 246, 0.2) !important;
+        color: #60a5fa !important;
+    }
+    body.dark-mode .shortcut-group:nth-child(4n + 2) .shortcut-icon {
+        background: rgba(16, 185, 129, 0.2) !important;
+        color: #34d399 !important;
+    }
+    body.dark-mode .shortcut-group:nth-child(4n + 3) .shortcut-icon {
+        background: rgba(245, 158, 11, 0.2) !important;
+        color: #fbbf24 !important;
+    }
+    body.dark-mode .shortcut-group:nth-child(4n + 4) .shortcut-icon {
+        background: rgba(139, 92, 246, 0.2) !important;
+        color: #a78bfa !important;
+    }
+}
