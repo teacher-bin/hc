@@ -2058,17 +2058,18 @@
     <!-- Member Settings Modal -->
     </div> <!-- End app-container -->
     <div id="memberSettingsModal" class="modal">
-        <div class="modal-content member-settings-content">
-            <span class="close-modal" onclick="closeMemberSettingsModal()">&times;</span>
+        <div class="modal-content member-settings-content" style="max-width: 500px;">
             <div class="modal-header">
                 <h2>구성원 목록 설정</h2>
+                <span class="close-modal" onclick="closeMemberSettingsModal()">&times;</span>
             </div>
             <div class="modal-body">
-                <p class="modal-desc">확인란에 표시할 구성원 이름을 콤마(,)로 구분하여 입력하세요.</p>
-                <textarea id="member-list-input" class="member-list-textarea" placeholder="예: 교장, 교감, 행정실장..."></textarea>
+                <p class="modal-desc" style="margin-bottom: 12px; color: var(--text-muted); font-size: 0.9rem;">확인란에 표시할 구성원 이름을 콤마(,)로 구분하여 입력하세요.</p>
+                <textarea id="member-list-input" class="member-list-textarea" placeholder="예: 교장, 교감, 행정실장..." style="font-family: 'Inter', 'Pretendard', 'Noto Sans KR', sans-serif; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; width: 100%; box-sizing: border-box; resize: vertical; min-height: 100px; font-size: 0.95rem; background-color: var(--bg-color, #ffffff); color: var(--text-color, #333);"></textarea>
             </div>
             <div class="modal-footer">
-                <button class="curr-btn save-btn" onclick="saveMemberSettings()">저장</button>
+                <button class="btn-cancel" onclick="closeMemberSettingsModal()">취소</button>
+                <button class="btn-primary" onclick="saveMemberSettings()" style="padding: 10px 24px;"><i class="fas fa-save"></i> 저장 완료</button>
             </div>
         </div>
     </div>
