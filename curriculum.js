@@ -77,9 +77,18 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (err) {
             console.error("Curriculum: Data Load Failed", err);
         }
+
+        // 로그인/권한 갱신 시 설정 다시 불러오기 (새로고침 시 데이터 초기화 방지)
+        window.addEventListener('user-role-updated', async () => {
+             console.log("Curriculum: Auth state updated, reloading configs...");
+             loadedYear = null; // 초기화하여 무조건 다시 불러오도록 설정
+             await Promise.all([
+                 loadMemberConfig(),
+                 loadYearlyData(currDate.getFullYear())
+             ]);
+             renderCurrentView();
+        });
     }
-
-
 
     // --- Data Loading (Real-time) ---
     let unsubscribeCurriculum = null;
@@ -217,17 +226,20 @@ document.addEventListener("DOMContentLoaded", () => {
         const currentMonthKey = String(currDate.getMonth() + 1); // "1", "2", ...
         const currentMonthData = currYearlyData[currentMonthKey] || {};
 
+        const isAdmin = (window.currentUserRole === 'admin' || window.currentUserRole === 'sub-admin');
+        const adminClass = isAdmin ? '' : 'hidden';
+
         if (currMembers.length === 0) {
             bar.innerHTML = `
                 <div class="no-members-msg" style="padding: 1rem; text-align: center; color: #666;">
                     교직원 목록이 설정되지 않았습니다. 
-                    <button class="curr-btn-sm" onclick="window.openMemberSettingsModal()" style="margin-left: 10px;">설정하기</button>
+                    <button class="curr-btn-sm ${adminClass}" onclick="window.openMemberSettingsModal()" style="margin-left: 10px;">설정하기</button>
                 </div>`;
             return;
         }
 
         let html = `
-            <button class="member-settings-btn" onclick="window.openMemberSettingsModal()" title="구성원 목록 설정">
+            <button class="member-settings-btn ${adminClass}" onclick="window.openMemberSettingsModal()" title="구성원 목록 설정">
                 <i class="fas fa-cog"></i>
             </button>
             <table class="confirm-table">

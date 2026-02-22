@@ -10245,7 +10245,13 @@ body.dark-mode .pagination button.active {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Hide scrollbar Firefox */
+}
+.stats-controls::-webkit-scrollbar {
+    display: none; /* Hide scrollbar for Chrome, Safari and Opera */
 }
 
 .stats-period-buttons {
@@ -10254,6 +10260,7 @@ body.dark-mode .pagination button.active {
     padding: 4px;
     border-radius: 8px;
     border: 1px solid #e2e8f0;
+    flex: 0 0 auto;
 }
 
 .period-btn {
@@ -10266,6 +10273,7 @@ body.dark-mode .pagination button.active {
     color: #64748b;
     cursor: pointer;
     transition: all 0.2s;
+    white-space: nowrap;
 }
 
 .period-btn.active {
@@ -10275,11 +10283,13 @@ body.dark-mode .pagination button.active {
 }
 
 .stats-select {
-    width: 120px; /* Increased to prevent text cutting */
+    width: auto !important;
+    min-width: 100px;
     height: 38px !important;
     padding: 0 10px !important;
     background-color: white !important;
     border: 1px solid #e2e8f0 !important;
+    flex: 0 0 auto;
 }
 
 .stats-date-range {
@@ -10291,6 +10301,7 @@ body.dark-mode .pagination button.active {
     padding: 0 8px;
     border-radius: 8px;
     height: 38px;
+    flex: 0 0 auto;
 }
 
 .stats-date-range .date-input {
@@ -10311,6 +10322,8 @@ body.dark-mode .pagination button.active {
     align-items: center;
     gap: 6px;
     padding: 0 1rem !important;
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 .stats-legend {
@@ -12248,6 +12261,23 @@ body.dark-mode .text-slate { color: #94a3b8 !important; }
         font-size: 0.8rem !important; /* Smaller text */
         padding: 6px 3px !important;   /* Tighter padding */
         overflow: hidden; /* Prevent spillover */
+        word-break: break-word !important; /* Prevent long continuous strings from expanding the table width */
+        white-space: normal !important;
+    }
+    
+    .training-table-modern thead th {
+        position: -webkit-sticky !important;
+        position: sticky !important;
+        top: 138px !important; /* Stick right below the mobile header */
+        z-index: 2000 !important; /* Ensure it stays above content but below main header */
+        background: var(--table-header) !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-bottom: 2px solid var(--border-color) !important;
+    }
+
+    .training-table-wrapper {
+        overflow-x: auto !important; /* Allow the table to scroll horizontally instead of clipping */
+        width: 100% !important;
     }
 
     /* Adjust remaining columns */

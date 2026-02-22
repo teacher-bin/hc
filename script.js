@@ -4050,68 +4050,7 @@
       header.classList.remove('scrolled');
     }
   }, { passive: true });
-  // --- Mobile Swipe Navigation ---
-  function initSwipeNavigation() {
-    let touchStartX = 0;
-    let touchStartY = 0;
-    const threshold = 70; // min distance for swipe
-    const maxVerticalOffset = 50; // max vertical distance to ignore scroll
-
-    document.addEventListener('touchstart', (e) => {
-      touchStartX = e.changedTouches[0].screenX;
-      touchStartY = e.changedTouches[0].screenY;
-    }, { passive: true });
-
-    document.addEventListener('touchend', (e) => {
-      // Only for mobile
-      if (window.innerWidth > 768) return;
-
-      const touchEndX = e.changedTouches[0].screenX;
-      const touchEndY = e.changedTouches[0].screenY;
-      
-      const diffX = touchEndX - touchStartX;
-      const diffY = touchEndY - touchStartY;
-
-      // Check if it's horizontal swipe and not a vertical scroll
-      if (Math.abs(diffX) > threshold && Math.abs(diffY) < maxVerticalOffset) {
-        
-        // Define tab order strictly from the header navigation
-        const navContainer = document.querySelector('#category-nav');
-        if (!navContainer) return;
-
-        const tabs = Array.from(navContainer.querySelectorAll('.nav-item'));
-        const visibleTabs = tabs.filter(tab => {
-             const style = getComputedStyle(tab);
-             return style.display !== 'none' && style.visibility !== 'hidden' && tab.offsetWidth > 0;
-        });
-
-        // Find current active index
-        const currentIndex = visibleTabs.findIndex(tab => tab.classList.contains('active'));
-        if (currentIndex === -1) return;
-
-        let targetTab = null;
-        if (diffX < 0) {
-          // Swipe Left -> Next Tab
-          if (currentIndex < visibleTabs.length - 1) {
-            targetTab = visibleTabs[currentIndex + 1];
-          }
-        } else {
-          // Swipe Right -> Prev Tab
-          if (currentIndex > 0) {
-            targetTab = visibleTabs[currentIndex - 1];
-          }
-        }
-
-        if (targetTab) {
-            targetTab.click();
-            // Scroll nav item into view if it's overflowed
-            targetTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-        }
-      }
-    }, { passive: true });
-  }
-
-  initSwipeNavigation();
+  // --- Mobile Swipe Navigation (Removed duplicate listener) ---
 
   // ============================================
   // LOGIN & REGISTER LOGIC (ADDED)
@@ -4723,11 +4662,11 @@
   let statsData = []; // Aggregated data [{label, count, rawDate}]
   let currentStatsPeriod = 'daily'; // daily, weekly, monthly
 
-  // Set default dates: Last 1 month
+  // Set default dates: Last 1 week
   const initStatsDates = () => {
     const end = new Date();
     const start = new Date();
-    start.setMonth(start.getMonth() - 1);
+    start.setDate(start.getDate() - 7);
     
     const startEl = document.getElementById('stats-start-date');
     const endEl = document.getElementById('stats-end-date');
@@ -4980,10 +4919,15 @@
   };
 
   window.updateStatsFromSelect = function() {
-    const months = parseInt(document.getElementById('stats-month-select').value);
+    const val = document.getElementById('stats-month-select').value;
     const end = new Date();
     const start = new Date();
-    start.setMonth(start.getMonth() - months);
+    
+    if (val === '1주') {
+        start.setDate(start.getDate() - 7);
+    } else {
+        start.setMonth(start.getMonth() - parseInt(val));
+    }
     
     document.getElementById('stats-start-date').value = start.toISOString().split('T')[0];
     document.getElementById('stats-end-date').value = end.toISOString().split('T')[0];
@@ -5063,6 +5007,8 @@
 
     // === Tab Switching Logic ===
     window.switchTab = function(category) {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+
         // 1. Hide all main sections
         const sections = [
             'status-section', 
@@ -5113,12 +5059,28 @@
             // Lazy Load / Refresh
             if(category === 'curriculum' && window.renderCurriculum) window.renderCurriculum();
             if(category === 'calendar' && calendar) calendar.render();
-            if(category === 'training' && window.initTraining) window.initTraining();
+            if(category === 'training' && window.initTraining) {
+                if (!window.trainingInitialized) {
+                    window.initTraining();
+                    window.trainingInitialized = true;
+                } else if (typeof window.loadTrainings === 'function') {
+                    window.loadTrainings();
+                }
+            }
         }
 
         // 4. Set active nav item
         const navBtn = document.querySelector(`.nav-item[data-category="${category}"]`);
-        if(navBtn) navBtn.classList.add('active');
+        if(navBtn) {
+            navBtn.classList.add('active');
+            
+            // Auto-scroll the nav menu to keep active item in view (Mobile)
+            const navContainer = document.getElementById('category-nav');
+            if (navContainer && window.innerWidth <= 768) {
+                const scrollLeftPos = navBtn.offsetLeft - (navContainer.offsetWidth / 2) + (navBtn.offsetWidth / 2);
+                navContainer.scrollTo({ left: Math.max(0, scrollLeftPos), behavior: 'smooth' });
+            }
+        }
 
         // 5. Update State
         window.currentCategory = category;
@@ -5144,7 +5106,8 @@
     const mainContainer = document.querySelector('main');
     let touchStartX = 0;
     let touchStartY = 0;
-    const minSwipeDistance = 50; 
+    const minSwipeDistance = 50;
+    let isSwiping = false;
 
     if (mainContainer) {
         mainContainer.addEventListener('touchstart', (e) => {
@@ -5164,6 +5127,8 @@
             const touchEndY = e.changedTouches[0].screenY;
             const diffX = touchEndX - touchStartX;
             const diffY = touchEndY - touchStartY;
+
+            if (isSwiping) return;
 
             // 1. Ignore if vertical scroll is dominant
             if (Math.abs(diffX) < Math.abs(diffY)) return;
@@ -5189,9 +5154,9 @@
             }
             if (isScrollable) return;
 
-            // 4. Navigate Tabs (Find visible nav items)
+            // 4. Navigate Tabs (Find visible nav items, exclude admin)
             const navItems = Array.from(document.querySelectorAll('.nav-item'));
-            const contentItems = navItems.filter(btn => !btn.classList.contains('hidden') && btn.style.display !== 'none');
+            const contentItems = navItems.filter(btn => !btn.classList.contains('hidden') && window.getComputedStyle(btn).display !== 'none' && btn.dataset.category !== 'admin');
             
             const activeBtn = document.querySelector('.nav-item.active');
             if (!activeBtn) return;
@@ -5200,18 +5165,29 @@
             const currentIndex = contentItems.indexOf(activeBtn);
             if (currentIndex === -1) return;
 
+            let navigated = false;
+
             if (diffX < 0) {
                 // Swipe Left -> Go Next (Right Tab)
                 if (currentIndex < contentItems.length - 1) {
                     const nextBtn = contentItems[currentIndex + 1];
                     nextBtn.click();
+                    navigated = true;
                 }
             } else {
                 // Swipe Right -> Go Prev (Left Tab)
                 if (currentIndex > 0) {
                     const prevBtn = contentItems[currentIndex - 1];
                     prevBtn.click();
+                    navigated = true;
                 }
+            }
+
+            if (navigated) {
+                isSwiping = true;
+                setTimeout(() => {
+                    isSwiping = false;
+                }, 300);
             }
         }, {passive: true});
     }
