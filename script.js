@@ -10,6 +10,7 @@
   const accountSection = document.getElementById("account-section");
   const busSection = document.getElementById("bus-section");
   const calendarSection = document.getElementById("calendar-section");
+  const adminSection = document.getElementById("admin-section");
   const statusTabs = document.querySelectorAll(".status-tab");
   const statusPanels = document.querySelectorAll(".status-panel");
   const siteTitle = document.getElementById("site-title");
@@ -22,8 +23,26 @@
     });
   }
 
+  // Sidebar Visibility Control for Wide Tabs
+  const leftSidebar = document.getElementById('left-sidebar');
+  if (leftSidebar && navItems.length > 0) {
+      navItems.forEach(btn => {
+          btn.addEventListener('click', () => {
+              const cat = btn.dataset.category;
+              if (cat === 'curriculum' || cat === 'training') {
+                  leftSidebar.classList.add('hidden');
+              } else {
+                  leftSidebar.classList.remove('hidden');
+              }
+          });
+      });
+  }
+
   let currentCategory = "all";
   let calendar = null; // FullCalendar 인스턴스
+
+  // Helper: Check Admin Role
+  const isAdmin = () => window.currentUserRole === 'admin' || window.currentUserRole === 'sub-admin';
 
   // 시간 업데이트 함수
   function updateClock() {
@@ -112,6 +131,7 @@
   let isEditMode = false;
   let localShortcutData = []; 
   let collapsedGroups = new Set(); // Track collapsed group IDs
+  let shortcutEditSource = 'personal'; // 'personal' or 'default' (admin only)
 
   // 자료마당 상태 관리
   let datayardEditMode = false;
@@ -133,85 +153,130 @@
   }
 
   async function loadShortcutsFromFirebase() {
-    const { db, firestoreUtils } = window;
+    const { db, firestoreUtils, auth } = window;
+    if (!db || !firestoreUtils) return;
+
     try {
-      // 1. 그룹 정보 가져오기 (컬렉션 shortcut_groups)
-      // 간단하게 구현하기 위해 문서 하나에 전체 JSON을 저장하는 방식을 추천하지만, 
-      // 확장성을 위해 개별 문서로 갈 수도 있습니다. 
-      // 여기서는 빠른 구현과 무결성을 위해 'settings' 컬렉션의 'shortcuts' 문서를 메인으로 사용하겠습니다.
-      // 만약 세부 컬렉션이 필요하다면 마이그레이션이 필요합니다.
-      
-      const docRef = firestoreUtils.doc(db, "settings", "shortcuts");
-      const docSnap = await firestoreUtils.getDocs(firestoreUtils.query(firestoreUtils.collection(db, "settings")));
-      // getDoc이 firestoreUtils에 없으므로 query를 이용하거나, 
-      // 단일 문서 관리용으로 collection 구조를 잡습니다.
-      
-      // 편의상 'shortcutGroups' 컬렉션을 사용합니다.
-      const q = firestoreUtils.query(firestoreUtils.collection(db, "shortcutGroups"));
-      const querySnapshot = await firestoreUtils.getDocs(q);
-      
-      const loadedData = [];
-      querySnapshot.forEach((doc) => {
-        loadedData.push({ id: doc.id, ...doc.data() });
-      });
+      const user = auth?.currentUser;
+      let loadedData = [];
+
+      // 1. 개인화된 바로가기 시도 (로그인된 경우)
+      if (user && shortcutEditSource === 'personal') {
+          const personalRef = firestoreUtils.collection(db, "users", user.uid, "myShortcuts");
+          const personalSnap = await firestoreUtils.getDocs(firestoreUtils.query(personalRef));
+          
+          if (!personalSnap.empty) {
+              personalSnap.forEach((doc) => {
+                  loadedData.push({ id: doc.id, ...doc.data() });
+              });
+              console.log("Personal shortcuts loaded for:", user.email);
+          }
+      }
+
+      // 2. 관리자 모드에서 'default' 선택했거나, 개인 데이터가 없는 경우 -> 글로벌 로드
+      if (loadedData.length === 0) {
+          const globalRef = firestoreUtils.collection(db, "shortcutGroups");
+          const globalSnap = await firestoreUtils.getDocs(firestoreUtils.query(globalRef));
+          
+          globalSnap.forEach((doc) => {
+              loadedData.push({ id: doc.id, ...doc.data() });
+          });
+          console.log("Global default shortcuts loaded (Source: " + shortcutEditSource + ")");
+      }
 
       if (loadedData.length > 0) {
-        // order 필드 기준 정렬
-        loadedData.sort((a, b) => a.order - b.order);
+        loadedData.sort((a, b) => (a.order || 0) - (b.order || 0));
         localShortcutData = loadedData;
-        // Default: Collapse all groups on mobile
+        
         if (window.innerWidth <= 768) {
             localShortcutData.forEach(g => collapsedGroups.add(g.id));
         }
       } else {
-        // 데이터가 없으면 초기 데이터(data.js)를 Firebase에 업로드
-        localShortcutData = JSON.parse(JSON.stringify(shortcutData));
-        // id 및 order 부여
+        // 완전 초기 상태 (데이터 무) -> window.shortcutData에서 로드 (data.js)
+        localShortcutData = JSON.parse(JSON.stringify(window.shortcutData || []));
         localShortcutData.forEach((group, index) => {
             if(!group.id) group.id = 'group-' + Date.now() + '-' + index;
             group.order = index;
-            if(!group.items) group.items = [];
-            group.items.forEach((item, i) => {
-                if(!item.id) item.id = 'item-' + Date.now() + '-' + i;
-            });
         });
-        await saveAllShortcutsToFirebase();
       }
       renderShortcuts();
     } catch (err) {
-      console.error("Firebase shortcuts load error:", err);
-      // 에러 시 로컬 데이터 Fallback
-      localShortcutData = JSON.parse(JSON.stringify(shortcutData));
+      console.error("Shortcuts load error:", err);
+      localShortcutData = JSON.parse(JSON.stringify(window.shortcutData || []));
       renderShortcuts();
     }
   }
+  window.loadShortcutsFromFirebase = loadShortcutsFromFirebase;
 
   async function saveAllShortcutsToFirebase() {
       if (!window.db) return;
-      const { db, firestoreUtils } = window;
+      const { db, firestoreUtils, auth } = window;
+      const user = auth?.currentUser;
+
+      let targetCollection = "";
+      if (isAdmin() && shortcutEditSource === 'default') {
+          targetCollection = "shortcutGroups";
+      } else if (user) {
+          targetCollection = `users/${user.uid}/myShortcuts`;
+      } else {
+          alert("로그인이 필요합니다.");
+          return;
+      }
       
-      // 기존 데이터 삭제 로직은 복잡하므로, 덮어쓰기 방식으로 진행.
-      // 실제로는 batch를 쓰는 게 좋지만 여기선 loop로 처리
-      for (const group of localShortcutData) {
-          await firestoreUtils.setDoc(firestoreUtils.doc(db, "shortcutGroups", group.id), group);
+      try {
+          // 컬렉션 내의 모든 문서를 업데이트/생성
+          for (const group of localShortcutData) {
+              await firestoreUtils.setDoc(firestoreUtils.doc(db, targetCollection, group.id), group);
+          }
+          console.log("Saved to:", targetCollection);
+      } catch (e) {
+          console.error("Save error:", e);
+          alert("저장 중 오류가 발생했습니다.");
       }
   }
   
   async function deleteGroupFromFirebase(groupId) {
       if (!window.db) return;
-      const { db, firestoreUtils } = window;
-      await firestoreUtils.deleteDoc(firestoreUtils.doc(db, "shortcutGroups", groupId));
+      const { db, firestoreUtils, auth } = window;
+      const user = auth?.currentUser;
+
+      let targetCollection = "";
+      if (isAdmin() && shortcutEditSource === 'default') {
+          targetCollection = "shortcutGroups";
+      } else if (user) {
+          targetCollection = `users/${user.uid}/myShortcuts`;
+      } else {
+          return;
+      }
+      
+      await firestoreUtils.deleteDoc(firestoreUtils.doc(db, targetCollection, groupId));
   }
 
   // 바로가기 렌더링 함수 (Sortable 적용)
   function renderShortcuts() {
+    const isAdminRole = isAdmin();
+    const isLoggedIn = !!window.auth?.currentUser;
+    
+    // Admin Toggle HTML
+    let sourceToggleHtml = "";
+    if (isEditMode && isAdminRole) {
+        sourceToggleHtml = `
+            <div class="shortcut-source-toggle">
+                <div class="source-btn ${shortcutEditSource==='personal'?'active':''}" onclick="window.switchShortcutSource('personal')">내 바로가기</div>
+                <div class="source-btn ${shortcutEditSource==='default'?'active':''}" onclick="window.switchShortcutSource('default')">기본값(공용)</div>
+            </div>
+        `;
+    }
+
     shortcutSection.innerHTML = `
       <div class="shortcut-controls">
         ${isEditMode 
-          ? `<button id="add-group-btn" class="btn-secondary"><i class="fas fa-folder-plus"></i> 그룹 추가</button>
+          ? `
+             ${sourceToggleHtml}
+             <button id="add-group-btn" class="btn-secondary"><i class="fas fa-folder-plus"></i> 그룹 추가</button>
              <button id="save-order-btn" class="btn-success"><i class="fas fa-save"></i> 저장 완료</button>
              <button id="cancel-edit-btn" class="btn-cancel"><i class="fas fa-times"></i> 취소</button>`
-          : `<button id="edit-mode-btn" class="btn-primary mobile-hide"><i class="fas fa-edit"></i> 바로가기 편집</button>`
+          : (isLoggedIn ? `<button id="edit-mode-btn" class="btn-primary mobile-hide"><i class="fas fa-edit"></i> 바로가기 편집</button>` : '')
         }
       </div>
       <div id="shortcut-container" class="shortcut-grid ${isEditMode ? 'edit-mode' : ''}"></div>
@@ -236,10 +301,13 @@
              openGroupModal();
         });
     } else {
-        document.getElementById('edit-mode-btn').addEventListener('click', () => {
-            isEditMode = true;
-            renderShortcuts();
-        });
+        const editBtn = document.getElementById('edit-mode-btn');
+        if (editBtn) {
+            editBtn.addEventListener('click', () => {
+                isEditMode = true;
+                renderShortcuts();
+            });
+        }
     }
 
     localShortcutData.forEach((group) => {
@@ -379,6 +447,15 @@
       // Firebase에서도 삭제
       await deleteGroupFromFirebase(groupId); 
       renderShortcuts();
+  };
+
+  window.switchShortcutSource = async function(source) {
+      if (shortcutEditSource === source) return;
+      if (isEditMode && localShortcutData.length > 0) {
+          if (!confirm("현재 변경 사항이 저장되지 않았습니다. 데이터를 새로 불러오시겠습니까?")) return;
+      }
+      shortcutEditSource = source;
+      await loadShortcutsFromFirebase();
   };
 
   window.initShortcuts = initShortcuts; // 외부 노출
@@ -728,14 +805,26 @@
           };
           document.getElementById('add-tab-master-btn').onclick = addNewTab;
       } else {
-          area.innerHTML = `
-              <button id="edit-status-btn" class="btn-primary">
-                  <i class="fas fa-edit"></i> 현황 편집
-              </button>
-          `;
-          document.getElementById('edit-status-btn').onclick = () => toggleStatusEditMode(false);
+          const isAdmin = window.currentUserRole === 'admin' || window.currentUserRole === 'sub-admin';
+          if (isAdmin) {
+              area.innerHTML = `
+                  <button id="edit-status-btn" class="btn-primary">
+                      <i class="fas fa-edit"></i> 현황 편집
+                  </button>
+              `;
+              document.getElementById('edit-status-btn').onclick = () => toggleStatusEditMode(false);
+          } else {
+              area.innerHTML = '';
+          }
       }
   }
+
+  // Handle live role updates to refresh all admin controls
+  window.addEventListener('user-role-updated', async () => {
+      renderStatusControls();
+      await loadShortcutsFromFirebase();
+      initAccountEditing();
+  });
 
   window.updateStatusLayout = (val) => {
       if (statusData[activeTabId]) {
@@ -837,6 +926,7 @@
           if (deletePromises.length > 0) {
               await Promise.all(deletePromises);
           }
+          if (window.logUserAction) window.logUserAction('status', '저장', '학교 현황 데이터를 저장했습니다.');
           
       } catch (e) {
           console.error("Status save error details:", e);
@@ -955,6 +1045,7 @@
                       const entry = Object.entries(statusData).find(e => e[1].title === tabName);
                       if (entry) statusData[entry[0]].order = index;
                   });
+                  if (window.logUserAction) window.logUserAction('status', '순서변경', '탭 순서를 변경했습니다.');
               }
           });
       }
@@ -1029,9 +1120,11 @@
 
   // Actions
   window.removeTab = (id) => {
+      const title = statusData[id]?.title || id;
       if (confirm('이 탭을 삭제하시겠습니까?')) {
           delete statusData[id];
           if (activeTabId === id) activeTabId = Object.keys(statusData)[0] || null;
+          if (window.logUserAction) window.logUserAction('status', '탭삭제', `탭: ${title}`);
           renderStatusTabs();
           renderStatusContent();
       }
@@ -1043,6 +1136,7 @@
           const id = 'tab_' + Date.now();
           statusData[id] = { title, order: Object.keys(statusData).length, columns: 1, tables: [{ headers: ['제목1'], widths:[100], rows: [['']] }] };
           activeTabId = id;
+          if (window.logUserAction) window.logUserAction('status', '탭생성', `새 탭: ${title}`);
           renderStatusTabs();
           renderStatusContent();
           renderStatusControls();
@@ -1051,12 +1145,14 @@
 
   window.addTableToTab = (tabId) => {
       statusData[tabId].tables.push({ headers: ['제목1'], widths: [100], rows: [['']] });
+      if (window.logUserAction) window.logUserAction('status', '표추가', `탭: ${statusData[tabId].title}`);
       renderStatusContent();
   };
 
   window.removeTableFromTab = (tabId, tIdx) => {
       if (confirm('이 표를 삭제하시겠습니까?')) {
           statusData[tabId].tables.splice(tIdx, 1);
+          if (window.logUserAction) window.logUserAction('status', '표삭제', `탭: ${statusData[tabId].title}, 표: ${tIdx + 1}번`);
           renderStatusContent();
       }
   };
@@ -1065,6 +1161,7 @@
       const table = statusData[tabId].tables[tIdx];
       if (type === 'add') table.rows.push(Array(table.headers.length).fill(''));
       else if (table.rows.length > 0) table.rows.pop();
+      if (window.logUserAction) window.logUserAction('status', type === 'add' ? '행추가' : '행삭제', `탭: ${statusData[tabId].title}, 표: ${tIdx + 1}번`);
       renderStatusContent();
   };
 
@@ -1080,6 +1177,7 @@
           if (table.widths) table.widths.pop();
           table.rows.forEach(r => r.pop());
       }
+      if (window.logUserAction) window.logUserAction('status', type === 'add' ? '열추가' : '열삭제', `탭: ${statusData[tabId].title}, 표: ${tIdx + 1}번`);
       renderStatusContent();
   };
 
@@ -1099,6 +1197,23 @@
     } else {
       await loadDatayardFromFirebase();
     }
+    // Force show edit button and its container if hidden
+    setTimeout(() => {
+        const btn = document.getElementById('datayard-edit-mode-btn');
+        if(btn) {
+            btn.classList.remove('hidden');
+            btn.style.setProperty('display', 'inline-flex', 'important');
+            
+            // Ensure parent container is also visible (fixes mobile/responsive layout hiding it)
+            const parent = btn.closest('.datayard-controls');
+            if(parent) {
+                parent.classList.remove('hidden');
+                parent.style.setProperty('display', 'flex', 'important');
+                parent.style.setProperty('gap', '10px', 'important');
+                parent.style.setProperty('align-items', 'center', 'important');
+            }
+        }
+    }, 500);
   }
 
   async function loadDatayardFromFirebase() {
@@ -1136,6 +1251,7 @@
       for (const group of localDatayardData) {
         await firestoreUtils.setDoc(firestoreUtils.doc(db, "datayardGroups", group.id), group);
       }
+      if(window.logUserAction) window.logUserAction('datayard', '수정', '자료마당 전체 저장');
       alert("자료마당 변경사항이 저장되었습니다.");
     } catch (error) {
       console.error("Error saving datayard:", error);
@@ -1169,18 +1285,21 @@
                 <h3>${group.category}</h3>
                 <p>${group.category} 관련 자료 목록</p>
               </div>
-              ${datayardEditMode ? `
-                <div class="group-edit-actions">
-                  <button class="edit-btn edit-group-btn" title="그룹 수정"><i class="fas fa-pen"></i></button>
-                  <button class="delete-btn delete-group-btn" title="그룹 삭제"><i class="fas fa-trash"></i></button>
-                </div>
-              ` : ''}
+
             </div>
-            <div style="display: flex; align-items: center; gap: 1rem;">
+            <!-- Right Side Controls (Premium Unified UI) -->
+            <div style="display: flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0;">
                ${datayardEditMode ? `
-                  <button class="add-item-btn add-file-btn" title="자료 추가"><i class="fas fa-plus-circle"></i> 자료추가</button>
+                   <!-- Edit Group -->
+                   <button class="my-magic-edit-btn" title="그룹 수정" style="width: 32px; height: 32px; min-width: 32px; background: #ffffff !important; border: 1px solid #e2e8f0 !important; border-radius: 8px; cursor: pointer; display: inline-flex !important; position: static !important; align-items: center; justify-content: center; color: #64748b !important; margin: 0 !important; flex-shrink: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s ease;"><i class="fas fa-pen" style="font-size: 0.9rem;"></i></button>
+                   
+                   <!-- Delete Group -->
+                   <button class="my-magic-delete-btn" title="그룹 삭제" style="width: 32px; height: 32px; min-width: 32px; background: #ffffff !important; border: 1px solid #e2e8f0 !important; border-radius: 8px; cursor: pointer; display: inline-flex !important; position: static !important; align-items: center; justify-content: center; color: #ef4444 !important; margin: 0 !important; flex-shrink: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s ease;"><i class="fas fa-trash" style="font-size: 0.9rem;"></i></button>
+                   
+                   <!-- Add Item (Simplified to Icon) -->
+                   <button class="add-item-btn add-file-btn" title="자료 추가" style="width: 32px; height: 32px; min-width: 32px; background: #ffffff !important; border: 1px solid #e2e8f0 !important; border-radius: 8px; cursor: pointer; display: inline-flex !important; position: static !important; align-items: center; justify-content: center; color: #10b981 !important; margin: 0 !important; flex-shrink: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s ease;"><i class="fas fa-plus" style="font-size: 1rem;"></i></button>
                ` : ''}
-               <i class="fas fa-chevron-down main-chevron"></i>
+               <i class="fas fa-chevron-down main-chevron" style="margin-left: 10px; cursor: pointer; flex-shrink: 0; color: #94a3b8;"></i>
             </div>
           </div>
           
@@ -1189,11 +1308,11 @@
               <div class="sub-items-list datayard-items-container" style="padding-left: 0;" data-group-id="${group.id}">
                 ${group.items.map((item, itemIndex) => `
                   <div class="file-item-wrapper" data-index="${itemIndex}">
-                    <a href="${item.url}" target="_blank" class="file-item">
+                    <a href="${item.url}" class="file-item" onclick="window.forceDownload(event, '${item.url}', '${item.title}')">
                       ${datayardEditMode ? '<i class="fas fa-grip-vertical datayard-sortable-handle item-handle"></i>' : ''}
                       <i class="fas fa-file-alt"></i>
                       <span>${item.title}</span>
-                      <i class="fas fa-external-link-alt link-icon"></i>
+                      <i class="fas fa-download link-icon" style="font-size: 0.85rem; opacity: 0.7;"></i>
                     </a>
                     ${datayardEditMode ? `
                       <div class="item-edit-actions">
@@ -1238,12 +1357,12 @@
           openDatayardGroupModal(group);
         });
 
-        card.querySelector(".edit-group-btn").addEventListener("click", (e) => {
+        card.querySelector(".my-magic-edit-btn").addEventListener("click", (e) => {
           e.stopPropagation();
           openDatayardGroupModal(group);
         });
 
-        card.querySelector(".delete-group-btn").addEventListener("click", (e) => {
+        card.querySelector(".my-magic-delete-btn").addEventListener("click", (e) => {
           e.stopPropagation();
           deleteDatayardGroup(group.id);
         });
@@ -1402,11 +1521,13 @@
     if(confirm("이 그룹과 포함된 모든 자료를 삭제하시겠습니까?")) {
       const index = localDatayardData.findIndex(g => g.id === groupId);
       if(index > -1) {
+        const deletedGroup = localDatayardData[index];
         localDatayardData.splice(index, 1);
         // Firebase 삭제
         if(window.db) {
           const { db, firestoreUtils } = window;
           firestoreUtils.deleteDoc(firestoreUtils.doc(db, "datayardGroups", groupId));
+          if(window.logUserAction) window.logUserAction('datayard', '삭제', `그룹 삭제: ${deletedGroup.category}`);
         }
         renderDatayard();
       }
@@ -1417,7 +1538,9 @@
     if(confirm("이 자료를 삭제하시겠습니까?")) {
       const group = localDatayardData.find(g => g.id === groupId);
       if(group) {
+        const deletedItem = group.items[itemIdx];
         group.items.splice(itemIdx, 1);
+        if(window.logUserAction && deletedItem) window.logUserAction('datayard', '삭제', `자료 삭제: ${deletedItem.title} (그룹: ${group.category})`);
         renderDatayard();
       }
     }
@@ -1491,6 +1614,7 @@
       group.category = title;
       group.icon = icon;
       group.color = color;
+      if(window.logUserAction) window.logUserAction('datayard', '수정', `그룹 정보 수정: ${title}`);
     } else {
       // 추가
       const newId = `group-${Date.now()}`;
@@ -1502,6 +1626,7 @@
         items: [],
         order: localDatayardData.length
       });
+      if(window.logUserAction) window.logUserAction('datayard', '생성', `새 그룹 생성: ${title}`);
     }
     dyGroupModal.classList.remove('active');
     renderDatayard();
@@ -1556,9 +1681,11 @@
     if(itemId !== "") {
       // 수정
       group.items[itemId] = { title, url };
+      if(window.logUserAction) window.logUserAction('datayard', '수정', `자료 수정: ${title} (그룹: ${group.category})`);
     } else {
       // 추가
       group.items.push({ title, url });
+      if(window.logUserAction) window.logUserAction('datayard', '생성', `새 자료 추가: ${title} (그룹: ${group.category})`);
     }
 
     dyItemModal.classList.remove('active');
@@ -1574,32 +1701,34 @@
 
   let datayardBackup = null;
 
-  dyEditBtn.addEventListener('click', () => {
-    datayardEditMode = true;
-    datayardBackup = JSON.parse(JSON.stringify(localDatayardData)); // Backup data
-    dyEditBtn.classList.add('hidden');
-    dyEditActions.classList.remove('hidden');
-    renderDatayard();
-  });
+  if (dyEditBtn) {
+    dyEditBtn.addEventListener('click', () => {
+      datayardEditMode = true;
+      datayardBackup = JSON.parse(JSON.stringify(localDatayardData)); // Backup data
+      dyEditBtn.classList.add('hidden');
+      dyEditActions.classList.remove('hidden');
+      renderDatayard();
+    });
+  }
 
   dyAddGroupBtn.addEventListener('click', () => openDatayardGroupModal());
 
   dySaveOrderBtn.addEventListener('click', async () => {
     datayardEditMode = false;
-    dyEditBtn.classList.remove('hidden');
     dyEditActions.classList.add('hidden');
+    if (dyEditBtn) dyEditBtn.classList.remove('hidden');
     await saveDatayardToFirebase();
     renderDatayard();
   });
 
   dyCancelEditBtn.addEventListener('click', () => {
-    if(confirm("저장하지 않은 변경사항은 사라집니다. 편집을 취소하시겠습니까?")) {
+    if (confirm("저장하지 않은 변경사항은 사라집니다. 편집을 취소하시겠습니까?")) {
       datayardEditMode = false;
       if (datayardBackup) {
         localDatayardData = JSON.parse(JSON.stringify(datayardBackup));
       }
-      dyEditBtn.classList.remove('hidden');
       dyEditActions.classList.add('hidden');
+      if (dyEditBtn) dyEditBtn.classList.remove('hidden');
       renderDatayard();
     }
   });
@@ -2282,6 +2411,7 @@
              }
           });
           localAccountData = newOrder;
+          if (window.logUserAction) window.logUserAction('account', '순서변경', '계정 순서를 변경했습니다.');
         }
       });
     }
@@ -2308,7 +2438,6 @@
     cancelBtn.onclick = () => {
       if (confirm("변경사항을 취소하시겠습니까?")) {
         accountEditMode = false;
-        editModeBtn.classList.remove("hidden");
         editActions.classList.add("hidden");
         loadAccountsFromFirebase(); // Reload original data
       }
@@ -2322,8 +2451,8 @@
             await firestoreUtils.setDoc(firestoreUtils.doc(db, "schoolAccounts", acc.id), acc);
           }
           alert("저장되었습니다.");
+          if (window.logUserAction) window.logUserAction('account', '저장', '계정 변경사항을 저장했습니다.');
           accountEditMode = false;
-          editModeBtn.classList.remove("hidden");
           editActions.classList.add("hidden");
           renderAccountTable();
         } catch (err) {
@@ -2459,6 +2588,7 @@
       const idx = localAccountData.findIndex(a => a.id === id);
       if (idx !== -1) {
         localAccountData[idx] = { ...localAccountData[idx], service, url, username, password, note };
+        if (window.logUserAction) window.logUserAction('account', '수정', `서비스: ${service}`);
       }
     } else {
       const newId = "acc-" + Date.now();
@@ -2471,6 +2601,7 @@
         note,
         order: localAccountData.length
       });
+      if (window.logUserAction) window.logUserAction('account', '생성', `서비스: ${service}`);
     }
 
     document.getElementById("accountModal").classList.remove("active");
@@ -2479,6 +2610,8 @@
 
   window.deleteAccount = (id) => {
     if (confirm("이 계정 정보를 삭제하시겠습니까?")) {
+      const acc = localAccountData.find(a => a.id === id);
+      if (window.logUserAction) window.logUserAction('account', '삭제', `서비스: ${acc ? acc.service : id}`);
       localAccountData = localAccountData.filter(a => a.id !== id);
       // Re-order
       localAccountData.forEach((acc, idx) => acc.order = idx);
@@ -2491,6 +2624,13 @@
 
   window.copyToClipboard = (text, element) => {
     navigator.clipboard.writeText(text).then(() => {
+      // Log copy action
+      if(window.logUserAction) {
+          const type = element.closest('td').previousElementSibling?.previousElementSibling ? '비밀번호' : '아이디';
+          const serviceName = element.closest('tr').querySelector('td:nth-child(2)')?.textContent.trim();
+          window.logUserAction('account', '복사', `${serviceName} 계정의 ${type} 복사`);
+      }
+
       // Small feedback animation
       element.classList.add("copied-flash");
       const originalText = element.textContent;
@@ -2533,6 +2673,9 @@
       currentCategory = item.getAttribute("data-category");
       document.body.setAttribute('data-tab', currentCategory); // Added for theme backgrounds
 
+      // Log User Action
+      if(window.logUserAction) window.logUserAction(currentCategory);
+
       // 모든 섹션 숨기기 및 애니메이션 클래스 초기화
       const allSections = [
         linksGrid, 
@@ -2543,6 +2686,7 @@
         accountSection,
         busSection,
         calendarSection,
+        adminSection,
         document.getElementById("intro-section")
       ];
       
@@ -2585,6 +2729,10 @@
         calendarSection.classList.remove("hidden");
         targetSection = calendarSection;
         initCalendar();
+      } else if (currentCategory === "admin") {
+        adminSection.classList.remove("hidden");
+        targetSection = adminSection;
+        window.switchAdminView('dashboard');
       } else if (currentCategory === "all") {
         const intro = document.getElementById("intro-section");
         intro.classList.remove("hidden");
@@ -2831,8 +2979,24 @@
         combinedEvents.forEach(data => {
              const start = data.start;
              let end = data.end || start;
+             
+             // 1. Date Check
              if (todayStr >= start && todayStr <= end) {
-                 todayEvents.push(data);
+                 // 2. Individual Filtering for 'doc' type
+                 if (data.eventType === 'doc') {
+                     const userTasks = window.currentUserTasks || [];
+                     const docInCharges = (data.inCharge || "").split(',').map(s => s.trim()).filter(Boolean);
+                     
+                     // Show if any of the doc's in-charge tasks matches any of user's assigned tasks
+                     const isMyDoc = docInCharges.some(task => userTasks.includes(task));
+                     
+                     if (isMyDoc) {
+                         todayEvents.push(data);
+                     }
+                 } else {
+                     // Other types (edu, staff, life) are shown to everyone as before
+                     todayEvents.push(data);
+                 }
              }
         });
 
@@ -2855,7 +3019,7 @@
 
         // 2. Render List
         const categories = [
-            { id: 'edu', label: '교육활동', icon: 'fa-chalkboard-teacher', types: ['edu'] },
+            { id: 'edu', label: '일정', icon: 'fa-chalkboard-teacher', types: ['edu'] },
             { id: 'staff', label: '교직원 복무', icon: 'fa-user-clock', types: ['staff'] },
             { id: 'doc', label: '처리할 공문', icon: 'fa-file-signature', types: ['doc'] }
         ];
@@ -2870,9 +3034,7 @@
             eventList.appendChild(li);
         } else {
             categories.forEach(cat => {
-                const catEvents = otherEvents
-                    .filter(ev => cat.types.includes(ev.eventType))
-                    .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
+                const catEvents = otherEvents.filter(ev => cat.types.includes(ev.eventType));
                 
                 if (catEvents.length > 0) {
                     const titleDiv = document.createElement('div');
@@ -2885,16 +3047,27 @@
 
                     catEvents.forEach(ev => {
                         const li = document.createElement('li');
-                        li.className = `event-item type-${ev.eventType} ${ev.isHoliday ? 'is-holiday' : ''}`;
+                        const isCompleted = ev.eventType === 'doc' && ev.isCompleted;
+                        li.className = `event-item type-${ev.eventType} ${ev.isHoliday ? 'is-holiday' : ''} ${isCompleted ? 'completed' : ''}`;
                         
                         let displayText = ev.title;
                         if (ev.eventType === 'staff') {
-                            displayText = `${ev.title}(${ev.staffStatus || '미정'})`;
+                            // Add space between Name and Status
+                            displayText = `${ev.title} (${ev.staffStatus || '미정'})`;
                         }
                         
-                        li.innerHTML = `<i class="fas ${ev.isHoliday ? 'fa-flag' : 'fa-check'}"></i> ${displayText}`;
+                        // Icon Logic
+                        let iconClass = 'fa-check';
+                        if (ev.isHoliday) iconClass = 'fa-flag';
+                        else if (ev.eventType === 'staff') iconClass = 'fa-user-check'; // Specific icon for staff
+                        else if (ev.eventType === 'edu') iconClass = 'fa-chalkboard';
+                        else if (ev.eventType === 'doc') {
+                            iconClass = isCompleted ? 'fa-check-circle' : 'fa-file-alt';
+                        }
 
-                        // Tooltip Construction (HTML List)
+                        li.innerHTML = `<i class="fas ${iconClass}"></i><span>${displayText}</span>`;
+
+                        // Tooltip Construction (HTML List for Detail View)
                         let info = [];
                         if (ev.eventType === 'edu') {
                             if (ev.time) info.push(`<li><b>시간:</b> ${ev.time}</li>`);
@@ -2902,17 +3075,21 @@
                             if (ev.target) info.push(`<li><b>대상:</b> ${ev.target}</li>`);
                             if (ev.inCharge) info.push(`<li><b>담당:</b> ${ev.inCharge}</li>`);
                         } else if (ev.eventType === 'staff') {
-                            info.push(`<li><b>이름:</b> ${ev.title}</li>`); // Title is name in staff
+                            info.push(`<li><b>이름:</b> ${ev.title}</li>`); 
                             info.push(`<li><b>복무:</b> ${ev.staffStatus || '미정'}</li>`);
+                            if (ev.place) info.push(`<li><b>장소:</b> ${ev.place}</li>`);
                             if (ev.time) info.push(`<li><b>시간:</b> ${ev.time}</li>`);
                         } else if (ev.eventType === 'doc') {
                             if (ev.inCharge) info.push(`<li><b>담당:</b> ${ev.inCharge}</li>`);
                         }
                         
+                        // Only add tooltip event if there IS info to show
                         const tooltipContent = info.length > 0 ? `<ul class="tooltip-list">${info.join('')}</ul>` : "";
                         
-                        li.onmouseenter = (e) => showFloatingTooltip(e, tooltipContent);
-                        li.onmouseleave = hideFloatingTooltip;
+                        if (info.length > 0) {
+                            li.onmouseenter = (e) => showFloatingTooltip(e, tooltipContent);
+                            li.onmouseleave = hideFloatingTooltip;
+                        }
 
                         li.onclick = () => {
                             const navCurr = document.querySelector('[data-category="curriculum"]');
@@ -2929,8 +3106,16 @@
     // 2. Sync Setup
     const setupTodayWidgetSync = () => {
         if (!window.db || isWidgetSyncSetup) return;
-        
-        isWidgetSyncSetup = true;
+     // Expose for external updates (profile change, etc.)
+    window.renderTodayWidget = renderTodayWidget;
+
+    // Listen for user data updates to refresh widget
+    window.addEventListener('user-role-updated', () => {
+        renderTodayWidget();
+    });
+
+    // 2. Initial Setup
+    isWidgetSyncSetup = true;
         const { db, firestoreUtils } = window;
 
         // Listen for updates
@@ -3179,6 +3364,9 @@
                   return firestoreUtils.setDoc(firestoreUtils.doc(db, "boardPosts", id), { order: index }, { merge: true });
                 });
                 await Promise.all(promises);
+
+                // Log Action
+                if (window.logUserAction) window.logUserAction('board', '순서변경', '메모 순서 변경');
               } catch (err) {
                 console.error("Order save error:", err);
               }
@@ -3205,7 +3393,7 @@
         // Date parsing helper
         const date = post.createdAt ? new Date(post.createdAt).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit' }) : '';
         const author = post.author || '익명';
-        const strippedContent = post.content.replace(/<[^>]*>?/gm, ''); // stripped html
+        const strippedContent = (post.content || '').replace(/<[^>]*>?/gm, ''); // stripped html
 
         // Tag Generation
         let statusTag = '';
@@ -3331,10 +3519,18 @@
           const currentPostsSnap = await firestoreUtils.getDocs(firestoreUtils.collection(db, "boardPosts"));
           postData.order = currentPostsSnap.size;
           
-          const newDocRef = firestoreUtils.doc(firestoreUtils.collection(db, "boardPosts"));
+          // Fix: Create doc ref correctly for compat SDK
+          const newDocRef = firestoreUtils.collection(db, "boardPosts").doc();
           await firestoreUtils.setDoc(newDocRef, postData);
         }
         
+        // Log Action
+        if (window.logUserAction) {
+             const action = id ? '수정' : '생성';
+             const summary = content.replace(/<[^>]*>/g, '').substring(0, 20);
+             window.logUserAction('board', action, `메모 ${action}: ${summary}...`);
+        }
+
         modal.classList.remove('active');
         loadBoard();
       } catch (err) {
@@ -3349,6 +3545,10 @@
       const { db, firestoreUtils } = window;
       try {
         await firestoreUtils.deleteDoc(firestoreUtils.doc(db, "boardPosts", id));
+
+        // Log Action
+        if (window.logUserAction) window.logUserAction('board', '삭제', '메모 삭제');
+
         loadBoard();
       } catch (err) {
         console.error("Delete error:", err);
@@ -3593,6 +3793,11 @@
         data.isAccepted = isChecked;
         data.status = isChecked ? "접수완료" : "접수중";
         
+        // Log action
+        if(window.logUserAction) {
+            window.logUserAction('bus', isChecked ? '접수' : '취소', `${data.date} ${data.destination}행 배차 ${data.status}`);
+        }
+
         // Update UI Badge
         const badge = document.getElementById(`status-badge-${id}`);
         if (badge) {
@@ -3674,6 +3879,13 @@
         }
 
         const existingIdx = localBusData.findIndex(r => r.id === id);
+        const actionType = existingIdx !== -1 ? '수정' : '신청';
+        
+        // Log action
+        if(window.logUserAction) {
+            window.logUserAction('bus', actionType, `${newReq.date} ${newReq.destination}행 배차 ${actionType}`);
+        }
+
         if (existingIdx !== -1) {
             localBusData[existingIdx] = { ...localBusData[existingIdx], ...newReq };
         } else {
@@ -3737,6 +3949,7 @@
     if (confirm("해당 행을 삭제하시겠습니까?")) {
       const idx = localBusData.findIndex(r => r.id === id);
       if (idx !== -1) {
+        const deletedData = localBusData[idx];
         if (window.db) {
           const { db, firestoreUtils } = window;
           try {
@@ -3747,6 +3960,12 @@
             return;
           }
         }
+        
+        // Log action
+        if(window.logUserAction) {
+            window.logUserAction('bus', '삭제', `${deletedData.date} ${deletedData.destination}행 배차 삭제`);
+        }
+
         localBusData.splice(idx, 1);
         renderBusTable();
       }
@@ -3856,30 +4075,1337 @@
       // Check if it's horizontal swipe and not a vertical scroll
       if (Math.abs(diffX) > threshold && Math.abs(diffY) < maxVerticalOffset) {
         
-        // Define tab order
-        const tabs = Array.from(document.querySelectorAll('.nav-item'));
+        // Define tab order strictly from the header navigation
+        const navContainer = document.querySelector('#category-nav');
+        if (!navContainer) return;
+
+        const tabs = Array.from(navContainer.querySelectorAll('.nav-item'));
         const visibleTabs = tabs.filter(tab => {
-             return getComputedStyle(tab).display !== 'none';
+             const style = getComputedStyle(tab);
+             return style.display !== 'none' && style.visibility !== 'hidden' && tab.offsetWidth > 0;
         });
 
         // Find current active index
         const currentIndex = visibleTabs.findIndex(tab => tab.classList.contains('active'));
         if (currentIndex === -1) return;
 
+        let targetTab = null;
         if (diffX < 0) {
-          // Swipe Left -> Next Tab (Drag finger left, content moves left, next item comes from right)
+          // Swipe Left -> Next Tab
           if (currentIndex < visibleTabs.length - 1) {
-            visibleTabs[currentIndex + 1].click();
+            targetTab = visibleTabs[currentIndex + 1];
           }
         } else {
           // Swipe Right -> Prev Tab
           if (currentIndex > 0) {
-            visibleTabs[currentIndex - 1].click();
+            targetTab = visibleTabs[currentIndex - 1];
           }
+        }
+
+        if (targetTab) {
+            targetTab.click();
+            // Scroll nav item into view if it's overflowed
+            targetTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
       }
     }, { passive: true });
   }
 
   initSwipeNavigation();
+
+  // ============================================
+  // LOGIN & REGISTER LOGIC (ADDED)
+  // ============================================
+
+  // 1. Firebase Initialize (Compat)
+  const firebaseConfig = {
+    apiKey: "AIzaSyCQmDCL-PuN2A9AgOzIpObCeNtvIFDJmhU",
+    authDomain: "studio-8412089884-f8185.firebaseapp.com",
+    projectId: "studio-8412089884-f8185",
+    storageBucket: "studio-8412089884-f8185.firebasestorage.app",
+    messagingSenderId: "928283224778",
+    appId: "1:928283224778:web:01cb08827402140aace233"
+  };
+
+  let auth, db;
+
+  try {
+      // Wait for firebase script to load if not ready
+      if (typeof firebase !== 'undefined') {
+          if (!firebase.apps.length) {
+              firebase.initializeApp(firebaseConfig);
+          }
+          
+          // CRITICAL: If modular Firebase is already present, DO NOT overwrite it.
+          // Instead, polyfill the compat methods (.collection) onto the modular instance.
+          if (window.db && window.firestoreUtils && !window.db.collection) {
+              console.log("Modular Firebase detected. Adding compatibility layer...");
+              const mDb = window.db;
+              const mUtils = window.firestoreUtils;
+              
+              // Polyfill .collection for modular db
+              window.db.collection = function(name) {
+                  const collRef = mUtils.collection(mDb, name);
+                  const wrapQuery = (q) => ({
+                      where: (f, o, v) => wrapQuery(mUtils.query(q, mUtils.where(f, o, v))),
+                      orderBy: (f, d) => wrapQuery(mUtils.query(q, mUtils.orderBy(f, d))),
+                      limit: (n) => wrapQuery(mUtils.query(q, mUtils.limit(n))),
+                      get: () => mUtils.getDocs(q),
+                      onSnapshot: (cb) => mUtils.onSnapshot(q, cb)
+                  });
+
+                  return {
+                      ...wrapQuery(collRef),
+                      doc: (id) => {
+                          const docRef = mUtils.doc(mDb, name, id);
+                          return {
+                              get: () => mUtils.getDoc(docRef),
+                              set: (v) => mUtils.setDoc(docRef, v),
+                              update: (v) => mUtils.updateDoc(docRef, v),
+                              delete: () => mUtils.deleteDoc(docRef),
+                              onSnapshot: (cb) => mUtils.onSnapshot(docRef, cb)
+                          };
+                      },
+                      add: (v) => mUtils.addDoc(collRef, v)
+                  };
+              };
+          } else if (!window.db) {
+              // Standard Compat Init (only if no modular)
+              window.auth = firebase.auth();
+              window.db = firebase.firestore();
+          }
+
+          if (!window.firestoreUtils) {
+              // Compat Mapper for legacy scripts if modular utils are missing
+              window.firestoreUtils = {
+                  collection: (d, n) => d.collection(n),
+                  doc: (d, c, i) => i ? d.collection(c).doc(i) : d, 
+                  getDocs: (q) => q.get(), 
+                  getDoc: async (d) => {
+                      const snap = await d.get();
+                      if (snap && typeof snap.exists !== 'function') {
+                          const val = snap.exists;
+                          snap.exists = () => val;
+                      }
+                      return snap;
+                  },
+                  setDoc: (d, v) => d.set(v),
+                  updateDoc: (d, v) => d.update(v),
+                  deleteDoc: (d) => d.delete(),
+                  orderBy: (field, dir) => ({ type: 'orderBy', field, dir }),
+                  limit: (n) => ({ type: 'limit', val: n }),
+                  where: (field, op, val) => ({ type: 'where', field, op, val }),
+                  query: (q, ...args) => {
+                      let queryRef = q;
+                      args.forEach(arg => {
+                          if (arg.type === 'orderBy') queryRef = queryRef.orderBy(arg.field, arg.dir);
+                          else if (arg.type === 'limit') queryRef = queryRef.limit(arg.val);
+                          else if (arg.type === 'where') queryRef = queryRef.where(arg.field, arg.op, arg.val);
+                      });
+                      return queryRef;
+                  },
+                  onSnapshot: (q, cb) => q.onSnapshot(cb)
+              };
+          }
+          
+          auth = window.auth;
+          db = window.db;
+          
+          window.dispatchEvent(new Event('firebase-ready'));
+      }
+  } catch (e) {
+      console.error("Firebase Init Error:", e);
+  }
+
+
+
+  /* ============================================
+     ADMIN PAGE ENHANCEMENTS (Stats, Logs, Bin)
+     ============================================ */
+  
+  // 1. Admin Top Navigation & View Switching
+  window.switchAdminView = (viewId) => {
+    // Updated selector for new top menu buttons
+    const navItems = document.querySelectorAll('.admin-nav-btn[data-view]');
+    const views = document.querySelectorAll('.admin-view');
+    const headerTitle = document.getElementById('admin-view-title');
+    const headerDesc = document.getElementById('admin-view-desc');
+
+    const viewInfo = {
+      'dashboard': { title: '대시보드', desc: '관리자 현황 및 통계' },
+      'users': { title: '교직원 현황', desc: '가입 승인 및 회원 정보 관리' },
+      'logs': { title: '관리자 로그', desc: '관리자 및 시스템 활동 기록' },
+      'user-logs': { title: '사용자 로그', desc: '사용자들의 주요 활동 내역' },
+      'bin': { title: '휴지통', desc: '삭제된 회원 복구 및 영구 삭제' },
+      'menus': { title: '메뉴 관리', desc: '메인 메뉴 및 위젯 표시 설정' }
+    };
+
+    // Update Nav
+    navItems.forEach(n => {
+        if(n.dataset.view === viewId) n.classList.add('active');
+        else n.classList.remove('active');
+    });
+
+    // Update View
+    views.forEach(v => {
+      v.classList.remove('active');
+      if(v.id === `admin-view-${viewId}`) v.classList.add('active');
+    });
+
+    // Update Header
+    if(headerTitle && viewInfo[viewId]) {
+        headerTitle.textContent = viewInfo[viewId].title;
+        headerDesc.textContent = viewInfo[viewId].desc;
+    }
+
+    // Trigger Data Load needed for specific views
+    if(viewId === 'dashboard') window.loadUserStats(); // New: Dashboard statistics
+    if(viewId === 'logs') window.loadAdminLogs();
+    if(viewId === 'user-logs') window.loadUserLogs();
+    if(viewId === 'bin') window.loadRecycleBin();
+    if(viewId === 'menus') window.renderMenuSettings();
+  };
+
+  window.initAdminNav = () => {
+    // Initialize navigation clicks (if not inline onclick)
+    // Currently using inline onclick="switchAdminView(...)" in HTML, so strictly not needed,
+    // but good for clean initialization or if removed inline.
+    // The previous implementation added listeners.
+    const navItems = document.querySelectorAll('.admin-nav-btn[data-view]');
+    navItems.forEach(item => {
+      item.addEventListener('click', () => {
+        window.switchAdminView(item.dataset.view);
+      });
+    });
+  };
+
+  window.downloadUserCSV = () => {
+     // Retrieve adminUsers from somewhere or re-fetch?
+     // adminUsers is in index.html module scope. We can't access it easily unless we expose it.
+     // But wait, renderAdminTable uses it. 
+     // We can try to access the table rows directly or fetch again.
+     // Fetching again is safer.
+     if(!db) return;
+     
+     // Ask for confirmation
+     if(!confirm("전체 회원 명부를 CSV로 다운로드하시겠습니까? (개인정보 보호 주의)")) return;
+
+     db.collection("users").orderBy("createdAt", "desc").get().then(snap => {
+         let csv = "\uFEFF이름,이메일,소속,직위,담임여부(반),권한,가입일,상태\n";
+         snap.forEach(doc => {
+             const u = doc.data();
+             if(u.deleted) return; // Skip deleted
+
+             const classInfo = u.isHomeroom ? (u.classInfo || 'O') : 'X';
+             const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '';
+             const status = u.approved ? '승인' : '대기';
+             
+             // Escape commas
+             const clean = (s) => (s || '').replace(/,/g, ' ');
+             
+             csv += `${clean(u.name)},${clean(u.email)},${clean(u.school)},${clean(u.position)},${clean(classInfo)},${u.role},${date},${status}\n`;
+         });
+         
+         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+         const link = document.createElement("a");
+         const url = URL.createObjectURL(blob);
+         link.setAttribute("href", url);
+         link.setAttribute("download", `회원명부_${new Date().toLocaleDateString()}.csv`);
+         link.style.visibility = 'hidden';
+         document.body.appendChild(link);
+         link.click();
+         document.body.removeChild(link);
+         
+         if(window.logAdminAction) window.logAdminAction("명부 다운로드", "전체 회원 명부 CSV 다운로드");
+     });
+  };
+
+  // 2. Dashboard Statistics & Recent Logs Update
+  window.updateAdminDashboard = (users) => {
+      // Users is the list of ACTIVE users (not deleted)
+      const total = users.length;
+      const teachers = users.filter(u => u.position && (u.position.includes('교사') || u.position.includes('부장'))).length;
+      const pending = users.filter(u => !u.approved).length;
+      
+      const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+      
+      setTxt('stat-total-users', total);
+      setTxt('stat-total-teachers', teachers);
+      setTxt('stat-pending-users', pending);
+      
+      // Async fetch for deleted count
+      if(db) {
+         db.collection("users").where("deleted", "==", true).get()
+         .then(snap => {
+             setTxt('stat-deleted-users', snap.size);
+         });
+
+         // Fetch Recent Logs for Widget
+         const logList = document.getElementById('dashboard-recent-logs');
+         if(logList) {
+             db.collection("adminLogs").orderBy('timestamp', 'desc').limit(5).get()
+             .then(snap => {
+                 if(snap.empty) {
+                     logList.innerHTML = '<li class="empty-log">최근 활동이 없습니다.</li>';
+                     return;
+                 }
+                 let html = '';
+                 snap.forEach(doc => {
+                     const log = doc.data();
+                     const time = new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                     html += `
+                        <li class="log-item">
+                            <div class="log-icon"><i class="fas fa-history"></i></div>
+                            <div class="log-content">
+                                <span class="log-text"><strong>${log.admin}</strong>: ${log.details}</span>
+                                <span class="log-time">${time}</span>
+                            </div>
+                        </li>
+                     `;
+                 });
+                 logList.innerHTML = html;
+             });
+         }
+      }
+  };
+
+  // 3. Activity Logging (Admin)
+  window.logAdminAction = async (action, details) => {
+      if(!db) return;
+      const user = auth.currentUser;
+      const adminName = user ? (user.displayName || user.email) : 'System';
+
+      try {
+          await db.collection("adminLogs").add({
+              action: action,
+              details: details,
+              admin: adminName,
+              timestamp: new Date().toISOString()
+          });
+      } catch(e) { console.error("Logging failed", e); }
+  };
+
+  // 3.1 User Activity Logging (New)
+  window.logUserAction = async (category, action = '조회', detail = '') => {
+      if(!db || !auth.currentUser) return; // Only log logged-in users
+      const user = auth.currentUser;
+      const userName = user.displayName || user.email;
+      const viewNames = {
+          'all': '홈',
+          'status': '학교현황',
+          'account': '학교계정',
+          'curriculum': '학사일정',
+          'bus': '배차신청',
+          'datayard': '자료마당',
+          'support': '온학교 e지원',
+          'training': '연수관리',
+          'admin': '관리자 페이지'
+      };
+      
+      const targetName = viewNames[category] || category;
+
+      try {
+           await db.collection("userLogs").add({
+              user: userName,
+              uid: user.uid,
+              action: action,
+              target: detail || targetName,
+              timestamp: new Date().toISOString(),
+              category: category
+          });
+      } catch(e) { console.error("User logging failed", e); }
+  };
+
+  // 4. Logs Viewer
+  let adminLogsData = [];
+  let adminLogsPage = 1;
+  const logsPerPage = 10;
+
+  window.loadAdminLogs = async function(page = 1) {
+      const targetTbody = document.getElementById('admin-log-list');
+      const pagination = document.getElementById('admin-log-pagination');
+      if(!targetTbody) return;
+      
+      adminLogsPage = page;
+      targetTbody.innerHTML = '<tr><td colspan="5" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> 로딩 중...</td></tr>';
+      if(pagination) pagination.innerHTML = '';
+
+      if(!db) {
+          targetTbody.innerHTML = '<tr><td colspan="5" class="text-center">DB 연결 실패</td></tr>';
+          return;
+      }
+      
+      try {
+          if (adminLogsData.length === 0 || page === 1) {
+              const q = db.collection("adminLogs").orderBy('timestamp', 'desc').limit(200);
+              const snap = await q.get();
+              adminLogsData = [];
+              snap.forEach(doc => adminLogsData.push(doc.data()));
+          }
+          
+          if(adminLogsData.length === 0) {
+              targetTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px;">기록된 로그가 없습니다.</td></tr>';
+              return;
+          }
+
+          const totalPages = Math.ceil(adminLogsData.length / logsPerPage);
+          const start = (page - 1) * logsPerPage;
+          const end = start + logsPerPage;
+          const paginatedLogs = adminLogsData.slice(start, end);
+
+          let html = '';
+          paginatedLogs.forEach(log => {
+              const date = new Date(log.timestamp);
+              const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+              
+              let target = '-';
+              if(log.details && log.details.includes('(')) {
+                  const match = log.details.match(/([^(]+)\(([^)]+)\)/);
+                  if(match) target = match[1].trim();
+              }
+
+              html += `
+                <tr>
+                    <td style="font-size: 0.85rem; color: #64748b;">${dateStr}</td>
+                    <td style="font-weight: 600;">${log.admin || 'System'}</td>
+                    <td><span class="badge" style="background: #e0e7ff; color: #4338ca;">${log.action}</span></td>
+                    <td style="color: #475569;">${target}</td> 
+                    <td style="text-align: left; color: #334155;">${log.details}</td>
+                </tr>
+              `;
+          });
+          targetTbody.innerHTML = html;
+          renderPagination(pagination, totalPages, page, 'loadAdminLogs');
+
+      } catch(e) {
+          console.error("Logs Error:", e);
+          targetTbody.innerHTML = `<tr><td colspan="5" style="color:red; text-align:center;">로그 로드 실패: ${e.message}</td></tr>`;
+      }
+  };
+
+  let userLogsData = [];
+  let userLogsPage = 1;
+
+  window.loadUserLogs = async function(page = 1) {
+      const targetTbody = document.getElementById('admin-user-log-list');
+      const pagination = document.getElementById('admin-user-log-pagination');
+      if(!targetTbody) return;
+      
+      userLogsPage = page;
+      
+      // Get filter values
+      const startDate = document.getElementById('filter-user-log-start')?.value;
+      const endDate = document.getElementById('filter-user-log-end')?.value;
+      const filterName = document.getElementById('filter-user-log-name')?.value.trim().toLowerCase();
+      const filterAction = document.getElementById('filter-user-log-action')?.value;
+      const filterCategory = document.getElementById('filter-user-log-category')?.value;
+
+      targetTbody.innerHTML = '<tr><td colspan="5" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> 로딩 중...</td></tr>';
+      if(pagination) pagination.innerHTML = '';
+
+      if(!window.db) {
+          targetTbody.innerHTML = '<tr><td colspan="5" class="text-center">DB 연결 실패</td></tr>';
+          return;
+      }
+      
+      try {
+          const { db, firestoreUtils } = window;
+          
+          if (userLogsData.length === 0 || page === 1) {
+              let q = firestoreUtils.query(
+                  firestoreUtils.collection(db, "userLogs"),
+                  firestoreUtils.orderBy('timestamp', 'desc'),
+                  firestoreUtils.limit(500) 
+              );
+              
+              const snap = await firestoreUtils.getDocs(q);
+              userLogsData = [];
+              snap.forEach(doc => userLogsData.push({ id: doc.id, ...doc.data() }));
+          }
+
+          // Client-side Filtering
+          let filteredLogs = userLogsData.filter(log => {
+              if (startDate) {
+                  const s = new Date(startDate + "T00:00:00");
+                  if (new Date(log.timestamp) < s) return false;
+              }
+              if (endDate) {
+                  const e = new Date(endDate + "T23:59:59");
+                  if (new Date(log.timestamp) > e) return false;
+              }
+              if (filterName && !log.user?.toLowerCase().includes(filterName)) return false;
+              if (filterAction && log.action !== filterAction) return false;
+              if (filterCategory && log.category !== filterCategory) return false;
+              return true;
+          });
+
+          if(filteredLogs.length === 0) {
+              targetTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px;">필터 결과에 해당하는 로그가 없습니다.</td></tr>';
+              return;
+          }
+
+          const totalPages = Math.ceil(filteredLogs.length / logsPerPage);
+          const start = (page - 1) * logsPerPage;
+          const end = start + logsPerPage;
+          const paginatedLogs = filteredLogs.slice(start, end);
+
+          let html = '';
+          paginatedLogs.forEach(log => {
+              const date = new Date(log.timestamp);
+              const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+              
+              let actionClass = 'badge-blue';
+              if (['삭제', '취소'].includes(log.action)) actionClass = 'badge-red';
+              else if (['생성', '신청', '접수'].includes(log.action)) actionClass = 'badge-green';
+              else if (['수정', '이동'].includes(log.action)) actionClass = 'badge-orange';
+              
+              const detailsHtml = log.details ? `<div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">${log.details}</div>` : '';
+              const catName = log.category || '-'; // Define catName here
+
+              html += `
+                <tr>
+                    <td style="font-size: 0.85rem; color: #64748b;">${dateStr}</td>
+                    <td style="font-weight: 600;">${log.user || 'Unknown'}</td>
+                    <td><span class="badge ${actionClass}">${log.action}</span></td>
+                    <td style="color: #475569;">
+                        ${log.target || '-'}
+                        ${detailsHtml}
+                    </td> 
+                    <td style="text-align: left; color: #334155;">${catName}</td>
+                </tr>
+              `;
+          });
+          targetTbody.innerHTML = html;
+          renderPagination(pagination, totalPages, page, 'loadUserLogs');
+
+      } catch(e) {
+          console.error("User Logs Error:", e);
+          targetTbody.innerHTML = `<tr><td colspan="5" style="color:red; text-align:center;">로그 로드 실패: ${e.message}</td></tr>`;
+      }
+  };
+
+  function renderPagination(container, totalPages, currentPage, callbackName) {
+      if(!container || totalPages <= 1) return;
+      
+      let html = '';
+      // Prev
+      html += `<button onclick="${callbackName}(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
+      
+      // Page numbers (Simple logic: show max 5 surrounding current)
+      let start = Math.max(1, currentPage - 2);
+      let end = Math.min(totalPages, start + 4);
+      if (end - start < 4) start = Math.max(1, end - 4);
+
+      for(let i = start; i <= end; i++) {
+          html += `<button class="${i === currentPage ? 'active' : ''}" onclick="${callbackName}(${i})">${i}</button>`;
+      }
+      
+      // Next
+      html += `<button onclick="${callbackName}(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
+      
+      container.innerHTML = html;
+  }
+
+  window.resetUserLogFilters = function() {
+      if(document.getElementById('filter-user-log-start')) document.getElementById('filter-user-log-start').value = '';
+      if(document.getElementById('filter-user-log-end')) document.getElementById('filter-user-log-end').value = '';
+      if(document.getElementById('filter-user-log-name')) document.getElementById('filter-user-log-name').value = '';
+      if(document.getElementById('filter-user-log-action')) document.getElementById('filter-user-log-action').value = '';
+      if(document.getElementById('filter-user-log-category')) document.getElementById('filter-user-log-category').value = '';
+      window.loadUserLogs();
+  };
+
+  // 5. Recycle Bin (Deleted Users)
+  window.loadRecycleBin = async function() {
+      // index.html has id="admin-bin-list"
+      const tbody = document.getElementById('admin-bin-list');
+      if(!tbody) return;
+      
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> 로딩 중...</td></tr>';
+
+      if(!db) return;
+      
+      try {
+          const snap = await db.collection("users").where("deleted", "==", true).get();
+          
+          if(snap.empty) {
+              tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4">휴지통이 비었습니다.</td></tr>';
+              return;
+          }
+
+          let html = '';
+          snap.forEach(docSnap => {
+              const u = docSnap.data();
+              if(!u) return;
+
+              html += `
+                <tr>
+                    <td>${u.deletedAt ? new Date(u.deletedAt).toLocaleDateString() : '-'}</td>
+                    <td>${u.name || '이름 없음'}</td>
+                    <td>${u.email || '-'}</td>
+                    <td><span class="badge badge-position">${u.position || '-'}</span></td>
+                    <td><span class="badge badge-red">삭제됨</span></td>
+                    <td>
+                        <div class="action-btn-group">
+                            <button class="btn-icon btn-restore-sm" onclick="restoreUser('${docSnap.id}', '${u.name}')" title="복구">
+                                <i class="fas fa-trash-restore"></i>
+                            </button>
+                            <button class="btn-icon btn-reject-sm" onclick="permanentDeleteUser('${docSnap.id}', '${u.name}')" title="영구 삭제">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+              `;
+          });
+          tbody.innerHTML = html;
+      } catch(e) {
+          console.error(e);
+          tbody.innerHTML = `<tr><td colspan="6" class="text-center text-red-500">로드 실패: ${e.message}</td></tr>`;
+      }
+  };
+
+  // 6. User Management Actions (Soft Delete & Restore)
+  window.softDeleteUser = async (uid, name) => {
+      if(!confirm(`[${name}] 회원을 삭제하시겠습니까?\n휴지통으로 이동되며 복구할 수 있습니다.`)) return;
+      if(!db) return;
+      
+      try {
+          await db.collection("users").doc(uid).update({
+              deleted: true,
+              deletedAt: new Date().toISOString(),
+              approved: false
+          });
+          window.logAdminAction('회원 삭제', `${name} (${uid}) 회원을 휴지통으로 이동`);
+          alert('휴지통으로 이동되었습니다.');
+          // UI update is handled by onSnapshot in index.html (it removes it from main list)
+          // Dashboard numbers update automatically via onSnapshot -> loadAdminData -> updateAdminDashboard
+      } catch(e) {
+          alert("삭제 실패: " + e.message);
+      }
+  };
+
+  window.restoreUser = async (uid, name) => {
+      if(!confirm(`[${name}] 회원을 복구하시겠습니까?`)) return;
+      if(!db) return;
+      
+      try {
+          await db.collection("users").doc(uid).update({
+              deleted: false,
+              deletedAt: null,
+              approved: true // Restore as approved for convenience
+          });
+          window.logAdminAction('회원 복구', `${name} (${uid}) 회원 복구`);
+          loadRecycleBin(); 
+      } catch(e) {
+          alert("복구 실패: " + e.message);
+      }
+  };
+
+  window.permanentDeleteUser = async (uid, name) => {
+     if(!confirm(`[${name}] 회원을 영구 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다!`)) return;
+     if(!db) return;
+
+     try {
+         await db.collection("users").doc(uid).delete();
+         window.logAdminAction('영구 삭제', `${name} (${uid}) 회원 영구 삭제`);
+         loadRecycleBin();
+     } catch(e) {
+         alert("삭제 실패: " + e.message);
+     }
+  };
+
+  // Initialize Admin Nav on Load
+  window.initAdminNav();
+
+  // === 7. User Activity Statistics Logic (New) ===
+  let statsChart = null;
+  let statsData = []; // Aggregated data [{label, count, rawDate}]
+  let currentStatsPeriod = 'daily'; // daily, weekly, monthly
+
+  // Set default dates: Last 1 month
+  const initStatsDates = () => {
+    const end = new Date();
+    const start = new Date();
+    start.setMonth(start.getMonth() - 1);
+    
+    const startEl = document.getElementById('stats-start-date');
+    const endEl = document.getElementById('stats-end-date');
+    if(startEl) startEl.value = start.toISOString().split('T')[0];
+    if(endEl) endEl.value = end.toISOString().split('T')[0];
+  };
+
+  window.loadUserStats = async function() {
+    if(!window.db) return;
+    const { db, firestoreUtils } = window;
+    
+    // Check if dates are set
+    const sEl = document.getElementById('stats-start-date');
+    if(sEl && !sEl.value) initStatsDates();
+
+    const startDate = document.getElementById('stats-start-date').value;
+    const endDate = document.getElementById('stats-end-date').value;
+
+    try {
+        // Query userLogs for the period
+        // For efficiency, we query by timestamp. 
+        // Note: Missing index might cause error, fallback handled by getting last 1000 logs if needed.
+        let q = firestoreUtils.query(
+            firestoreUtils.collection(db, "userLogs"),
+            firestoreUtils.where("timestamp", ">=", startDate + "T00:00:00"),
+            firestoreUtils.where("timestamp", "<=", endDate + "T23:59:59"),
+            firestoreUtils.orderBy("timestamp", "asc")
+        );
+        
+        let snap;
+        try {
+            snap = await firestoreUtils.getDocs(q);
+        } catch (e) {
+            console.warn("Stats Index error, falling back to limited fetch", e);
+            q = firestoreUtils.query(firestoreUtils.collection(db, "userLogs"), firestoreUtils.limit(2000));
+            snap = await firestoreUtils.getDocs(q);
+        }
+
+        const logs = [];
+        snap.forEach(doc => logs.push(doc.data()));
+        
+        processStatsData(logs, startDate, endDate);
+        renderUserStatsChart();
+        renderUserStatsTable();
+    } catch (e) {
+        console.error("Stats load failed", e);
+    }
+  };
+
+  function processStatsData(logs, start, end) {
+    const periodData = {};
+    const s = new Date(start);
+    const e = new Date(end);
+    let prevYear = null;
+
+    let curr = new Date(s);
+    while (curr <= e) {
+        let key = "";
+        if (currentStatsPeriod === 'daily') {
+            key = (curr.getMonth() + 1).toString().padStart(2, '0') + "." + curr.getDate().toString().padStart(2, '0');
+        } else if (currentStatsPeriod === 'weekly') {
+            // '2월 1주' format
+            const month = curr.getMonth() + 1;
+            const weekNum = getWeekOfMonth(curr);
+            key = month + "월 " + weekNum + "주";
+        } else {
+            // Smart monthly format: '2026년 1월', then '2월', then '2027년 1월'
+            const year = curr.getFullYear();
+            const month = curr.getMonth() + 1;
+            
+            if (prevYear === null || (year !== prevYear && month === 1)) {
+                key = year + "년 " + month + "월";
+            } else {
+                key = month + "월";
+            }
+            prevYear = year;
+        }
+        if (!periodData[key]) periodData[key] = new Set();
+        
+        if (currentStatsPeriod === 'daily') curr.setDate(curr.getDate() + 1);
+        else if (currentStatsPeriod === 'weekly') curr.setDate(curr.getDate() + 7);
+        else curr.setMonth(curr.getMonth() + 1);
+    }
+
+    logs.forEach(log => {
+        const d = new Date(log.timestamp);
+        if (d < s || d > new Date(end + "T23:59:59")) return;
+
+        let key = "";
+        if (currentStatsPeriod === 'daily') {
+            key = (d.getMonth() + 1).toString().padStart(2, '0') + "." + d.getDate().toString().padStart(2, '0');
+        } else if (currentStatsPeriod === 'weekly') {
+            key = (d.getMonth() + 1) + "월 " + getWeekOfMonth(d) + "주";
+        } else {
+            const year = d.getFullYear();
+            const month = d.getMonth() + 1;
+            // We need to find the correct key that was created in the initialization loop
+            // The logic must match exactly how we built periodData keys
+            // Re-running the logic is tricky due to prevYear, so we use a simpler approach
+             key = month + "월";
+             if (month === 1 || Object.keys(periodData).find(k => k.includes(year + "년") && k.includes(month + "월"))) {
+                 const fullKey = year + "년 " + month + "월";
+                 if(periodData[fullKey]) key = fullKey;
+             }
+        }
+        
+        if (periodData[key]) periodData[key].add(log.uid || log.user);
+    });
+
+    statsData = Object.keys(periodData).map(key => ({
+        label: key,
+        count: periodData[key].size
+    }));
+  }
+
+  function getWeekOfMonth(date) {
+    const day = date.getDate();
+    return Math.ceil(day / 7);
+  }
+
+  function renderUserStatsChart() {
+    const ctx = document.getElementById('userStatsChart');
+    if(!ctx) return;
+
+    const innerContainer = ctx.closest('.stats-chart-scroll-inner');
+    const wrapper = innerContainer?.parentElement;
+    
+    if (innerContainer && wrapper) {
+        // Point width 20px for high density as requested
+        const pointWidth = 20; 
+        const minWidth = wrapper.clientWidth - 5;
+        const totalContentWidth = statsData.length * pointWidth;
+        const finalWidth = Math.max(minWidth, totalContentWidth);
+        innerContainer.style.width = finalWidth + 'px';
+    }
+
+    const data = {
+        labels: statsData.map(d => d.label),
+        datasets: [{
+            label: '액티브 유저 수',
+            data: statsData.map(d => d.count),
+            borderColor: '#3b82f6',
+            backgroundColor: (context) => {
+                const chart = context.chart;
+                const {ctx, chartArea} = chart;
+                if (!chartArea) return null;
+                const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                gradient.addColorStop(0, 'rgba(59, 130, 246, 0.15)');
+                gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+                return gradient;
+            },
+            borderWidth: 2,
+            tension: 0, // Sharp jagged peaks for professional "activity" look
+            fill: true,
+            pointBackgroundColor: '#ffffff',
+            pointBorderColor: '#3b82f6',
+            pointBorderWidth: 1.5,
+            pointRadius: statsData.length > 50 ? 0 : 2, // Hide points if very dense
+            pointHoverRadius: 5,
+            pointHoverBackgroundColor: '#3b82f6'
+        }]
+    };
+
+    if (statsChart) statsChart.destroy();
+    
+    statsChart = new Chart(ctx, {
+        type: 'line',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: {
+                padding: { left: 5, right: 30, top: 10, bottom: 5 }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    padding: 10,
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    titleFont: { size: 12, weight: '700' },
+                    bodyFont: { size: 11 },
+                    displayColors: false,
+                    callbacks: {
+                        label: (context) => ` 활동: ${context.parsed.y}명`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { 
+                        display: true,
+                        color: 'rgba(226, 232, 240, 0.3)',
+                        drawTicks: false
+                    },
+                    border: { display: false },
+                    ticks: { 
+                        color: '#94a3b8', 
+                        font: { size: 9 },
+                        maxRotation: 0,
+                        autoSkip: true,
+                        autoSkipPadding: 30, // Show labels every ~120px spaces
+                        maxTicksLimit: 20
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: { 
+                        color: 'rgba(226, 232, 240, 0.5)',
+                        drawTicks: false,
+                        lineWidth: 1
+                    },
+                    border: { display: false },
+                    suggestedMax: Math.max(...statsData.map(d => d.count)) + 2,
+                    ticks: { 
+                        stepSize: 1, 
+                        color: '#94a3b8', 
+                        font: { size: 10 },
+                        padding: 10
+                    }
+                }
+            },
+            interaction: { mode: 'nearest', axis: 'x', intersect: false }
+        }
+    });
+
+    // Smart Scroll: latest data
+    setTimeout(() => {
+        if (wrapper) {
+            wrapper.scrollTo({ left: wrapper.scrollWidth, behavior: 'auto' });
+        }
+    }, 50);
+  }
+
+  function renderUserStatsTable() {
+    const head = document.getElementById('stats-table-head');
+    const body = document.getElementById('stats-table-body');
+    if(!head || !body) return;
+
+    head.innerHTML = `<tr>${statsData.map(d => `<th style="text-align: center;">${d.label}</th>`).join('')}</tr>`;
+    body.innerHTML = `<tr>${statsData.map(d => `<td style="text-align: center;">${d.count}</td>`).join('')}</tr>`;
+  }
+
+  window.updateStatsPeriod = function(period, btn) {
+    currentStatsPeriod = period;
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    window.loadUserStats();
+  };
+
+  window.updateStatsFromSelect = function() {
+    const months = parseInt(document.getElementById('stats-month-select').value);
+    const end = new Date();
+    const start = new Date();
+    start.setMonth(start.getMonth() - months);
+    
+    document.getElementById('stats-start-date').value = start.toISOString().split('T')[0];
+    document.getElementById('stats-end-date').value = end.toISOString().split('T')[0];
+    window.loadUserStats();
+  };
+
+  window.updateStatsFromDate = function() {
+    window.loadUserStats();
+  };
+
+  window.downloadStatsExcel = function() {
+    if(!statsData || statsData.length === 0) return;
+    
+    // Convert to Excel format
+    const rows = [
+        ["기간", "액티브 유저 수"],
+        ...statsData.map(d => [d.label, d.count])
+    ];
+    
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "ActiveUsers");
+    
+    const fileName = `ActiveUserStats_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+  };
+
+
+
+
+  // === 8. Robust File Download Helper (Bypasses Browser Previewers) ===
+  window.forceDownload = async function(e, url, title) {
+    if (e) e.preventDefault();
+    
+    // Log the action for statistics
+    if (window.logUserAction) {
+      window.logUserAction('datayard', '다운로드', title);
+    }
+
+    let downloadUrl = url;
+
+    // A. Detect and Convert Google Drive 'view' Links to 'uc?export=download'
+    if (url.includes('drive.google.com')) {
+        const driveRegex = /\/file\/d\/(.+?)\/(view|edit|open)/;
+        const match = url.match(driveRegex);
+        if (match && match[1]) {
+            downloadUrl = `https://drive.google.com/uc?export=download&id=${match[1]}`;
+        } else if (url.includes('id=')) {
+            const idMatch = url.match(/id=([^&]+)/);
+            if (idMatch) downloadUrl = `https://drive.google.com/uc?export=download&id=${idMatch[1]}`;
+        }
+    }
+
+    // B. Attempt Blob-based download to bypass browser's built-in preview/PDF viewer
+    try {
+        const response = await fetch(downloadUrl);
+        if (response.ok) {
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = blobUrl;
+            a.download = title || 'download';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(blobUrl);
+            document.body.removeChild(a);
+            return;
+        }
+    } catch (err) {
+        console.warn("Direct blob fetch failed (likely CORS), falling back to location-based download:", err);
+    }
+
+    // C. Fallback for non-CORS sources (Some browsers may still preview)
+    window.location.href = downloadUrl;
+  };
+
+    // === Tab Switching Logic ===
+    window.switchTab = function(category) {
+        // 1. Hide all main sections
+        const sections = [
+            'status-section', 
+            'shortcut-section', 
+            'datayard-section', 
+            'curriculum-section', 
+            'helppage-section', 
+            'account-section', 
+            'bus-section', 
+            'calendar-section', 
+            'admin-section', 
+            'training-section' 
+        ];
+        
+        sections.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) {
+                el.classList.add('hidden');
+                el.style.display = 'none'; 
+            }
+        });
+
+        // 2. Remove active class from nav items
+        document.querySelectorAll('.nav-item').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        // 3. Show selected section
+        let targetId = '';
+        switch(category) {
+            case 'status': targetId = 'status-section'; break;
+            case 'all': targetId = 'shortcut-section'; break; // Home maps to shortcut section
+            case 'datayard': targetId = 'datayard-section'; break;
+            case 'curriculum': targetId = 'curriculum-section'; break;
+            case 'support': targetId = 'helppage-section'; break; 
+            case 'account': targetId = 'account-section'; break;
+            case 'bus': targetId = 'bus-section'; break;
+            case 'calendar': targetId = 'calendar-section'; break; 
+            case 'admin': targetId = 'admin-section'; break;
+            case 'training': targetId = 'training-section'; break;
+        }
+
+        const targetEl = document.getElementById(targetId);
+        if(targetEl) {
+            targetEl.classList.remove('hidden');
+            targetEl.style.display = 'block';
+            
+            // Lazy Load / Refresh
+            if(category === 'curriculum' && window.renderCurriculum) window.renderCurriculum();
+            if(category === 'calendar' && calendar) calendar.render();
+            if(category === 'training' && window.initTraining) window.initTraining();
+        }
+
+        // 4. Set active nav item
+        const navBtn = document.querySelector(`.nav-item[data-category="${category}"]`);
+        if(navBtn) navBtn.classList.add('active');
+
+        // 5. Update State
+        window.currentCategory = category;
+
+        // 6. Update Body Background Theme (for full-page background)
+        document.body.classList.remove('bg-theme-training', 'bg-theme-admin');
+        if (category === 'training') document.body.classList.add('bg-theme-training');
+        if (category === 'admin') document.body.classList.add('bg-theme-admin');
+    };
+
+    // Attach Event Listeners to Nav Items (Ensures all buttons work)
+    document.querySelectorAll('.nav-item').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            // Prevent default just in case
+            const category = btn.dataset.category;
+            if (category) {
+                window.switchTab(category);
+            }
+        });
+    });
+
+    // ================= Mobile Swipe Navigation =================
+    const mainContainer = document.querySelector('main');
+    let touchStartX = 0;
+    let touchStartY = 0;
+    const minSwipeDistance = 50; 
+
+    if (mainContainer) {
+        mainContainer.addEventListener('touchstart', (e) => {
+            if (e.changedTouches && e.changedTouches.length > 0) {
+                touchStartX = e.changedTouches[0].screenX;
+                touchStartY = e.changedTouches[0].screenY;
+            }
+        }, {passive: true});
+
+        mainContainer.addEventListener('touchend', (e) => {
+            // Only active on mobile view
+            if (window.innerWidth > 768) return;
+
+            if (!e.changedTouches || e.changedTouches.length === 0) return;
+
+            const touchEndX = e.changedTouches[0].screenX;
+            const touchEndY = e.changedTouches[0].screenY;
+            const diffX = touchEndX - touchStartX;
+            const diffY = touchEndY - touchStartY;
+
+            // 1. Ignore if vertical scroll is dominant
+            if (Math.abs(diffX) < Math.abs(diffY)) return;
+
+            // 2. Ignore short swipes
+            if (Math.abs(diffX) < minSwipeDistance) return;
+
+            // 3. Ignore if swiping on a horizontally scrollable element
+            let target = e.target;
+            let isScrollable = false;
+            
+            // Traverse up to find scrollable parent
+            while (target && target !== mainContainer && target !== document.body) {
+                // Check if element is scrollable
+                if (target.scrollWidth > target.clientWidth) {
+                     const style = window.getComputedStyle(target);
+                     if (style.overflowX === 'auto' || style.overflowX === 'scroll') {
+                         isScrollable = true;
+                         break;
+                     }
+                }
+                target = target.parentElement;
+            }
+            if (isScrollable) return;
+
+            // 4. Navigate Tabs (Find visible nav items)
+            const navItems = Array.from(document.querySelectorAll('.nav-item'));
+            const contentItems = navItems.filter(btn => !btn.classList.contains('hidden') && btn.style.display !== 'none');
+            
+            const activeBtn = document.querySelector('.nav-item.active');
+            if (!activeBtn) return;
+
+            // Find index in the *filtered* visible list
+            const currentIndex = contentItems.indexOf(activeBtn);
+            if (currentIndex === -1) return;
+
+            if (diffX < 0) {
+                // Swipe Left -> Go Next (Right Tab)
+                if (currentIndex < contentItems.length - 1) {
+                    const nextBtn = contentItems[currentIndex + 1];
+                    nextBtn.click();
+                }
+            } else {
+                // Swipe Right -> Go Prev (Left Tab)
+                if (currentIndex > 0) {
+                    const prevBtn = contentItems[currentIndex - 1];
+                    prevBtn.click();
+                }
+            }
+        }, {passive: true});
+    }
+
 });
+
+// === 7. Menu & Widget Management (Global Scope for Timing) ===
+window.menuSettings = {
+    menus: {
+        'status': true,
+        'account': true,
+        'curriculum': true,
+        'bus': true,
+        'datayard': true,
+        'support': true,
+        'training': true
+    },
+    widgets: {
+        'school-today-widget': true,
+        'notice-widget': true
+    }
+};
+
+let menuSettingsUnsubscribe = null;
+
+window.loadMenuSettings = async () => {
+    // 안전한 폴링 대기 로직 적용
+    const waitForDB = () => {
+        return new Promise(resolve => {
+            const check = () => {
+                if (window.db && window.firebaseReady && window.firestoreUtils) resolve();
+                else setTimeout(check, 100);
+            };
+            check();
+        });
+    };
+    
+    await waitForDB();
+
+    const db = window.db;
+    const firestoreUtils = window.firestoreUtils;
+    if (!db || !firestoreUtils) return;
+
+    // 이미 리스너가 실행 중이면 중복 실행 방지
+    if (menuSettingsUnsubscribe) return;
+
+    try {
+        const docRef = firestoreUtils.doc(db, "menu_visibility", "current");
+        
+        // 실시간 리스너 적용 (모든 유저에게 즉시 반영되도록)
+        menuSettingsUnsubscribe = firestoreUtils.onSnapshot(docRef, (docSnap) => {
+            console.log("Menu settings sync received");
+            if (docSnap && typeof docSnap.exists === 'function' && docSnap.exists()) {
+                const data = docSnap.data();
+                if(data.menus) window.menuSettings.menus = { ...window.menuSettings.menus, ...data.menus };
+                if(data.widgets) window.menuSettings.widgets = { ...window.menuSettings.widgets, ...data.widgets };
+                console.log("Applied synced menu settings:", window.menuSettings);
+            } else {
+                console.log("No remote menu settings found, using defaults.");
+            }
+            window.applyMenuSettings();
+        }, (err) => {
+            console.error("Firestore menu settings listener error:", err);
+            // 권한 문제 등이 발생하더라도 기본값으로 UI 적용
+            window.applyMenuSettings();
+        });
+    } catch (e) {
+        console.error("Failed to initialize menu settings listener:", e);
+        window.applyMenuSettings();
+    }
+};
+
+window.applyMenuSettings = () => {
+    console.log("Applying Menu Settings UI...");
+    // Apply Menus
+    for (const [key, isVisible] of Object.entries(window.menuSettings.menus)) {
+        const btn = document.querySelector(`.nav-item[data-category="${key}"]`);
+        if (btn) {
+            if (isVisible) {
+                btn.classList.remove('hidden');
+                btn.style.display = ''; 
+            } else {
+                btn.classList.add('hidden');
+                btn.style.setProperty('display', 'none', 'important');
+            }
+        }
+    }
+
+    // Apply Widgets
+    for (const [id, isVisible] of Object.entries(window.menuSettings.widgets)) {
+        const widget = document.getElementById(id);
+        if (widget) {
+            if (isVisible) {
+                widget.classList.remove('hidden');
+                widget.style.display = '';
+            } else {
+                widget.classList.add('hidden');
+                widget.style.setProperty('display', 'none', 'important');
+            }
+        }
+    }
+    
+    // Re-trigger resize to adjust layout
+    window.dispatchEvent(new Event('resize'));
+};
+
+window.renderMenuSettings = () => {
+    const menuContainer = document.getElementById('admin-menu-toggle-list');
+    const widgetContainer = document.getElementById('admin-widget-toggle-list');
+    
+    const menuNames = {
+        'status': '학교현황',
+        'account': '학교계정',
+        'curriculum': '학사일정',
+        'bus': '배차신청',
+        'datayard': '자료마당',
+        'support': '온학교 e지원',
+        'training': '연수관리'
+    };
+    
+    const widgetNames = {
+        'school-today-widget': '오늘의 일정',
+        'notice-widget': '알립니다 (메모/공지)'
+    };
+
+    const renderToggleItem = (type, key, name, isChecked) => {
+        const statusLabel = isChecked ? '공개' : '비공개';
+        const activeClass = isChecked ? 'is-active' : '';
+        
+        return `
+          <div class="menu-toggle-item ${activeClass}" data-key="${key}">
+              <span class="item-name">${name}</span>
+              <div class="toggle-control-group">
+                  <span class="status-text">${statusLabel}</span>
+                  <label class="switch">
+                      <input type="checkbox" onchange="toggleMenuVisibility('${type}', '${key}', this.checked, this)" ${isChecked ? 'checked' : ''}>
+                      <span class="slider round"></span>
+                  </label>
+              </div>
+          </div>
+        `;
+    };
+
+    if (menuContainer) {
+        menuContainer.innerHTML = Object.entries(menuNames).map(([key, name]) => {
+            const isChecked = window.menuSettings.menus[key] !== false; 
+            return renderToggleItem('menus', key, name, isChecked);
+        }).join('');
+    }
+
+    if (widgetContainer) {
+         widgetContainer.innerHTML = Object.entries(widgetNames).map(([key, name]) => {
+            const isChecked = window.menuSettings.widgets[key] !== false; 
+            return renderToggleItem('widgets', key, name, isChecked);
+        }).join('');
+    }
+};
+
+window.toggleMenuVisibility = (type, key, checked, element) => {
+    if (type === 'menus') window.menuSettings.menus[key] = checked;
+    else if (type === 'widgets') window.menuSettings.widgets[key] = checked;
+
+    if(element) {
+        const container = element.closest('.menu-toggle-item');
+        const statusText = container.querySelector('.status-text');
+        
+        if (checked) {
+            container.classList.add('is-active');
+            statusText.textContent = '공개';
+        } else {
+            container.classList.remove('is-active');
+            statusText.textContent = '비공개';
+        }
+    }
+};
+
+window.saveMenuSettings = async () => {
+    const db = window.db;
+    const firestoreUtils = window.firestoreUtils;
+    if(!db || !firestoreUtils) return;
+    if(!confirm("설정을 저장하고 모든 사용자에게 즉시 적용하시겠습니까?")) return;
+    
+    try {
+        // 컬렉션 명을 settings에서 menu_visibility로 변경하여 권한 이슈 회피 시도
+        await firestoreUtils.setDoc(firestoreUtils.doc(db, "menu_visibility", "current"), window.menuSettings);
+        // onSnapshot에 의해 applyMenuSettings가 자동으로 호출되겠지만, 즉각적인 피드백을 위해 한 번 더 호출 가능
+        window.applyMenuSettings();
+        alert("설정이 저장되었습니다. 모든 사용자의 화면에 즉시 반영됩니다.");
+        if(window.logAdminAction) window.logAdminAction("메뉴 설정 변경", "메뉴 및 위젯 표시 설정 업데이트 (Global)");
+    } catch (e) {
+        console.error("Error saving settings:", e);
+        alert("설정 저장 중 오류가 발생했습니다. 권한 문제일 수 있습니다.");
+    }
+};
+
+// Initial Call
+window.loadMenuSettings();
