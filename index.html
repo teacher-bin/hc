@@ -548,20 +548,33 @@
               <div id="icon-tab-custom" class="icon-tab-content">
                  <div class="custom-icon-inputs">
                     <p class="helper-text">* 권장 크기: 64x64px 이상 1:1 비율</p>
-                    <label class="radio-label">
-                        <input type="radio" name="image-source" value="url" checked> 이미지 주소(URL) 입력
-                    </label>
-                    <input type="url" id="shortcut-image-url" placeholder="https://example.com/icon.png">
                     
-                    <label class="radio-label" style="margin-top: 10px;">
-                        <input type="radio" name="image-source" value="file"> 이미지 파일 업로드 (20KB 미만)
-                    </label>
-                    <input type="file" id="shortcut-image-file" accept="image/*">
+                    <div class="source-toggle-group">
+                        <label class="source-toggle-label">
+                            <input type="radio" name="image-source" value="url" checked>
+                            <div class="source-toggle-btn">이미지 주소(URL) 입력</div>
+                        </label>
+                        <label class="source-toggle-label">
+                            <input type="radio" name="image-source" value="file">
+                            <div class="source-toggle-btn">이미지 파일 업로드</div>
+                        </label>
+                    </div>
+
+                    <input type="url" id="shortcut-image-url" class="modern-input" placeholder="https://example.com/icon.png">
+                    
+                    <div class="modern-file-upload">
+                        <input type="file" id="shortcut-image-file" accept="image/*" class="modern-file-input">
+                        <label for="shortcut-image-file" class="file-upload-label">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>클릭하여 파일 선택 (20KB 미만)</span>
+                        </label>
+                    </div>
+                    
                     <input type="hidden" id="shortcut-image-base64">
                     
                     <div id="image-preview" class="image-preview hidden">
                         <img src="" alt="Preview">
-                        <button type="button" id="clear-image">삭제</button>
+                        <button type="button" id="clear-image"><i class="fas fa-times"></i> 삭제</button>
                     </div>
                  </div>
               </div>
@@ -1197,6 +1210,7 @@
                                     <button class="period-btn" data-period="monthly" onclick="updateStatsPeriod('monthly', this)">월간</button>
                                 </div>
                                 <select id="stats-month-select" class="curr-input stats-select" onchange="updateStatsFromSelect()">
+                                    <option value="1주" selected>1주일</option>
                                     <option value="1">1개월</option>
                                     <option value="3">3개월</option>
                                     <option value="6">6개월</option>

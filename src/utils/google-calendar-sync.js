@@ -1,5 +1,5 @@
-const CLIENT_ID = '282957432666-6b0t3u7k2fub1f1fdlr418mnneeo4tks.apps.googleusercontent.com';
-const API_KEY = 'AIzaSyAdvZ9cy__9fWBRfgTyEoBsa27O1Cp-FoU';
+const CLIENT_ID = 'YOUR_CLIENT_ID';
+const API_KEY = 'YOUR_API_KEY';
 
 const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest';
 const SCOPES = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar';

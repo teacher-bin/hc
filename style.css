@@ -1312,38 +1312,141 @@ footer {
 .custom-icon-inputs {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 1rem;
 }
 
 .helper-text {
-  font-size: 0.8rem;
-  color: #ef4444;
-  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted, #64748b);
+  margin-bottom: 0;
+  text-align: center;
 }
 
-.radio-label {
-  font-size: 0.9rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.2rem;
-  cursor: pointer;
+/* Radio Button Alternative: Segmented Control Toggle Group */
+.source-toggle-group {
+    display: flex;
+    background: var(--bg-color, #f1f5f9);
+    border: 1px solid var(--border-color, transparent);
+    border-radius: 12px;
+    padding: 4px;
+    gap: 4px;
+}
+.source-toggle-label {
+    flex: 1;
+    margin: 0;
+    cursor: pointer;
+}
+.source-toggle-label input[type="radio"] {
+    display: none;
+}
+.source-toggle-btn {
+    text-align: center;
+    padding: 0.6rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-muted, #64748b);
+    transition: all 0.2s ease;
+}
+.source-toggle-label input[type="radio"]:checked + .source-toggle-btn {
+    background: var(--card-bg, white);
+    color: var(--primary-color, #3b82f6);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
+/* Modern Input Fields */
+.modern-input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color, #e2e8f0);
+    font-size: 0.95rem;
+    color: var(--text-main);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: var(--bg-color, #f8fafc);
+    box-sizing: border-box;
+}
+.modern-input:focus {
+    border-color: var(--primary-color, #3b82f6);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    background: var(--card-bg, white);
+    outline: none;
+}
+
+.modern-file-upload {
+    position: relative;
+    width: 100%;
+}
+.modern-file-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 2;
+}
+.file-upload-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1.5rem;
+    border: 2px dashed var(--border-color, #cbd5e1);
+    border-radius: 12px;
+    background: var(--bg-color, #f8fafc);
+    color: var(--text-muted, #64748b);
+    transition: all 0.2s;
+    font-size: 0.95rem;
+    font-weight: 500;
+    box-sizing: border-box;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+}
+.modern-file-input:hover + .file-upload-label {
+    border-color: var(--primary-color, #3b82f6);
+    background: rgba(59, 130, 246, 0.05);
+    color: var(--primary-color, #3b82f6);
+}
+.file-upload-label i {
+    font-size: 1.5rem;
+}
+
+/* Disabled Status applied by JS */
+.modern-input:disabled {
+    opacity: 0.5;
+    pointer-events: none;
+    background: var(--bg-color, #e2e8f0);
+}
+.modern-file-input:disabled {
+    pointer-events: none;
+}
+.modern-file-input:disabled + .file-upload-label {
+    opacity: 0.5;
+    background: var(--bg-color, #e2e8f0);
+    border-color: var(--border-color, #cbd5e1);
+    color: var(--text-muted, #94a3b8);
+}
+
+/* Redesigned Image Preview Container */
 .image-preview {
-  margin-top: 1rem;
-  width: 80px;
-  height: 80px;
+  margin-top: 0.5rem;
+  width: 100px;
+  height: 100px;
   border-radius: 16px;
-  border: 2px dashed #cbd5e1;
+  border: 1px solid var(--border-color, #e2e8f0);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   position: relative;
-  background: #f8fafc;
+  background: var(--card-bg, white);
+  box-shadow: var(--shadow-soft);
+  align-self: center;
 }
 
 .image-preview img {
@@ -1361,12 +1464,21 @@ footer {
   bottom: 0;
   left: 0;
   width: 100%;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(239, 68, 68, 0.9);
   color: white;
   border: none;
-  font-size: 0.7rem;
-  padding: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 6px;
   cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+#clear-image:hover {
+  background: #dc2626;
 }
 
 @keyframes fadeIn {
@@ -5218,7 +5330,7 @@ body:not(.dark-mode) .curr-row:hover {
 .type-selector-step h3 {
   text-align: center;
   font-size: 1.2rem;
-  color: #1e293b;
+  color: var(--text-main, #1e293b);
   margin-bottom: 2rem;
   font-weight: 700;
 }
@@ -5623,26 +5735,37 @@ body:not(.dark-mode) .curr-row:hover {
   /* Removed default arrow to control styling better or use a neutral one */
 }
 
-/* Style the options explicitly */
+/* Style the options explicitly with CSS variables for dark mode support */
 .confirm-select option[value="미확인"] {
-  background-color: #fee2e2;
-  color: #ef4444;
+  background-color: var(--unconfirmed-option-bg, #fee2e2);
+  color: var(--unconfirmed-text, #ef4444);
 }
 
 .confirm-select option[value="확인"] {
-  background-color: #dcfce7;
-  color: #22c55e;
+  background-color: var(--confirmed-option-bg, #dcfce7);
+  color: var(--confirmed-text, #22c55e);
 }
 
 /* Base styles for the select itself based on class */
 .confirm-select.status-unconfirmed {
-  background-color: #fee2e2;
-  color: #ef4444;
+  background-color: var(--unconfirmed-bg, #fee2e2);
+  color: var(--unconfirmed-text, #ef4444);
+  border: 1px solid var(--unconfirmed-text, #ef4444);
 }
 
 .confirm-select.status-confirmed {
-  background-color: #dcfce7;
-  color: #22c55e;
+  background-color: var(--confirmed-bg, #dcfce7);
+  color: var(--confirmed-text, #22c55e);
+  border: 1px solid var(--confirmed-text, #22c55e);
+}
+
+body.dark-mode {
+  --unconfirmed-bg: rgba(239, 68, 68, 0.15); /* 반투명 (select 버튼 자체 배경) */
+  --unconfirmed-option-bg: #2d1b24; /* 불투명 (옵션 목록 배경) - 자연스러운 다크 레드톤 */
+  --unconfirmed-text: #fc8181;
+  --confirmed-bg: rgba(34, 197, 94, 0.15); /* 반투명 (select 버튼 자체 배경) */
+  --confirmed-option-bg: #1c2b23; /* 불투명 (옵션 목록 배경) - 자연스러운 다크 그린톤 */
+  --confirmed-text: #68d391;
 }
 
 .member-settings-btn {
@@ -6795,10 +6918,9 @@ body.dark-mode #bus-section::before {
     display: flex;
     align-items: center;
     gap: 0.3rem;
-    background: white;
-    padding: 0.2rem 0.5rem;
-    border-radius: 6px;
-    border: 1px solid #e2e8f0;
+    background: transparent;
+    border: none;
+    padding: 0;
 }
 
 .minimal-select {
@@ -7465,8 +7587,8 @@ body.dark-mode .custom-time-picker-wrapper {
 }
 
 body.dark-mode .time-select-group {
-  background: rgba(71, 85, 105, 0.8) !important;
-  border-color: rgba(148, 163, 184, 0.3) !important;
+  background: transparent !important;
+  border: none !important;
 }
 
 body.dark-mode .minimal-select {
@@ -8249,11 +8371,6 @@ body.dark-mode .modal-desc {
 body.dark-mode .image-preview {
   background: rgba(51, 65, 85, 0.6) !important;
   border-color: rgba(148, 163, 184, 0.3) !important;
-}
-
-/* === 47. Radio Labels === */
-body.dark-mode .radio-label {
-  color: #cbd5e1 !important;
 }
 
 /* === 48. Form Select === */
@@ -10245,7 +10362,13 @@ body.dark-mode .pagination button.active {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Hide scrollbar Firefox */
+}
+.stats-controls::-webkit-scrollbar {
+    display: none; /* Hide scrollbar for Chrome, Safari and Opera */
 }
 
 .stats-period-buttons {
@@ -10254,6 +10377,7 @@ body.dark-mode .pagination button.active {
     padding: 4px;
     border-radius: 8px;
     border: 1px solid #e2e8f0;
+    flex: 0 0 auto;
 }
 
 .period-btn {
@@ -10266,6 +10390,7 @@ body.dark-mode .pagination button.active {
     color: #64748b;
     cursor: pointer;
     transition: all 0.2s;
+    white-space: nowrap;
 }
 
 .period-btn.active {
@@ -10275,11 +10400,13 @@ body.dark-mode .pagination button.active {
 }
 
 .stats-select {
-    width: 120px; /* Increased to prevent text cutting */
+    width: auto !important;
+    min-width: 100px;
     height: 38px !important;
     padding: 0 10px !important;
     background-color: white !important;
     border: 1px solid #e2e8f0 !important;
+    flex: 0 0 auto;
 }
 
 .stats-date-range {
@@ -10291,6 +10418,7 @@ body.dark-mode .pagination button.active {
     padding: 0 8px;
     border-radius: 8px;
     height: 38px;
+    flex: 0 0 auto;
 }
 
 .stats-date-range .date-input {
@@ -10311,6 +10439,8 @@ body.dark-mode .pagination button.active {
     align-items: center;
     gap: 6px;
     padding: 0 1rem !important;
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 .stats-legend {
@@ -11730,7 +11860,8 @@ body.dark-mode .training-table-modern tbody tr:hover {
 }
 
 body.dark-mode .col-title {
-    color: #f8fafc;
+    color: #ffffff;
+    font-weight: 600;
 }
 
 body.dark-mode .col-manager {
@@ -12248,6 +12379,23 @@ body.dark-mode .text-slate { color: #94a3b8 !important; }
         font-size: 0.8rem !important; /* Smaller text */
         padding: 6px 3px !important;   /* Tighter padding */
         overflow: hidden; /* Prevent spillover */
+        word-break: break-word !important; /* Prevent long continuous strings from expanding the table width */
+        white-space: normal !important;
+    }
+    
+    .training-table-modern thead th {
+        position: -webkit-sticky !important;
+        position: sticky !important;
+        top: 138px !important; /* Stick right below the mobile header */
+        z-index: 2000 !important; /* Ensure it stays above content but below main header */
+        background: var(--table-header) !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-bottom: 2px solid var(--border-color) !important;
+    }
+
+    .training-table-wrapper {
+        overflow-x: auto !important; /* Allow the table to scroll horizontally instead of clipping */
+        width: 100% !important;
     }
 
     /* Adjust remaining columns */
@@ -12357,8 +12505,12 @@ body.dark-mode .training-table-modern tbody td {
 
 /* Force high visibility for key columns */
 body.dark-mode .training-table-modern .col-title,
-body.dark-mode td.col-title {
+body.dark-mode td.col-title,
+body.dark-mode .training-table-modern tbody td.col-title,
+body.dark-mode .training-table-modern tbody td.col-title div,
+body.dark-mode td.col-title div {
     color: #ffffff !important;
+    text-shadow: 0 0 1px rgba(255, 255, 255, 0.3) !important;
     font-weight: 700 !important;
     opacity: 1 !important;
 }
