@@ -1270,6 +1270,26 @@ footer {
   height: 48px;
   border-radius: 12px;
   font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+  color: #64748b;
+  background: #f8fafc;
+}
+
+.icon-option:hover {
+  background: #f1f5f9;
+  transform: scale(1.05);
+}
+
+.icon-option.selected {
+  border-color: var(--primary-color);
+  background: #eff6ff;
+  color: var(--primary-color);
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.1);
 }
 
 /* Icon Type Tabs */
@@ -1294,7 +1314,7 @@ footer {
 }
 
 .icon-tab.active {
-  background: transparent;
+  background: white;
   color: var(--primary-color);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -11844,20 +11864,6 @@ body.dark-mode .training-table-wrapper {
     box-shadow: none;
 }
 
-body.dark-mode .training-table-modern thead th {
-    background-color: rgba(30, 41, 59, 0.9) !important;
-    color: #94a3b8;
-    border-bottom-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-body.dark-mode .training-table-modern tbody td {
-    border-bottom-color: rgba(255, 255, 255, 0.05);
-    color: #cbd5e1;
-}
-
-body.dark-mode .training-table-modern tbody tr:hover {
-    background-color: rgba(255, 255, 255, 0.02);
-}
 
 body.dark-mode .col-title {
     color: #ffffff;
@@ -12358,7 +12364,13 @@ body.dark-mode .text-slate { color: #94a3b8 !important; }
         padding: 10px !important;
     }
 
-    /* 3. Hide specified columns in Training Table */
+    /* 3. Hide specified columns in Training Table - 헤더/데이터 행 불일치 포함 최종 정리 */
+    /* 헤더에만 있는 열 숨기기 */
+    .training-table-modern .col-drag,
+    /* 데이터 행에만 있는 열 숨기기 */
+    .training-table-modern .col-link,
+    .training-table-modern .col-actions,
+    /* 양쪽 모두 숨길 열 */
     .training-table-modern .col-num,
     .training-table-modern .col-deadline,
     .training-table-modern .col-manager,
@@ -12383,26 +12395,35 @@ body.dark-mode .text-slate { color: #94a3b8 !important; }
         white-space: normal !important;
     }
     
+    /* === 연수 테이블 헤더 강제 표시 ===
+     * 핵심: overflow-x:auto 컨테이너 안에서는 position:sticky가 동작하지 않음.
+     * 모바일에서는 sticky 제거하고 position:static으로 정상 렌더링
+    */
+    #training-table thead tr th,
     .training-table-modern thead th {
-        position: -webkit-sticky !important;
-        position: sticky !important;
-        top: 138px !important; /* Stick right below the mobile header */
-        z-index: 2000 !important; /* Ensure it stays above content but below main header */
-        background: var(--table-header) !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        border-bottom: 2px solid var(--border-color) !important;
+        position: static !important;  /* sticky 제거 - overflow-x:auto 충돌 방지 */
+        background-color: #f8fafc !important;
+        color: #1e293b !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        font-size: 0.75rem !important;
+        font-weight: 700 !important;
+        padding: 10px 4px !important;
+        line-height: 1.3 !important;
+        height: auto !important;
+        min-height: 32px !important;
+        overflow: visible !important;
+        box-shadow: none !important;
+        border-bottom: 2px solid #cbd5e1 !important;
+        white-space: normal !important;
+        /* display는 여기서 지정하지 않음 - 열 숨김 규칙(.col-num 등 display:none)을 덮어쓰지 않도록 */
     }
 
     .training-table-wrapper {
-        overflow-x: auto !important; /* Allow the table to scroll horizontally instead of clipping */
+        overflow-x: auto !important;
         width: 100% !important;
     }
 
-    /* Adjust remaining columns */
-    .training-table-modern .col-drag {
-        width: 25px !important; /* Minimize drag handle width */
-        padding: 0 !important;
-    }
 
     .training-table-modern .col-category {
         width: 45px !important; /* Just enough for badge */
@@ -12477,11 +12498,11 @@ body:not(.dark-mode).bg-theme-admin {
 
 /* Enhance Admin Container for Premium Feel */
 body:not(.dark-mode) #admin-section .admin-container {
-    background: rgba(255, 255, 255, 0.6) !important;
-    backdrop-filter: blur(10px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.4) !important;
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07) !important;
-    border-radius: 20px !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
     padding: 20px !important;
 }
 
@@ -13160,4 +13181,306 @@ body.dark-mode .modal-header h2 {
 
 body.dark-mode .modal-body label {
     color: #94a3b8;
+}
+
+/* 오버레이 관리 테이블 링크 - 라이트/다크 모드 대응 */
+.overlay-admin-link {
+    color: #3b82f6;
+    text-decoration: none;
+    font-size: 0.82rem;
+    transition: color 0.2s;
+}
+.overlay-admin-link:hover {
+    text-decoration: underline;
+}
+body.dark-mode .overlay-admin-link {
+    color: #93c5fd; /* 너무 밝지 않은 옅은 하늘색 - 다크 배경에서 식별 가능 */
+}
+body.dark-mode .overlay-admin-link:hover {
+    color: #bfdbfe;
+}
+
+/* ================= Floating Overlay Sidebar ================= */
+.overlay-sidebar {
+    position: fixed;
+    top: 76px; /* Positioned right below the header area, near the logout button */
+    right: 0;
+    z-index: 9500; /* Set below modal (9999) and iframe overlay (99000) */
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-right: none;
+    border-top-left-radius: 22px;
+    border-bottom-left-radius: 22px;
+    padding: 18px 12px;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.08);
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+body.dark-mode .overlay-sidebar {
+    background: rgba(15, 23, 42, 0.5);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.3);
+}
+
+.overlay-sidebar.collapsed {
+    transform: translateX(100%);
+}
+
+.overlay-sidebar-toggle {
+    position: absolute;
+    left: -22px;
+    top: 14px; /* Move toggle button near the top of the sidebar */
+    width: 22px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 8px 0 0 8px;
+    border-right: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.05);
+    color: #475569;
+    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    z-index: 10;
+}
+
+body.dark-mode .overlay-sidebar-toggle {
+    background: rgba(15, 23, 42, 0.5);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #cbd5e1;
+}
+
+.overlay-sidebar-toggle:hover {
+    background: rgba(255, 255, 255, 1);
+    width: 26px;
+    left: -26px;
+}
+
+body.dark-mode .overlay-sidebar-toggle:hover {
+    background: rgba(30, 41, 59, 0.9);
+}
+
+.overlay-sidebar.collapsed .overlay-sidebar-toggle i {
+    transform: rotate(180deg);
+}
+
+.overlay-sidebar-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none; /* Let container pass unused clicks */
+}
+
+.floating-overlay-btn {
+    pointer-events: auto; /* Re-enable clicks for the button */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 19px;
+    background: #10b981; /* Default green */
+    color: white;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    padding: 0;
+}
+
+.floating-overlay-btn i {
+    font-size: 1.1rem;
+    min-width: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.4s ease;
+}
+
+.floating-overlay-btn span {
+    white-space: nowrap;
+    font-weight: 600;
+    font-size: 0.9rem;
+    max-width: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-width 0.4s ease, opacity 0.3s ease 0.1s, padding 0.4s ease;
+}
+
+.floating-overlay-btn:hover {
+    width: auto;
+    border-radius: 19px;
+    padding-right: 18px;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.floating-overlay-btn:hover i {
+    transform: rotate(360deg);
+}
+
+.floating-overlay-btn:hover span {
+    max-width: 200px;
+    opacity: 1;
+    padding-left: 5px;
+}
+
+.floating-overlay-btn.active-mode {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px currentColor;
+    outline: 2px solid white;
+    outline-offset: 2px;
+}
+
+.floating-overlay-btn.inactive-mode {
+    filter: grayscale(100%);
+    opacity: 0.4;
+}
+
+.floating-overlay-btn.inactive-mode:hover {
+    filter: grayscale(50%);
+    opacity: 0.8;
+}
+
+/* Floating Overlay Button Color Themes */
+.floating-overlay-btn.color-blue { background: #3b82f6; }
+.floating-overlay-btn.color-blue:hover { background: #2563eb; }
+
+.floating-overlay-btn.color-green { background: #10b981; }
+.floating-overlay-btn.color-green:hover { background: #059669; }
+
+.floating-overlay-btn.color-purple { background: #8b5cf6; }
+.floating-overlay-btn.color-purple:hover { background: #7c3aed; }
+
+.floating-overlay-btn.color-red { background: #ef4444; }
+.floating-overlay-btn.color-red:hover { background: #dc2626; }
+
+.floating-overlay-btn.color-yellow { background: #eab308; color: #1e293b; }
+.floating-overlay-btn.color-yellow:hover { background: #ca8a04; }
+
+.floating-overlay-btn.color-gray { background: #64748b; }
+.floating-overlay-btn.color-gray:hover { background: #475569; }
+
+
+/* ================= Full Screen Iframe Overlay ================= */
+.main-iframe-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 99000;
+    pointer-events: none;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.main-iframe-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: -1;
+}
+
+.main-iframe-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.iframe-panel {
+    position: absolute;
+    left: 0;
+    bottom: -100%;
+    width: 100%;
+    height: 100vh; /* 브라우저 최상단까지 꽉 차게 변경 */
+    background: #ffffff;
+    border-radius: 0; /* 꽉 차므로 둥근 모서리 제거 */
+    box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.15);
+    transition: bottom 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+    display: flex;
+    flex-direction: column;
+}
+
+body.dark-mode .iframe-panel {
+    background: #0f172a;
+    box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.5);
+}
+
+.main-iframe-overlay.active .iframe-panel {
+    bottom: 0;
+}
+
+.iframe-panel iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 0;
+}
+
+/* Iframe Overlay Controls */
+.iframe-controls {
+    position: absolute;
+    top: 20px;
+    right: 32px;
+    display: flex;
+    gap: 12px;
+    z-index: 3001;
+}
+
+.iframe-action-btn {
+    height: 48px;
+    padding: 0 20px;
+    background: rgba(15, 23, 42, 0.7);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 24px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.iframe-action-btn i {
+    font-size: 1.1rem;
+}
+
+.iframe-action-btn.close-btn {
+    width: 48px;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.7);
+}
+
+
+.iframe-action-btn.close-btn:hover {
+    background: #ef4444;
+    border-color: #ef4444;
+    transform: translateY(-2px) rotate(90deg);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+}
+
+body.dark-mode .iframe-action-btn {
+    background: rgba(0, 0, 0, 0.6);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .iframe-action-btn.close-btn:hover {
+    background: #dc2626;
 }

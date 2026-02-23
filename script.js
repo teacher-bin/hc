@@ -466,34 +466,30 @@
   const shortcutForm = document.getElementById('shortcutForm');
   const groupForm = document.getElementById('groupForm');
   
-  // 아이콘 선택기 및 탭
-  const iconOptions = document.querySelectorAll('.icon-option');
-  const iconTabs = document.querySelectorAll('.icon-tab');
-  const iconContents = document.querySelectorAll('.icon-tab-content');
-  
   // 상태 변수
   let selectedIcon = 'fa-link';
   let selectedIconType = 'preset'; // preset or custom
   let customIconData = ''; // URL or Base64
 
-  // 탭 전환
-  iconTabs.forEach(tab => {
+  // 탭 전환 (단축키 모달용만 캡처하도록 변경)
+  document.querySelectorAll('#shortcutModal .icon-tab').forEach(tab => {
       tab.addEventListener('click', () => {
           const target = tab.dataset.tab;
           
-          iconTabs.forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('#shortcutModal .icon-tab').forEach(t => t.classList.remove('active'));
           tab.classList.add('active');
           
-          iconContents.forEach(c => c.classList.remove('active'));
-          document.getElementById(`icon-tab-${target}`).classList.add('active');
+          document.querySelectorAll('#shortcutModal .icon-tab-content').forEach(c => c.classList.remove('active'));
+          const content = document.getElementById(`icon-tab-${target}`);
+          if (content) content.classList.add('active');
           selectedIconType = target;
       });
   });
 
-  // 아이콘 선택 이벤트
-  iconOptions.forEach(opt => {
+  // 아이콘 선택 이벤트 (단축키 모달용만 캡처 하도록 변경)
+  document.querySelectorAll('#shortcutModal .icon-option').forEach(opt => {
       opt.addEventListener('click', () => {
-          iconOptions.forEach(o => o.classList.remove('selected'));
+          document.querySelectorAll('#shortcutModal .icon-option').forEach(o => o.classList.remove('selected'));
           opt.classList.add('selected');
           selectedIcon = opt.dataset.icon;
           // 자동으로 탭 전환은 하지 않음 (사용자 의도 존중)
@@ -596,7 +592,8 @@
           customIconData = item.icon;
           
           // Switch Tab
-          iconTabs[1].click(); 
+          const customTabBtn = document.querySelector('#shortcutModal .icon-tab[data-tab="custom"]');
+          if (customTabBtn) customTabBtn.click(); 
           
           if(item.icon.startsWith('data:')) {
               // Base64
@@ -618,9 +615,10 @@
           // Preset Icon
           selectedIconType = 'preset';
           selectedIcon = item.icon || 'fa-link';
-          iconTabs[0].click();
+          const presetTabBtn = document.querySelector('#shortcutModal .icon-tab[data-tab="preset"]');
+          if (presetTabBtn) presetTabBtn.click();
           
-          iconOptions.forEach(o => {
+          document.querySelectorAll('#shortcutModal .icon-option').forEach(o => {
               if(o.dataset.icon === selectedIcon) o.classList.add('selected');
               else o.classList.remove('selected');
           });
@@ -629,7 +627,8 @@
 
   function resetIconState() {
       // Default to preset tab
-      iconTabs[0].click();
+      const presetTabBtn = document.querySelector('#shortcutModal .icon-tab[data-tab="preset"]');
+      if (presetTabBtn) presetTabBtn.click();
       
       // Clear custom inputs
       fileInput.value = '';
@@ -640,8 +639,9 @@
       
       // Default Icon
       selectedIcon = 'fa-link';
-      iconOptions.forEach(o => o.classList.remove('selected'));
-      document.querySelector('.icon-option[data-icon="fa-link"]').classList.add('selected');
+      document.querySelectorAll('#shortcutModal .icon-option').forEach(o => o.classList.remove('selected'));
+      const defaultIconOpt = document.querySelector('#shortcutModal .icon-option[data-icon="fa-link"]');
+      if (defaultIconOpt) defaultIconOpt.classList.add('selected');
       
       // Reset Radios
       radioInputs[0].checked = true;
@@ -4176,7 +4176,8 @@
       'logs': { title: '관리자 로그', desc: '관리자 및 시스템 활동 기록' },
       'user-logs': { title: '사용자 로그', desc: '사용자들의 주요 활동 내역' },
       'bin': { title: '휴지통', desc: '삭제된 회원 복구 및 영구 삭제' },
-      'menus': { title: '메뉴 관리', desc: '메인 메뉴 및 위젯 표시 설정' }
+      'menus': { title: '메뉴 관리', desc: '메인 메뉴 및 위젯 표시 설정' },
+      'overlay': { title: '메인버튼 관리', desc: '화면 우측 상단에 떠 있는 버튼들(예: 구글시트 배차신청)을 관리합니다.' }
     };
 
     // Update Nav

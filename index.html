@@ -1156,6 +1156,9 @@
             <button class="admin-nav-btn" onclick="switchAdminView('menus')" data-view="menus">
                 <i class="fas fa-sliders-h"></i> 메뉴 관리
             </button>
+            <button class="admin-nav-btn" onclick="switchAdminView('overlay')" data-view="overlay">
+                <i class="fas fa-link"></i> 메인버튼 관리
+            </button>
             <button class="admin-nav-btn download-csv" onclick="downloadUserCSV()">
                 <i class="fas fa-file-csv"></i> 명부 다운로드
             </button>
@@ -1446,12 +1449,38 @@
                     <h3 class="menu-settings-subtitle" style="margin-top: 40px;"><i class="fas fa-columns" style="color: var(--primary-color);"></i> 사이드바 위젯 설정</h3>
                     <div id="admin-widget-toggle-list" class="widget-toggle-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;">
                          <!-- JS Generated -->
-                         <div style="padding: 20px; text-align: center; color: #94a3b8;">로딩 중...</div>
                     </div>
                 </div>
-                    <button class="btn-primary" onclick="saveMenuSettings()" style="padding: 10px 24px; font-size: 1rem;">
-                        <i class="fas fa-save"></i> 설정 저장하기
-                    </button>
+                <!-- Menu Settings save button -->
+                <button class="btn-primary" onclick="saveMenuSettings()" style="padding: 10px 24px; font-size: 1rem; margin-top: 20px;">
+                    <i class="fas fa-save"></i> 설정 저장하기
+                </button>
+            </div>
+
+            <!-- View: Overlay Buttons Management -->
+            <div id="admin-view-overlay" class="admin-view">
+                <div class="view-header">
+                    <h2>메인버튼 관리</h2>
+                    <p class="view-desc">화면 우측 상단에 떠 있는 버튼들(예: 구글시트 배차신청)을 관리합니다.</p>
+                </div>
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+                    <button class="btn-primary" onclick="window.openOverlayButtonModal()"><i class="fas fa-plus"></i> 버튼 추가</button>
+                </div>
+                <div class="admin-table-wrapper">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 30%; text-align: center;">버튼 이름</th>
+                                <th style="width: 15%; text-align: center;">아이콘</th>
+                                <th style="width: 40%; text-align: center;">링크(URL)</th>
+                                <th style="width: 15%; text-align: center;">관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-overlay-buttons-list">
+                            <!-- JS Populated -->
+                            <tr><td colspan="5" style="text-align:center; padding:2rem;">로딩 중...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </main>
@@ -1631,6 +1660,98 @@
                 <button type="button" class="btn-primary" onclick="document.getElementById('staffSettingsModal').classList.remove('active')">닫기</button>
             </div>
         </div>
+    </div>
+
+    <!-- Overlay Button Modal -->
+    <div id="overlayButtonModal" class="modal">
+      <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+          <h2 id="overlayButtonModalTitle">오버레이 버튼 추가</h2>
+          <span class="close-modal" onclick="window.closeOverlayButtonModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+          <form id="overlayButtonForm">
+            <input type="hidden" id="overlay-btn-id">
+            <div class="form-group">
+              <label>버튼 이름 (라벨)</label>
+              <input type="text" id="overlay-btn-title" class="form-input-modern" required placeholder="예: 배차 신청">
+            </div>
+            <div class="form-group">
+              <label>링크 URL (구글 시트 등)</label>
+              <input type="url" id="overlay-btn-url" class="form-input-modern" required placeholder="https://docs.google.com/spreadsheets/...">
+            </div>
+            <div class="form-group">
+              <label>아이콘 카테고리 선택</label>
+              
+              <div class="icon-type-tabs" style="margin-bottom: 12px;">
+                <button type="button" class="icon-tab active" data-category="general">📝 일반/문서</button>
+                <button type="button" class="icon-tab" data-category="school">🏫 학교/소통</button>
+                <button type="button" class="icon-tab" data-category="tools">🛠️ 도구/기타</button>
+              </div>
+
+              <div class="overlay-icon-container" style="padding-right: 8px;">
+                <!-- 일반 및 문서 -->
+                <div id="overlay-cat-general" class="overlay-category-content">
+                  <div class="icon-selector" style="margin-bottom: 0.5rem;">
+                    <div class="icon-option selected" data-icon="fas fa-table" title="테이블/시트"><i class="fas fa-table"></i></div>
+                    <div class="icon-option" data-icon="fas fa-link" title="링크"><i class="fas fa-link"></i></div>
+                    <div class="icon-option" data-icon="fas fa-file-alt" title="문서"><i class="fas fa-file-alt"></i></div>
+                    <div class="icon-option" data-icon="fas fa-clipboard-list" title="설문/목록"><i class="fas fa-clipboard-list"></i></div>
+                    <div class="icon-option" data-icon="fas fa-folder-open" title="폴더"><i class="fas fa-folder-open"></i></div>
+                    <div class="icon-option" data-icon="fas fa-calculator" title="계산/통계"><i class="fas fa-calculator"></i></div>
+                    <div class="icon-option" data-icon="fas fa-chart-pie" title="차트"><i class="fas fa-chart-pie"></i></div>
+                  </div>
+                </div>
+
+                <!-- 소통 및 학교업무 -->
+                <div id="overlay-cat-school" class="overlay-category-content" style="display: none;">
+                  <div class="icon-selector" style="margin-bottom: 0.5rem;">
+                    <div class="icon-option" data-icon="fas fa-users" title="사용자/학생"><i class="fas fa-users"></i></div>
+                    <div class="icon-option" data-icon="fas fa-bus" title="통학버스"><i class="fas fa-bus"></i></div>
+                    <div class="icon-option" data-icon="fas fa-chalkboard" title="수업/칠판"><i class="fas fa-chalkboard"></i></div>
+                    <div class="icon-option" data-icon="fas fa-calendar-check" title="일정"><i class="fas fa-calendar-check"></i></div>
+                    <div class="icon-option" data-icon="fas fa-comments" title="메신저/소통"><i class="fas fa-comments"></i></div>
+                    <div class="icon-option" data-icon="fas fa-bullhorn" title="공지사항"><i class="fas fa-bullhorn"></i></div>
+                    <div class="icon-option" data-icon="fas fa-envelope" title="우편/메일"><i class="fas fa-envelope"></i></div>
+                    <div class="icon-option" data-icon="fas fa-book" title="교재/도서"><i class="fas fa-book"></i></div>
+                  </div>
+                </div>
+
+                <!-- 도구 및 미디어 -->
+                <div id="overlay-cat-tools" class="overlay-category-content" style="display: none;">
+                  <div class="icon-selector" style="margin-bottom: 0.5rem;">
+                    <div class="icon-option" data-icon="fas fa-chart-bar" title="막대형 차트"><i class="fas fa-chart-bar"></i></div>
+                    <div class="icon-option" data-icon="fas fa-map-marked-alt" title="지도"><i class="fas fa-map-marked-alt"></i></div>
+                    <div class="icon-option" data-icon="fas fa-camera" title="사진"><i class="fas fa-camera"></i></div>
+                    <div class="icon-option" data-icon="fas fa-video" title="동영상"><i class="fas fa-video"></i></div>
+                    <div class="icon-option" data-icon="fas fa-clock" title="시간"><i class="fas fa-clock"></i></div>
+                    <div class="icon-option" data-icon="fas fa-cog" title="설정"><i class="fas fa-cog"></i></div>
+                    <div class="icon-option" data-icon="fas fa-heart" title="관심/좋아요"><i class="fas fa-heart"></i></div>
+                    <div class="icon-option" data-icon="fas fa-check-circle" title="확인/완료"><i class="fas fa-check-circle"></i></div>
+                  </div>
+                </div>
+              </div>
+              <!-- Hidden input to store final icon value (class or URL) -->
+              <input type="hidden" id="overlay-btn-icon-final" value="fas fa-table">
+            </div>
+            <div class="form-group">
+              <label>버튼 색상 테마</label>
+              <select id="overlay-btn-color" class="form-input-modern">
+                <option value="blue">파란색 (Blue)</option>
+                <option value="green" selected>초록색 (Green - 구글시트 스타일)</option>
+                <option value="purple">보라색 (Purple)</option>
+                <option value="red">빨간색 (Red)</option>
+                <option value="yellow">노란색 (Yellow)</option>
+                <option value="gray">회색 (Gray)</option>
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" onclick="window.closeOverlayButtonModal()">취소</button>
+          <button type="submit" form="overlayButtonForm" class="btn-save">저장</button>
+        </div>
+      </div>
     </div>
 
     <!-- Work Role Settings Modal (Admin Only) -->
@@ -3446,7 +3567,40 @@
           }
       };
      </script>
+
+    <!-- ================= Floating Overlay Sidebar ================= -->
+    <div id="overlay-sidebar" class="overlay-sidebar">
+        <!-- 토글 버튼 (접기/펼치기) -->
+        <button id="overlay-sidebar-toggle" class="overlay-sidebar-toggle" onclick="window.toggleOverlaySidebar()">
+             <i class="fas fa-chevron-right"></i>
+        </button>
+        <div id="overlay-buttons-container" class="overlay-sidebar-content">
+            <!-- JS rendered -->
+        </div>
+    </div>
+
+    <!-- ================= Full Screen Overlay iframe ================= -->
+    <div id="main-iframe-overlay" class="main-iframe-overlay">
+        <!-- 닫기 버튼 -->
+        <div class="iframe-controls">
+            <button class="iframe-action-btn close-btn" onclick="closeIframeOverlay()" title="닫기">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="iframe-panel">
+            <!-- credentialless: 크로스사이트 쿠키 차단 우회로 공개 구글시트를 로그인 없이 로드 가능하게 함 -->
+            <iframe id="main-overlay-frame" 
+                    allowfullscreen 
+                    credentialless
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads allow-presentation allow-top-navigation-by-user-activation">
+            </iframe>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="overlay.js"></script>
     <script src="data.js"></script>
     <script src="helppageData.js"></script>
     <script src="src/utils/holidays.js"></script>
