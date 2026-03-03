@@ -1,0 +1,3059 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>외부강사 관리시스템</title>
+  <meta name="description" content="초등학교 외부강사 활동 확인서 발급 및 출강 기록 관리 시스템" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- SheetJS 엑셀 처리 라이브러리 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* index.html 전용 추가 스타일 */
+
+    /* 강사 목록 행 액션 (세련된 아이콘 버튼) */
+    .row-actions { display: flex; gap: 4px; justify-content: center; align-items: center; }
+
+    .btn-icon-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      color: var(--color-text-sub);
+    }
+    
+    .btn-icon-action svg {
+      width: 18px;
+      height: 18px;
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* 수정 버튼 (차분한 파란색 계열 호버) */
+    .btn-icon-edit:hover {
+      background-color: rgba(59, 130, 246, 0.1); 
+      border-color: rgba(59, 130, 246, 0.2);
+      color: #3b82f6;
+    }
+    .btn-icon-edit:active svg { transform: scale(0.85); }
+
+    /* 삭제 버튼 (부드러운 빨간색 계열 호버) */
+    .btn-icon-delete:hover {
+      background-color: rgba(239, 68, 68, 0.1); 
+      border-color: rgba(239, 68, 68, 0.2);
+      color: #ef4444; 
+    }
+    .btn-icon-delete:active svg { transform: scale(0.85); }
+
+    /* 다크모드 대응 */
+    [data-theme="dark"] .btn-icon-action { opacity: 0.8; }
+    [data-theme="dark"] .btn-icon-edit:hover {
+      background-color: rgba(96, 165, 250, 0.15);
+      color: #60a5fa;
+      opacity: 1;
+    }
+    [data-theme="dark"] .btn-icon-delete:hover {
+      background-color: rgba(248, 113, 113, 0.15);
+      color: #f87171;
+      opacity: 1;
+    }
+
+    /* 탭 */
+    .tabs {
+      display: flex;
+      gap: 2px;
+      background: var(--color-surface-alt);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 4px;
+      margin-bottom: 20px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 9px 16px;
+      border: none;
+      background: none;
+      border-radius: calc(var(--radius-sm) - 2px);
+      cursor: pointer;
+      font-family: var(--font-main);
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--color-text-sub);
+      transition: all var(--transition);
+    }
+    .tab-btn.active {
+      background: var(--color-surface);
+      color: var(--color-primary);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* 강사 검색 + 필터 행 */
+    .search-filter-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .search-input-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 200px;
+    }
+    .search-input-wrap .search-icon {
+      position: absolute;
+      left: 12px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--color-text-sub);
+      pointer-events: none;
+    }
+    .search-input-wrap .form-control {
+      padding-left: 38px;
+    }
+
+    /* 시수 입력 테이블 전용 스타일 */
+    .hours-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed; /* 고정 너비 기반 넓이 분배 */
+    }
+    .hours-table th, .hours-table td {
+      border: 1px solid var(--color-border);
+      text-align: center;
+      padding: 6px;
+      vertical-align: middle;
+      font-size: 0.9rem;
+    }
+    .hours-table th { background: var(--color-surface-alt); font-weight: 600; white-space: nowrap; }
+    .hours-table .col-prog { width: 140px; text-align: left; padding-left: 10px; font-weight: 600; }
+    .hours-table .col-inst { width: 90px; }
+    .hours-table .col-month { width: auto; /* 나머지 균등 분배 */ }
+    .hours-table .col-total { width: 60px; font-weight: 700; color: var(--color-primary); }
+    .hours-input {
+      width: 100%; height: 28px;
+      text-align: center;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--color-text);
+      font-size: 0.95rem;
+      transition: all 0.2s;
+    }
+    .hours-input:hover { border-color: var(--color-border); background: var(--color-bg); }
+    .hours-input:focus { border-color: var(--color-primary); background: var(--color-bg); outline: none; }
+    .hours-input::placeholder { color: #ccc; font-size: 0.75rem; }
+
+    /* 빈 상태 */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--color-text-sub);
+    }
+    .empty-state .empty-icon { font-size: 3rem; margin-bottom: 12px; }
+    .empty-state .empty-title { font-size: 1rem; font-weight: 700; margin-bottom: 6px; color: var(--color-text); }
+    .empty-state .empty-desc { font-size: 0.875rem; }
+
+    @media (max-width: 600px) {
+      .month-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* 권한 확인 오버레이 */
+    #authOverlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--color-bg); z-index: 99999;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      transition: opacity 0.5s;
+    }
+    #authOverlay.hidden { opacity: 0; pointer-events: none; }
+    .loader {
+      border: 4px solid var(--color-border);
+      border-top: 4px solid var(--color-primary);
+      border-radius: 50%;
+      width: 40px; height: 40px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body style="overflow: hidden;">
+
+  <!-- 권한 확인 화면 -->
+  <div id="authOverlay">
+    <div class="loader"></div>
+    <div style="font-size: 1.1rem; font-weight: 700; color: var(--color-text);">최고관리자 및 부관리자 권한 확인 중...</div>
+    <div style="font-size: 0.9rem; color: var(--color-text-sub); margin-top: 8px;">가로내 온라인 연구실 통합 인증을 불러옵니다.</div>
+  </div>
+
+<!-- 사이드바 오버레이 (모바일) -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- 앱 레이아웃 -->
+<div class="app-layout">
+
+  <!-- 사이드바 -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">📋</div>
+      <h1>외부강사<br>관리시스템</h1>
+      <span id="schoolName">○○초등학교</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-label">메뉴</div>
+      <button class="nav-item active" data-page="dashboard" id="nav-dashboard">
+        <span class="nav-icon">🏠</span> 대시보드
+      </button>
+      <button class="nav-item" data-page="instructors" id="nav-instructors">
+        <span class="nav-icon">👤</span> 강사 관리
+      </button>
+      <button class="nav-item" data-page="programs" id="nav-programs">
+        <span class="nav-icon">📚</span> 프로그램 관리
+      </button>
+      <button class="nav-item" data-page="worklogs" id="nav-worklogs">
+        <span class="nav-icon">📅</span> 출강 기록 입력
+      </button>
+      <button class="nav-item" data-page="certificate" id="nav-certificate">
+        <span class="nav-icon">📄</span> 확인서 발급
+      </button>
+
+      <div class="nav-label" style="margin-top:16px;">설정</div>
+      <button class="nav-item" data-page="settings" id="nav-settings">
+        <span class="nav-icon">⚙️</span> 학교 정보 설정
+      </button>
+    </nav>
+
+    <div class="sidebar-footer" style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:14px 20px;">
+      <span style="font-size:0.85rem; font-weight:700; color:var(--color-text-sub);">화면 테마</span>
+      <label class="theme-switch" for="themeToggle" title="라이트/다크 모드 전환">
+        <input type="checkbox" id="themeToggle" />
+        <div class="theme-slider">
+          <span class="icon-sun">☀️</span>
+          <span class="icon-moon">🌙</span>
+        </div>
+      </label>
+    </div>
+  </aside>
+
+  <!-- 메인 콘텐츠 -->
+  <div class="main-content">
+
+    <!-- 상단 헤더 -->
+    <header class="top-header">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="btn btn-ghost btn-icon" id="sidebarToggle" title="사이드바 열기/닫기">☰</button>
+        <span class="page-title" id="pageTitle">대시보드</span>
+      </div>
+      <div class="header-actions">
+        <span style="font-size:0.8rem;color:var(--color-text-sub);" id="currentDate"></span>
+      </div>
+    </header>
+
+    <!-- 콘텐츠 영역 -->
+    <main class="content-area">
+
+      <!-- ★ 대시보드 페이지 -->
+      <section id="page-dashboard" class="page-section">
+        <h3 style="margin-bottom:12px; font-size:1.15rem; color:var(--color-primary); display:flex; align-items:center; gap:8px;"><span style="font-size:1.4rem;">🌟</span> 전체 기간 요약</h3>
+        <div class="card" style="margin-bottom: 24px;">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th style="text-align:center;">등록된 강사 수</th>
+                  <th style="text-align:center;">프로그램 수</th>
+                  <th style="text-align:center;">누적 연도</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td id="stat-all-inst-count" style="text-align:center; font-size:1.1rem; font-weight:700;">-</td>
+                  <td id="stat-all-prog-count" style="text-align:center; font-size:1.1rem; font-weight:700;">-</td>
+                  <td id="stat-all-years" style="text-align:center; font-size:1.1rem; font-weight:700;">-</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <h3 style="margin-bottom:12px; font-size:1.15rem; color:var(--color-primary); display:flex; align-items:center; gap:8px;"><span style="font-size:1.4rem;">📊</span> 올해 현황 (<span id="stat-current-year"></span>)</h3>
+        <div class="card" style="margin-bottom: 32px;">
+          <div class="table-wrapper">
+            <table id="stat-year-table">
+              <thead>
+                <tr id="stat-year-thead-row">
+                  <th style="text-align:center;">구분</th>
+                  <th style="text-align:center;">합계</th>
+                </tr>
+              </thead>
+              <tbody id="stat-year-tbody">
+                <tr><td colspan="2"><div class="empty-state">데이터를 불러오는 중입니다...</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:12px;">
+          <h3 style="margin:0; font-size:1.15rem; color:var(--color-primary); display:flex; align-items:center; gap:8px;"><span style="font-size:1.4rem;">🏫</span> 올해 우리학교 프로그램 (<span id="stat-current-year-progs"></span>)</h3>
+          <button class="btn btn-outline" style="font-size:0.8rem; padding:4px 8px; border-color:var(--color-primary); color:var(--color-primary);" onclick="resetDashboardSort()" title="기본 정렬로 되돌리기">🔄 정렬 초기화</button>
+        </div>
+        <div class="card" style="margin-bottom: 32px;">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th onclick="sortDashboardPrograms('domain')" style="cursor:pointer; user-select:none; text-align:center;" title="오름차순/내림차순 정렬">영역 <span id="sort-dash-icon-domain" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+                  <th onclick="sortDashboardPrograms('name')" style="cursor:pointer; user-select:none; text-align:center;" title="오름차순/내림차순 정렬">프로그램명 <span id="sort-dash-icon-name" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+                  <th onclick="sortDashboardPrograms('instructor')" style="cursor:pointer; user-select:none; text-align:center;" title="오름차순/내림차순 정렬">강사명 <span id="sort-dash-icon-instructor" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+                  <th onclick="sortDashboardPrograms('period')" style="cursor:pointer; user-select:none; text-align:center;" title="오름차순/내림차순 정렬">운영 기간 <span id="sort-dash-icon-period" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+                  <th onclick="sortDashboardPrograms('day_of_week')" style="cursor:pointer; user-select:none; text-align:center;" title="오름차순/내림차순 정렬">요일 <span id="sort-dash-icon-day_of_week" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+                  <th onclick="sortDashboardPrograms('target')" style="cursor:pointer; user-select:none; text-align:center;" title="오름차순/내림차순 정렬">대상 <span id="sort-dash-icon-target" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+                  <th onclick="sortDashboardPrograms('capacity')" style="cursor:pointer; user-select:none; text-align:center;" title="오름차순/내림차순 정렬">인원 <span id="sort-dash-icon-capacity" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+                  <th onclick="sortDashboardPrograms('hours')" style="cursor:pointer; user-select:none; text-align:center;" title="오름차순/내림차순 정렬">주당 시수 <span id="sort-dash-icon-hours" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+                  <th onclick="sortDashboardPrograms('notes')" style="cursor:pointer; user-select:none; text-align:center;" title="오름차순/내림차순 정렬">비고 <span id="sort-dash-icon-notes" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+                </tr>
+              </thead>
+              <tbody id="stat-year-programs-tbody">
+                <tr><td colspan="9"><div class="empty-state">데이터를 불러오는 중입니다...</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ★ 강사 관리 페이지 -->
+      <section id="page-instructors" class="page-section" style="display:none;">
+        <div class="card">
+          <div class="card-header" style="justify-content:space-between; flex-wrap:wrap; gap:10px;">
+            <div class="card-title">👤 강사 목록</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <button class="btn btn-outline" id="btnInstructorsTemplate" style="font-size:0.85rem; padding:6px 10px;">📝 서식 내려받기</button>
+              <button class="btn btn-outline" id="btnInstructorsUpload" style="font-size:0.85rem; padding:6px 10px;">📤 자료 올리기</button>
+              <input type="file" id="fileInstructorsExcel" accept=".xlsx, .xls" style="display:none;">
+              <button class="btn btn-primary" id="btnInstructorsDownload" style="font-size:0.85rem; padding:6px 10px; margin-right:8px;">📥 데이터 내려받기</button>
+              <div style="width:1px; height:24px; background:var(--color-border); margin:0 4px;"></div>
+              <button class="btn btn-primary" id="addInstructorBtn">
+                ➕ 강사 등록
+              </button>
+            </div>
+          </div>
+          <div class="card-body" style="padding-bottom:0;">
+            <div class="search-filter-row" style="margin-bottom:16px;">
+              <div class="search-input-wrap">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="form-control" id="instructorSearch" placeholder="강사명 검색..." />
+              </div>
+            </div>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:50px; text-align:center;">#</th>
+                  <th onclick="sortInstructors('name_korean')" style="cursor:pointer; user-select:none; text-align:center;" title="오름차순/내림차순 정렬">성명(한글) <span id="sort-inst-icon-name_korean" style="font-size:0.8em; color:var(--color-text-sub);">▲</span></th>
+                  <th onclick="sortInstructors('name_chinese')" style="cursor:pointer; user-select:none; text-align:center;" title="오름차순/내림차순 정렬">성명(한자) <span id="sort-inst-icon-name_chinese" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+                  <th onclick="sortInstructors('birth_date')" style="cursor:pointer; user-select:none; text-align:center;" title="오름차순/내림차순 정렬">생년월일 <span id="sort-inst-icon-birth_date" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+                  <th onclick="sortInstructors('consignment_type')" style="cursor:pointer; user-select:none; text-align:center;" title="오름차순/내림차순 정렬">위탁구분 <span id="sort-inst-icon-consignment_type" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+                  <th onclick="sortInstructors('position')" style="cursor:pointer; user-select:none; text-align:center;" title="오름차순/내림차순 정렬">직위 <span id="sort-inst-icon-position" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+                  <th onclick="sortInstructors('total')" style="cursor:pointer; user-select:none; text-align:center;" title="오름차순/내림차순 정렬">총 시수 <span id="sort-inst-icon-total" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+                  <th style="width:100px; text-align:center;">관리</th>
+                </tr>
+              </thead>
+              <tbody id="instructorTableBody">
+                <tr><td colspan="8"><div class="empty-state"><div class="empty-icon">👤</div><div class="empty-title">등록된 강사가 없습니다</div><div class="empty-desc">상단 '강사 등록' 버튼을 눌러 추가하세요</div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ★ 프로그램 관리 페이지 -->
+      <section id="page-programs" class="page-section" style="display:none;">
+        <div class="card">
+          <div class="card-header" style="justify-content:space-between; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex;align-items:center;gap:16px;">
+              <div class="card-title">📚 프로그램 관리</div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <label style="font-weight:600; font-size:0.9rem;">기준연도</label>
+                <select class="form-control" id="programYearSelect" style="width:120px;"></select>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <button class="btn btn-outline" id="btnProgramsTemplate" style="font-size:0.85rem; padding:6px 10px;">📝 서식 내려받기</button>
+              <button class="btn btn-outline" id="btnProgramsUpload" style="font-size:0.85rem; padding:6px 10px;">📤 자료 올리기</button>
+              <input type="file" id="fileProgramsExcel" accept=".xlsx, .xls" style="display:none;">
+              <button class="btn btn-primary" id="btnProgramsDownload" style="font-size:0.85rem; padding:6px 10px; margin-right:8px;">📥 데이터 내려받기</button>
+              <div style="width:1px; height:24px; background:var(--color-border); margin:0 4px;"></div>
+              <button class="btn btn-outline" id="btnBulkEditDates" style="display:none; margin-right:8px;">📅 일괄 수정</button>
+              <button class="btn btn-outline" id="btnDuplicateSelectedPrograms" style="display:none; margin-right:8px; border-color:var(--color-primary); color:var(--color-primary);">📄 선택 복제</button>
+              <button class="btn btn-danger" id="btnDeleteSelectedPrograms" style="display:none; margin-right:8px;">🗑️ 선택 삭제</button>
+              <button class="btn btn-outline" id="manageDomainBtn">영역 관리</button>
+              <button class="btn btn-outline" id="importProgramsBtn">프로그램 가져오기</button>
+              <button class="btn btn-primary" id="addProgramBtn">프로그램 추가</button>
+            </div>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:40px; text-align:center;"><input type="checkbox" id="checkAllProgramsList"></th>
+                  <th style="width:50px; text-align:center;">번호</th>
+                  <th onclick="sortPrograms('domain')" style="cursor:pointer; user-select:none;" title="영역 정렬">영역 <span id="sort-icon-domain" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+                  <th onclick="sortPrograms('name')" style="cursor:pointer; user-select:none;" title="프로그램명 정렬">프로그램명 <span id="sort-icon-name" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+                  <th onclick="sortPrograms('instructor')" style="cursor:pointer; user-select:none;" title="강사명 정렬">강사명 <span id="sort-icon-instructor" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+                  <th>운영 기간</th>
+                  <th onclick="sortPrograms('day_of_week')" style="cursor:pointer; user-select:none;" title="요일 정렬">요일 <span id="sort-icon-day_of_week" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+                  <th>대상</th>
+                  <th>비고</th>
+                  <th style="width:100px;">관리</th>
+                </tr>
+              </thead>
+              <tbody id="programTableBody">
+                <tr><td colspan="10"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">데이터 없음</div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ★ 출강 기록 입력 페이지 -->
+      <section id="page-worklogs" class="page-section" style="display:none;">
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-header" style="justify-content:space-between; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+              <div class="card-title" style="margin-right:10px;">📅 시수 입력</div>
+              <span style="font-weight:600;">기준연도</span>
+              <select class="form-control" id="worklogsYearSelect" style="width:120px;"></select>
+              <span style="font-weight:600; margin-left:10px;">입력 방식</span>
+              <select class="form-control" id="worklogsInputMode" style="width:160px;">
+                <option value="monthly" selected>월별 시수 입력</option>
+                <option value="annual">연간 총 시수 입력</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-outline" id="btnWorklogsResetSort" style="font-size:0.85rem; padding:6px 10px; border-color:var(--color-primary); color:var(--color-primary);" onclick="resetWorklogsSort()">🔄 정렬 초기화</button>
+              <button class="btn btn-outline" id="btnWorklogsTemplate" style="font-size:0.85rem; padding:6px 10px;">📝 서식 내려받기</button>
+              <button class="btn btn-outline" id="btnWorklogsUpload" style="font-size:0.85rem; padding:6px 10px;">📤 자료 올리기</button>
+              <input type="file" id="fileWorklogsExcel" accept=".xlsx, .xls" style="display:none;">
+              <button class="btn btn-primary" id="btnWorklogsDownload" style="font-size:0.85rem; padding:6px 10px;">📥 데이터 내려받기</button>
+            </div>
+          </div>
+          <div class="card-body" style="padding:0; overflow-x:auto;">
+            <table class="hours-table">
+              <thead id="worklogsTableHead">
+                <!-- JS dynamically renders header based on input mode -->
+              </thead>
+              <tbody id="worklogsTableBody">
+                <tr><td colspan="16"><div class="empty-state"><div class="empty-icon">📂</div><div class="empty-title">연도를 선택하여 프로그램 데이터를 불러옵니다.</div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ★ 확인서 발급 페이지 -->
+      <section id="page-certificate" class="page-section" style="display:none;">
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-header">
+            <div class="card-title">📄 확인서 발급 설정</div>
+          </div>
+          <div class="card-body">
+            
+            <!-- 강사 정보 테이블 -->
+            <table class="hours-table" style="margin-bottom:16px;">
+              <thead>
+                <tr>
+                  <th style="width:33%;">강사 선택 <span class="required">*</span></th>
+                  <th style="width:33%;">위탁구분</th>
+                  <th style="width:33%;">직위</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="padding:4px;">
+                    <select class="form-control" id="certInstructorSelect" style="width:100%; border:none; background:transparent; text-align:center; outline:none; font-weight:600; font-size:1rem;">
+                      <option value="">-- 강사를 선택하세요 --</option>
+                    </select>
+                  </td>
+                  <td id="certInstructorConsignment" style="text-align:center;">-</td>
+                  <td id="certInstructorPosition" style="text-align:center;">-</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- 프로그램 선택 테이블 -->
+            <table class="hours-table" style="margin-bottom:16px;">
+              <thead>
+                <tr>
+                  <th style="width:150px;">운영 연도</th>
+                  <th style="position: relative;">
+                    <div style="display:flex; justify-content:center; align-items:center; width:100%;">
+                      <label style="position:absolute; left:16px; cursor:pointer; font-size:0.85rem; font-weight:700; color:var(--color-primary); display:flex; align-items:center; gap:4px; margin:0;">
+                        <input type="checkbox" id="checkAllCertPrograms"> 전체 선택
+                      </label>
+                      <span>운영 프로그램 선택</span>
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="certProgramTableBody">
+                <tr><td colspan="2"><div class="empty-state" style="padding:20px 0; border:none;"><div class="empty-title" style="color:var(--color-text-sub);">강사를 선택하면 프로그램 목록이 표시됩니다.</div></div></td></tr>
+              </tbody>
+            </table>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap; justify-content:center;">
+              <button class="btn btn-primary" id="generateCertBtn">🔍 미리보기 생성</button>
+              <button class="btn btn-success" id="printCertBtn" disabled>🖨️ 인쇄 / PDF 저장</button>
+            </div>
+          </div>
+        </div>
+        <div id="certPreviewArea" style="display:none;">
+          <!-- certificate.html 내용이 여기 iframe으로 로드됨 -->
+          <iframe id="certIframe" src="" style="width:100%;height:1100px;border:none;border-radius:var(--radius-md);box-shadow:var(--shadow-card);"></iframe>
+        </div>
+      </section>
+
+      <!-- ★ 설정 페이지 -->
+      <section id="page-settings" class="page-section" style="display:none;">
+        <div class="card" style="max-width:560px;">
+          <div class="card-header">
+            <div class="card-title">⚙️ 학교 정보 설정</div>
+          </div>
+          <div class="card-body">
+            <div class="form-group" style="margin-bottom:16px;">
+              <label class="form-label">학교명</label>
+              <input type="text" class="form-control" id="settingSchoolName" placeholder="○○초등학교" />
+            </div>
+            <div class="form-group" style="margin-bottom:16px;">
+              <label class="form-label">학교장명</label>
+              <input type="text" class="form-control" id="settingPrincipalName" placeholder="홍길동" />
+            </div>
+            <div class="form-group" style="margin-bottom:24px;">
+              <label class="form-label">학교 주소</label>
+              <input type="text" class="form-control" id="settingSchoolAddress" placeholder="경상남도 창원시..." />
+            </div>
+            <button class="btn btn-primary" id="saveSettingsBtn">💾 저장</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ────────── 강사 등록/수정 모달 ────────── -->
+<div class="modal-backdrop" id="instructorModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="instructorModalTitle">강사 등록</span>
+      <button class="modal-close" data-modal="instructorModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="instructorId" />
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">성명(한글) <span class="required">*</span></label>
+          <input type="text" class="form-control" id="inputNameKorean" placeholder="홍길동" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">성명(한자)</label>
+          <input type="text" class="form-control" id="inputNameChinese" placeholder="洪吉童" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">생년월일 <span class="required">*</span></label>
+          <input type="date" class="form-control" id="inputBirthDate" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">직위</label>
+          <input type="text" class="form-control" id="inputPosition" value="외부강사" />
+        </div>
+        <div class="form-group full">
+          <label class="form-label">위탁구분 <span class="required">*</span></label>
+          <div style="display:flex; gap:10px;">
+            <select class="form-control" id="inputConsignmentType" style="flex:1;">
+              <option value="개인">개인</option>
+              <option value="업체">업체</option>
+              <option value="직접입력">직접입력</option>
+            </select>
+            <input type="text" class="form-control" id="inputConsignmentCustom" placeholder="직접 입력" style="display:none; flex:1;" />
+          </div>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">주소 <span class="required">*</span></label>
+          <input type="text" class="form-control" id="inputAddress" placeholder="경상남도 창원시..." />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-modal="instructorModal">취소</button>
+      <button class="btn btn-primary" id="saveInstructorBtn">💾 저장</button>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ────────── 영역 관리 모달 ────────── -->
+<div class="modal-backdrop" id="domainModal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <span class="modal-title">영역 관리</span>
+      <button class="modal-close" data-modal="domainModal">✕</button>
+    </div>
+    <div class="modal-body" style="max-height:400px;overflow-y:auto;padding-top:10px;">
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <input type="text" class="form-control" id="newDomainInput" placeholder="새로운 영역명 입력 (예: 돌봄교실)" style="flex:1;" />
+        <button class="btn btn-primary" id="addDomainBtn">추가</button>
+      </div>
+      <table style="margin:0; width:100%;">
+        <tbody id="domainListBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ────────── 프로그램 입력 모달 ────────── -->
+<div class="modal-backdrop" id="programModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="programModalTitle">프로그램 추가</span>
+      <button class="modal-close" data-modal="programModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="programId" />
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">영역 선택 <span class="required">*</span></label>
+          <select class="form-control" id="inputProgramDomain"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">프로그램명 <span class="required">*</span></label>
+          <input type="text" class="form-control" id="inputProgramName" placeholder="보드게임" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">강사명 <span class="required">*</span></label>
+          <select class="form-control" id="inputProgramInstructor"></select>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">운영 기간 <span class="required">*</span></label>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <input type="date" class="form-control" id="inputProgramStartDate" />
+            <span>~</span>
+            <input type="date" class="form-control" id="inputProgramEndDate" />
+          </div>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">운영 요일</label>
+          <input type="text" class="form-control" id="inputProgramDayOfWeek" placeholder="예: 화, 목" />
+        </div>
+        <div class="form-group full">
+          <label class="form-label">대상 학년 (중복 선택 가능)</label>
+          <div style="display:flex;gap:12px;flex-wrap:wrap; margin-top:4px;" id="gradeCheckboxGroup">
+            <label><input type="checkbox" name="targetGrade" value="1"> 1학년</label>
+            <label><input type="checkbox" name="targetGrade" value="2"> 2학년</label>
+            <label><input type="checkbox" name="targetGrade" value="3"> 3학년</label>
+            <label><input type="checkbox" name="targetGrade" value="4"> 4학년</label>
+            <label><input type="checkbox" name="targetGrade" value="5"> 5학년</label>
+            <label><input type="checkbox" name="targetGrade" value="6"> 6학년</label>
+            <label style="border-left:1px solid var(--color-border); padding-left:12px; margin-left:4px;">
+              <input type="checkbox" id="checkAllGrades"> <strong>전교생</strong>
+            </label>
+          </div>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">비고</label>
+          <input type="text" class="form-control" id="inputProgramNotes" placeholder="비고 입력" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-modal="programModal">취소</button>
+      <button class="btn btn-primary" id="saveProgramBtn">💾 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ────────── 프로그램 가져오기 모달 ────────── -->
+<div class="modal-backdrop" id="importProgramsModal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <span class="modal-title">프로그램 가져오기</span>
+      <button class="modal-close" data-modal="importProgramsModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group full">
+        <label class="form-label">어느 연도의 프로그램을 가져올까요?</label>
+        <select class="form-control" id="importYearSelect"></select>
+      </div>
+      <p style="font-size:0.85rem; color:var(--color-text-sub); margin-top:12px; line-height:1.5;">
+        * 선택한 연도의 모든 프로그램 목록이 현재 선택된 기준연도로 복사됩니다.<br>
+        * 가져온 후 프로그램 표상단의 <b>'일괄 수정'</b> 버튼으로 기간을 한꺼번에 변경할 수 있습니다.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-modal="importProgramsModal">취소</button>
+      <button class="btn btn-primary" id="doImportProgramsBtn">📥 복사하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ────────── 운영기간 일괄수정 모달 ────────── -->
+<div class="modal-backdrop" id="bulkEditDatesModal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <span class="modal-title">운영기간 일괄수정</span>
+      <button class="modal-close" data-modal="bulkEditDatesModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group full">
+        <label class="form-label">새로운 운영 시작일 <span class="required">*</span></label>
+        <input type="date" class="form-control" id="bulkInputStartDate">
+      </div>
+      <div class="form-group full">
+        <label class="form-label">새로운 운영 종료일 <span class="required">*</span></label>
+        <input type="date" class="form-control" id="bulkInputEndDate">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-modal="bulkEditDatesModal">취소</button>
+      <button class="btn btn-primary" id="doBulkEditDatesBtn">💾 일괄 변경</button>
+    </div>
+  </div>
+</div>
+
+<!-- 토스트 컨테이너 -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import {
+    getFirestore, collection, doc, addDoc, getDoc, getDocs,
+    setDoc, updateDoc, deleteDoc, query, where, orderBy
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+  /* ══════════════════════════════════════════
+     가로내 온라인 연구실 통합 Firebase 설정 (인증용)
+  ══════════════════════════════════════════ */
+  const authConfig = {
+    apiKey: "AIzaSyCQmDCL-PuN2A9AgOzIpObCeNtvIFDJmhU",
+    authDomain: "studio-8412089884-f8185.firebaseapp.com",
+    projectId: "studio-8412089884-f8185",
+    storageBucket: "studio-8412089884-f8185.firebasestorage.app",
+    messagingSenderId: "928283224778",
+    appId: "1:928283224778:web:01cb08827402140aace233"
+  };
+
+  /* ══════════════════════════════════════════
+     외부강사 관리시스템 원본 Firebase 설정 (데이터용)
+  ══════════════════════════════════════════ */
+  const dataConfig = {
+    apiKey: "AIzaSyDZ2CPA9llijtwg0_nuKXxW35aJzqVwBDI",
+    authDomain: "instructor-cert.firebaseapp.com",
+    projectId: "instructor-cert",
+    storageBucket: "instructor-cert.firebasestorage.app",
+    messagingSenderId: "422747275380",
+    appId: "1:422747275380:web:228a95ac9813ac6b8d9121"
+  };
+
+  const authApp = initializeApp(authConfig); // 기본(default) 앱으로 초기화해야 index.html과 인증 세션을 공유함
+  const dataApp = initializeApp(dataConfig, "dataApp");
+
+  const auth = getAuth(authApp);
+  const dbAuth = getFirestore(authApp); // 로그인 권한 조회용 DB
+  const db  = getFirestore(dataApp); // 외부강사 관리 데이터용 DB
+  
+  const INSTRUCTORS = "instructors";
+  const WORK_LOGS   = "work_logs";
+  const PROGRAMS    = "programs";
+  const DOMAINS     = "program_domains";
+
+  /* ══════════════════════════════════════════
+     유틸리티
+  ══════════════════════════════════════════ */
+  const $ = id => document.getElementById(id);
+  const toast = (msg, type = 'info') => {
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    const icons = { success:'✅', error:'❌', info:'ℹ️' };
+    el.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
+    $('toastContainer').appendChild(el);
+    setTimeout(() => el.remove(), 3500);
+  };
+
+  /* ══════════════════════════════════════════
+     테마 & 사이드바 (슬라이드 스위치 적용)
+  ══════════════════════════════════════════ */
+  const themeToggle = $('themeToggle');
+  
+  themeToggle.addEventListener('change', (e) => {
+    if (e.target.checked) {
+      document.body.classList.add('dark-mode');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.body.classList.remove('dark-mode');
+      localStorage.setItem('theme', 'light');
+    }
+  });
+
+  // 초기 상태 로드 (기본값 라이트 모드 강제)
+  if (localStorage.getItem('theme') === 'dark') {
+    document.body.classList.add('dark-mode');
+    themeToggle.checked = true;
+  } else {
+    document.body.classList.remove('dark-mode');
+    themeToggle.checked = false;
+  }
+
+  $('sidebarToggle').addEventListener('click', () => {
+    $('sidebar').classList.toggle('open');
+    $('sidebarOverlay').classList.toggle('open');
+  });
+  $('sidebarOverlay').addEventListener('click', () => {
+    $('sidebar').classList.remove('open');
+    $('sidebarOverlay').classList.remove('open');
+  });
+
+  /* ══════════════════════════════════════════
+     페이지 라우팅
+  ══════════════════════════════════════════ */
+  const pageTitles = {
+    dashboard:   '대시보드',
+    instructors: '강사 관리',
+    programs:    '프로그램 관리',
+    worklogs:    '출강 기록 입력',
+    certificate: '확인서 발급',
+    settings:    '학교 정보 설정'
+  };
+
+  let currentPage = 'dashboard';
+
+  function navigateTo(page) {
+    document.querySelectorAll('.page-section').forEach(s => s.style.display = 'none');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    $(`page-${page}`).style.display = 'block';
+    $(`nav-${page}`).classList.add('active');
+    $('pageTitle').textContent = pageTitles[page];
+    currentPage = page;
+    if (page === 'dashboard') loadDashboard();
+    if (page === 'instructors') renderInstructorTable();
+    if (page === 'programs') { loadDomains(); loadPrograms(); }
+    if (page === 'worklogs') { loadWorklogsTable(); }
+    if (page === 'certificate') populateInstructorSelect('certInstructorSelect');
+  }
+
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      navigateTo(btn.dataset.page);
+      if (window.innerWidth < 960) {
+        $('sidebar').classList.remove('open');
+        $('sidebarOverlay').classList.remove('open');
+      }
+    });
+  });
+
+  /* ══════════════════════════════════════════
+     날짜 표시
+  ══════════════════════════════════════════ */
+  const now = new Date();
+  $('currentDate').textContent = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일`;
+
+  /* ══════════════════════════════════════════
+     연도 셀렉트 채우기
+  ══════════════════════════════════════════ */
+  function fillYearSelect(selectId, selectedYear) {
+    const sel = $(selectId);
+    sel.innerHTML = '';
+    const cur = now.getFullYear();
+    for (let y = cur; y >= cur - 10; y--) {
+      const opt = document.createElement('option');
+      opt.value = y; opt.textContent = `${y}년`;
+      if (y === (selectedYear || cur)) opt.selected = true;
+      sel.appendChild(opt);
+    }
+  }
+
+  fillYearSelect('worklogsYearSelect');
+  fillYearSelect('programYearSelect');
+  
+
+
+  /* ══════════════════════════════════════════
+     모달 공통
+  ══════════════════════════════════════════ */
+  document.querySelectorAll('.modal-close, [data-modal]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.modal;
+      if (id) $(id).classList.remove('open');
+    });
+  });
+
+  document.querySelectorAll('.modal-backdrop').forEach(bd => {
+    bd.addEventListener('click', e => {
+      if (e.target === bd) bd.classList.remove('open');
+    });
+  });
+
+  function openModal(id) { $(id).classList.add('open'); }
+  function closeModal(id) { $(id).classList.remove('open'); }
+
+  /* ══════════════════════════════════════════
+     설정 저장/불러오기
+  ══════════════════════════════════════════ */
+  function loadSettings() {
+    const s = JSON.parse(localStorage.getItem('schoolSettings') || '{}');
+    if (s.schoolName)    { $('settingSchoolName').value = s.schoolName; $('schoolName').textContent = s.schoolName; }
+    if (s.principalName) $('settingPrincipalName').value = s.principalName;
+    if (s.schoolAddress) $('settingSchoolAddress').value = s.schoolAddress;
+  }
+
+  $('saveSettingsBtn').addEventListener('click', () => {
+    const s = {
+      schoolName:     $('settingSchoolName').value.trim(),
+      principalName:  $('settingPrincipalName').value.trim(),
+      schoolAddress:  $('settingSchoolAddress').value.trim()
+    };
+    localStorage.setItem('schoolSettings', JSON.stringify(s));
+    $('schoolName').textContent = s.schoolName || '○○초등학교';
+    toast('설정이 저장되었습니다.', 'success');
+  });
+
+  loadSettings();
+
+  /* ══════════════════════════════════════════
+     강사 데이터 캐시
+  ══════════════════════════════════════════ */
+  let instructorsCache = [];
+
+  async function fetchInstructors() {
+    const snap = await getDocs(collection(db, INSTRUCTORS));
+    instructorsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    instructorsCache.sort((a, b) => a.name_korean.localeCompare(b.name_korean, 'ko'));
+    return instructorsCache;
+  }
+
+  let currentDashboardPrograms = [];
+  let dashboardActiveDomains = [];
+  let dashboardInstructors = [];
+  let currentDashboardSort = { col: 'default', dir: 'asc' };
+
+  window.resetDashboardSort = () => {
+    currentDashboardSort = { col: 'default', dir: 'asc' };
+    renderDashboardProgramsTable();
+    toast('기본 정렬 상태로 복구되었습니다.', 'success');
+  };
+
+  window.sortDashboardPrograms = (col) => {
+    if (currentDashboardSort.col === col) {
+      currentDashboardSort.dir = currentDashboardSort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      currentDashboardSort.col = col;
+      currentDashboardSort.dir = 'asc';
+    }
+    renderDashboardProgramsTable();
+  };
+
+  function renderDashboardProgramsTable() {
+    const tbody = $('stat-year-programs-tbody');
+    if (!tbody) return;
+
+    if (currentDashboardPrograms.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">데이터 없음</div></div></td></tr>';
+      return;
+    }
+
+    currentDashboardPrograms.sort((a, b) => {
+      const getDayWeight = (str) => {
+        if (!str) return 99;
+        const order = { '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6, '일': 7 };
+        return order[str.trim().charAt(0)] || 99;
+      };
+
+      const getDomainWeight = (domainName) => {
+        if (!domainName) return 99;
+        if (domainName.includes('방과후')) return 1;
+        if (domainName.includes('동아리')) return 2;
+        if (domainName.includes('돌봄')) return 3;
+        if (domainName.includes('유치원')) return 4;
+        return 5;
+      };
+
+      if (currentDashboardSort.col === 'default') {
+        const domainA = dashboardActiveDomains.find(d => d.id === a.domain_id)?.name || '';
+        const domainB = dashboardActiveDomains.find(d => d.id === b.domain_id)?.name || '';
+        const dWeightA = getDomainWeight(domainA);
+        const dWeightB = getDomainWeight(domainB);
+        if (dWeightA !== dWeightB) return dWeightA - dWeightB;
+
+        const dayWeightA = getDayWeight(a.day_of_week);
+        const dayWeightB = getDayWeight(b.day_of_week);
+        if (dayWeightA !== dayWeightB) return dayWeightA - dayWeightB;
+
+        const nameA = a.name || '';
+        const nameB = b.name || '';
+        if (nameA < nameB) return -1;
+        if (nameA > nameB) return 1;
+        return 0;
+      }
+
+      let valA = '', valB = '';
+      if (currentDashboardSort.col === 'domain') {
+        valA = dashboardActiveDomains.find(d => d.id === a.domain_id)?.name || '';
+        valB = dashboardActiveDomains.find(d => d.id === b.domain_id)?.name || '';
+      } else if (currentDashboardSort.col === 'name') {
+        valA = a.name || '';
+        valB = b.name || '';
+      } else if (currentDashboardSort.col === 'instructor') {
+        valA = dashboardInstructors.find(i => i.id === a.instructor_id)?.name_korean || '';
+        valB = dashboardInstructors.find(i => i.id === b.instructor_id)?.name_korean || '';
+      } else if (currentDashboardSort.col === 'day_of_week') {
+        const weightA = getDayWeight(a.day_of_week);
+        const weightB = getDayWeight(b.day_of_week);
+        if (weightA !== weightB) {
+           return currentDashboardSort.dir === 'asc' ? (weightA - weightB) : (weightB - weightA);
+        }
+        valA = a.day_of_week || '';
+        valB = b.day_of_week || '';
+      } else if (currentDashboardSort.col === 'period') {
+        valA = a.start_date || '';
+        valB = b.start_date || '';
+      } else if (currentDashboardSort.col === 'target') {
+        valA = a.grades ? a.grades.join(',') : '';
+        valB = b.grades ? b.grades.join(',') : '';
+      } else if (currentDashboardSort.col === 'capacity') {
+        valA = a.capacity || 0;
+        valB = b.capacity || 0;
+      } else if (currentDashboardSort.col === 'hours') {
+        valA = a.hours || 0;
+        valB = b.hours || 0;
+      } else if (currentDashboardSort.col === 'notes') {
+        valA = a.notes || '';
+        valB = b.notes || '';
+      }
+
+      if (valA < valB) return currentDashboardSort.dir === 'asc' ? -1 : 1;
+      if (valA > valB) return currentDashboardSort.dir === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    ['domain', 'name', 'instructor', 'period', 'day_of_week', 'target', 'capacity', 'hours', 'notes'].forEach(col => {
+      const iconSpan = $(`sort-dash-icon-${col}`);
+      if (iconSpan) iconSpan.textContent = currentDashboardSort.col === col ? (currentDashboardSort.dir === 'asc' ? '▲' : '▼') : '';
+    });
+
+    tbody.innerHTML = currentDashboardPrograms.map(p => {
+      const dName = dashboardActiveDomains.find(d => d.id === p.domain_id)?.name || '-';
+      const instName = dashboardInstructors.find(i => i.id === p.instructor_id)?.name_korean || '-';
+      const periodDisplay = (p.start_date && p.end_date) ? `${p.start_date} ~ ${p.end_date}` : '-';
+      const capacityDisplay = p.capacity ? `${p.capacity}명` : '-';
+      const hoursDisplay = p.hours ? `${p.hours}시간` : '-';
+      const gradesDisplay = typeof formatGrades === 'function' ? formatGrades(p.grades || []) : '-';
+      const dayDisplay = p.day_of_week || '-';
+
+      return `<tr>
+        <td style="text-align:center;">${dName}</td>
+        <td style="text-align:center;"><strong>${p.name || '-'}</strong></td>
+        <td style="text-align:center;">${instName}</td>
+        <td style="text-align:center;">${periodDisplay}</td>
+        <td style="text-align:center;">${dayDisplay}</td>
+        <td style="text-align:center;">${gradesDisplay}</td>
+        <td style="text-align:center;">${capacityDisplay}</td>
+        <td style="text-align:center;">${hoursDisplay}</td>
+        <td style="text-align:center;">${p.notes || ''}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  /* ══════════════════════════════════════════
+     대시보드
+  ══════════════════════════════════════════ */
+  async function loadDashboard() {
+    // 1. 강사 목록 조회 
+    const instructors = await fetchInstructors();
+    if($('stat-all-inst-count')) $('stat-all-inst-count').textContent = `${instructors.length}명`;
+
+    // 2. 전체 프로그램 + 연도 조회
+    const progsSnap = await getDocs(collection(db, PROGRAMS));
+    const allProgs = progsSnap.docs.map(d => ({id: d.id, ...d.data()}));
+    if($('stat-all-prog-count')) $('stat-all-prog-count').textContent = `${allProgs.length}개`;
+    
+    let minYear = 9999, maxYear = 0;
+    allProgs.forEach(p => {
+      const y = parseInt(p.year);
+      if (y) {
+        if (y < minYear) minYear = y;
+        if (y > maxYear) maxYear = y;
+      }
+    });
+
+    if (minYear !== 9999 && maxYear !== 0) {
+      if($('stat-all-years')) $('stat-all-years').textContent = minYear === maxYear ? `${minYear}년` : `${minYear}년 ~ ${maxYear}년`;
+    } else {
+      if($('stat-all-years')) $('stat-all-years').textContent = '-';
+    }
+
+    // 3. 올해 영역별 통계
+    const yr = now.getFullYear();
+    if($('stat-current-year')) $('stat-current-year').textContent = `${yr}년`;
+    
+    // 도메인 목록 불러오기
+    const domainsSnap = await getDocs(query(collection(db, DOMAINS), orderBy('created_at')));
+    const activeDomains = domainsSnap.docs.map(d => ({ id: d.id, name: d.data().name }));
+
+    // 올해 프로그램 필터링
+    const yrProgs = allProgs.filter(p => parseInt(p.year) === yr);
+    
+    // 올해 시수 필터링
+    const qy = query(collection(db, WORK_LOGS), where('year', '==', yr));
+    const snapY = await getDocs(qy);
+    const yrLogs = snapY.docs.map(d => d.data());
+
+    // 도메인별 통계 초기화
+    const domainStats = {};
+    activeDomains.forEach(d => {
+      domainStats[d.id] = { name: d.name, instSet: new Set(), progCount: 0, hours: 0 };
+    });
+    // 도메인 없는(미지정) 경우도 대비
+    domainStats['unknown'] = { name: '미지정/기타', instSet: new Set(), progCount: 0, hours: 0 };
+
+    yrProgs.forEach(p => {
+      const dId = p.domain_id || 'unknown';
+      if (!domainStats[dId]) domainStats[dId] = { name: '미지정/기타', instSet: new Set(), progCount: 0, hours: 0 };
+      domainStats[dId].progCount++;
+      if (p.instructor_id) domainStats[dId].instSet.add(p.instructor_id);
+    });
+
+    yrLogs.forEach(l => {
+      const p = yrProgs.find(prog => prog.id === l.program_id);
+      const dId = p ? (p.domain_id || 'unknown') : 'unknown';
+      if (!domainStats[dId]) domainStats[dId] = { name: '미지정/기타', instSet: new Set(), progCount: 0, hours: 0 };
+      domainStats[dId].hours += (parseFloat(l.hours) || 0);
+    });
+
+    // 헤더 렌더링
+    let theadHtml = `<th style="text-align:center;">구분</th>`;
+    activeDomains.forEach(d => {
+      theadHtml += `<th style="text-align:center;">${d.name}</th>`;
+    });
+    theadHtml += `<th style="text-align:center;">합계</th>`;
+    if ($('stat-year-thead-row')) $('stat-year-thead-row').innerHTML = theadHtml;
+
+    // 본문 (강사 수, 프로그램 수, 누적 시수) 렌더링
+    let totalInst = 0, totalProg = 0, totalHours = 0;
+    
+    let rowInst = `<td style="text-align:center; font-weight:600;">강사 수</td>`;
+    let rowProg = `<td style="text-align:center; font-weight:600;">프로그램 수</td>`;
+    let rowHours = `<td style="text-align:center; font-weight:600;">누적 시수</td>`;
+
+    activeDomains.forEach(d => {
+      const st = domainStats[d.id];
+      const instCount = st.instSet.size;
+      totalInst += instCount;
+      totalProg += st.progCount;
+      totalHours += st.hours;
+
+      rowInst += `<td style="text-align:center;">${instCount || '-'}</td>`;
+      rowProg += `<td style="text-align:center;">${st.progCount || '-'}</td>`;
+      rowHours += `<td style="text-align:center;">${st.hours || '-'}</td>`;
+    });
+
+    rowInst += `<td style="text-align:center; color:var(--color-primary); font-weight:700;">${totalInst || '-'}</td>`;
+    rowProg += `<td style="text-align:center; color:var(--color-primary); font-weight:700;">${totalProg || '-'}</td>`;
+    rowHours += `<td style="text-align:center; color:var(--color-primary); font-weight:700;">${totalHours || '-'}</td>`;
+
+    if ($('stat-year-tbody')) {
+      $('stat-year-tbody').innerHTML = `
+        <tr>${rowInst}</tr>
+        <tr>${rowProg}</tr>
+        <tr>${rowHours}</tr>
+      `;
+    }
+
+    // 4. 올해 우리학교 프로그램 렌더링
+    if ($('stat-current-year-progs')) $('stat-current-year-progs').textContent = `${yr}년`;
+    
+    currentDashboardPrograms = yrProgs;
+    dashboardActiveDomains = activeDomains;
+    dashboardInstructors = instructors;
+    renderDashboardProgramsTable();
+  }
+
+  /* ══════════════════════════════════════════
+     강사 목록 렌더링
+  ══════════════════════════════════════════ */
+  let currentInstructorSort = { col: 'name_korean', dir: 'asc' };
+
+  window.sortInstructors = (col) => {
+    if (currentInstructorSort.col === col) {
+      currentInstructorSort.dir = currentInstructorSort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      currentInstructorSort.col = col;
+      currentInstructorSort.dir = 'asc';
+    }
+    renderInstructorTable();
+  };
+  async function renderInstructorTable(filter = '') {
+    const instructors = await fetchInstructors();
+    const filtered = filter ? instructors.filter(i => i.name_korean.includes(filter)) : instructors;
+    const tbody = $('instructorTableBody');
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">👤</div><div class="empty-title">등록된 강사가 없습니다</div><div class="empty-desc">우측 상단 '강사 등록' 버튼을 눌러 추가하세요</div></div></td></tr>`;
+      return;
+    }
+
+    // 강사별 총 시수 병렬 조회
+    const totals = await Promise.all(filtered.map(async inst => {
+      const q = query(collection(db, WORK_LOGS), where('instructor_id', '==', inst.id));
+      const snap = await getDocs(q);
+      return snap.docs.reduce((s, d) => s + (d.data().hours || 0), 0);
+    }));
+
+    // 정렬을 위해 강사 데이터와 총 시수를 합침
+    let combined = filtered.map((inst, i) => ({ inst, total: totals[i] }));
+
+    combined.sort((a, b) => {
+      let valA, valB;
+      if (currentInstructorSort.col === 'total') {
+        valA = parseFloat(a.total) || 0;
+        valB = parseFloat(b.total) || 0;
+      } else {
+        valA = a.inst[currentInstructorSort.col] || '';
+        valB = b.inst[currentInstructorSort.col] || '';
+      }
+
+      if (valA < valB) return currentInstructorSort.dir === 'asc' ? -1 : 1;
+      if (valA > valB) return currentInstructorSort.dir === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    // 아이콘 업데이트
+    ['name_korean', 'name_chinese', 'birth_date', 'consignment_type', 'position', 'total'].forEach(col => {
+      const iconSpan = $(`sort-inst-icon-${col}`);
+      if (iconSpan) iconSpan.textContent = currentInstructorSort.col === col ? (currentInstructorSort.dir === 'asc' ? '▲' : '▼') : '';
+    });
+
+    tbody.innerHTML = combined.map((item, i) => {
+      const inst = item.inst;
+      const isCompany = inst.consignment_type === '업체';
+      const isPersonal = inst.consignment_type === '개인';
+      const customConsign = (!isCompany && !isPersonal && inst.consignment_type) ? inst.consignment_type : '';
+      
+      return `
+      <tr>
+        <td style="color:var(--color-text-sub); text-align:center;">${i + 1}</td>
+        <td><input type="text" class="inline-input" style="font-weight:bold; color:var(--color-text); text-align:center;" value="${inst.name_korean}" onblur="updateInstructorField(this, '${inst.id}', 'name_korean', '${inst.name_korean}')"></td>
+        <td><input type="text" class="inline-input" style="text-align:center;" value="${inst.name_chinese || ''}" onblur="updateInstructorField(this, '${inst.id}', 'name_chinese', '${inst.name_chinese || ''}')"></td>
+        <td><input type="date" class="inline-input" style="text-align:center;" value="${inst.birth_date || ''}" onblur="updateInstructorField(this, '${inst.id}', 'birth_date', '${inst.birth_date || ''}')"></td>
+        <td style="text-align:center;">
+           <select class="inline-input select-badge badge" style="background:var(--color-border); color:var(--color-text); width:auto;" onchange="updateInstructorField(this, '${inst.id}', 'consignment_type', '${inst.consignment_type || ''}')">
+             <option value="개인" ${isPersonal ? 'selected' : ''}>개인</option>
+             <option value="업체" ${isCompany ? 'selected' : ''}>업체</option>
+             ${customConsign ? `<option value="${customConsign}" selected>${customConsign}</option>` : '<option value="직접입력">직접입력</option>'}
+           </select>
+        </td>
+        <td style="text-align:center;"><input type="text" class="inline-input badge badge-success" style="text-align:center; width:auto;" value="${inst.position || '외부강사'}" onblur="updateInstructorField(this, '${inst.id}', 'position', '${inst.position || '외부강사'}')"></td>
+        <td style="text-align:center;"><strong>${item.total}</strong>시간</td>
+        <td>
+          <div class="row-actions">
+            <button class="btn-icon-action btn-icon-edit" onclick="editInstructor('${inst.id}')" title="수정">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+            </button>
+            <button class="btn-icon-action btn-icon-delete" onclick="deleteInstructor('${inst.id}','${inst.name_korean}')" title="삭제">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  window.updateInstructorField = async (el, id, field, oldVal) => {
+    let newVal = el.value.trim();
+    if (field === 'consignment_type' && newVal === '직접입력') {
+       toast('위탁구분 "직접입력" 및 기본정보 외 수정은 우측 "수정" 버튼을 눌러 진행해주세요.', 'info');
+       el.value = oldVal;
+       return;
+    }
+    if (newVal === oldVal) return;
+    try {
+      if (field === 'name_korean' && !newVal) {
+        toast('성명(한글)은 필수 입력 항목입니다.', 'error');
+        el.value = oldVal;
+        return;
+      }
+      
+      await updateDoc(doc(db, INSTRUCTORS, id), {
+        [field]: newVal,
+        updated_at: new Date().toISOString()
+      });
+      
+      // Update Cache
+      const cached = instructorsCache.find(i => i.id === id);
+      if (cached) {
+        cached[field] = newVal;
+      }
+      
+      toast('변경사항이 실시간으로 저장되었습니다.', 'success');
+      el.style.backgroundColor = 'rgba(16,185,129,0.1)';
+      setTimeout(()=> el.style.backgroundColor='', 500);
+
+      // if name changed, update the UI logic (re-render might be too heavy, but we can update dash/cache)
+      if (field === 'name_korean') {
+        fetchInstructors(); 
+      }
+    } catch(err) {
+      console.error('Field Update Error:', err);
+      toast('수정 중 오류가 발생했습니다.', 'error');
+      el.value = oldVal;
+    }
+  };
+
+  $('instructorSearch').addEventListener('input', e => renderInstructorTable(e.target.value.trim()));
+
+  /* 위탁구분 직접 입력 토글 */
+  $('inputConsignmentType').addEventListener('change', (e) => {
+    $('inputConsignmentCustom').style.display = (e.target.value === '직접입력') ? 'block' : 'none';
+  });
+
+  /* 강사 등록 버튼 */
+  $('addInstructorBtn').addEventListener('click', () => {
+    $('instructorModalTitle').textContent = '강사 등록';
+    $('instructorId').value = '';
+    ['inputNameKorean','inputNameChinese','inputBirthDate','inputAddress','inputConsignmentCustom'].forEach(id => $(id).value = '');
+    $('inputPosition').value = '외부강사';
+    $('inputConsignmentType').value = '개인';
+    $('inputConsignmentCustom').style.display = 'none';
+    openModal('instructorModal');
+  });
+
+  /* 강사 수정 (전역 노출) */
+  window.editInstructor = async (id) => {
+    const snap = await getDoc(doc(db, INSTRUCTORS, id));
+    if (!snap.exists()) return;
+    const d = snap.data();
+    $('instructorModalTitle').textContent = '강사 정보 수정';
+    $('instructorId').value = id;
+    $('inputNameKorean').value  = d.name_korean  || '';
+    $('inputNameChinese').value = d.name_chinese  || '';
+    $('inputBirthDate').value   = d.birth_date    || '';
+    $('inputPosition').value    = d.position      || '외부강사';
+    $('inputAddress').value     = d.address       || '';
+    
+    // 위탁구분 로드
+    const consType = d.consignment_type || '개인';
+    if (['개인', '업체'].includes(consType)) {
+      $('inputConsignmentType').value = consType;
+      $('inputConsignmentCustom').value = '';
+      $('inputConsignmentCustom').style.display = 'none';
+    } else {
+      $('inputConsignmentType').value = '직접입력';
+      $('inputConsignmentCustom').value = consType;
+      $('inputConsignmentCustom').style.display = 'block';
+    }
+
+    openModal('instructorModal');
+  };
+
+  /* 강사 삭제 */
+  window.deleteInstructor = async (id, name) => {
+    if (!confirm(`"${name}" 강사를 삭제하시겠습니까?\n(관련 출강 기록은 삭제되지 않습니다)`)) return;
+    await deleteDoc(doc(db, INSTRUCTORS, id));
+    toast(`${name} 강사가 삭제되었습니다.`, 'success');
+    renderInstructorTable();
+  };
+
+  /* 강사 저장 */
+  $('saveInstructorBtn').addEventListener('click', async () => {
+    const nameKr = $('inputNameKorean').value.trim();
+    const birth  = $('inputBirthDate').value;
+    const addr   = $('inputAddress').value.trim();
+    
+    let consType = $('inputConsignmentType').value;
+    if (consType === '직접입력') {
+      consType = $('inputConsignmentCustom').value.trim();
+      if (!consType) {
+        toast('위탁구분을 직접 입력해 주세요.', 'error');
+        return;
+      }
+    }
+
+    if (!nameKr || !birth || !addr) { 
+      toast('필수 항목(성명, 생년월일, 위탁구분, 주소)을 모두 입력해 주세요.', 'error'); 
+      return; 
+    }
+
+    const data = {
+      name_korean:  nameKr,
+      name_chinese: $('inputNameChinese').value.trim(),
+      birth_date:   birth,
+      consignment_type: consType,
+      position:     $('inputPosition').value.trim() || '외부강사',
+      address:      addr,
+      updated_at:   new Date().toISOString()
+    };
+
+    const existingId = $('instructorId').value;
+    if (existingId) {
+      await updateDoc(doc(db, INSTRUCTORS, existingId), data);
+      toast('강사 정보가 수정되었습니다.', 'success');
+    } else {
+      data.created_at = new Date().toISOString();
+      await addDoc(collection(db, INSTRUCTORS), data);
+      toast('강사가 등록되었습니다.', 'success');
+    }
+
+    $('instructorModal').classList.remove('open');
+    renderInstructorTable();
+  });
+
+  /* ══════════════════════════════════════════
+     강사 셀렉트 채우기 (출강기록 / 확인서 공통)
+  ══════════════════════════════════════════ */
+  async function populateInstructorSelect(selectId) {
+    const instructors = await fetchInstructors();
+    const sel = $(selectId);
+    sel.innerHTML = '<option value="">-- 강사를 선택하세요 --</option>';
+    instructors.forEach(inst => {
+      const opt = document.createElement('option');
+      opt.value = inst.id;
+      opt.textContent = inst.name_korean;
+      sel.appendChild(opt);
+    });
+  }
+
+  /* ══════════════════════════════════════════
+     프로그램 관리 로직
+  ══════════════════════════════════════════ */
+  let domainsCache = [];
+  
+  async function loadDomains() {
+    const snap = await getDocs(query(collection(db, DOMAINS), orderBy('created_at')));
+    domainsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    
+    $('domainListBody').innerHTML = domainsCache.length ? domainsCache.map(d => `
+      <tr>
+        <td style="padding:8px 4px;">${d.name}</td>
+        <td style="text-align:right; padding:8px 4px;">
+          <button class="btn btn-danger btn-sm" onclick="deleteDomain('${d.id}')">🗑️</button>
+        </td>
+      </tr>
+    `).join('') : '<tr><td colspan="2" style="text-align:center;color:#888;">등록된 영역이 없습니다.</td></tr>';
+
+    const sel = $('inputProgramDomain');
+    sel.innerHTML = '<option value="">-- 영역 선택 --</option>';
+    domainsCache.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = d.name;
+      sel.appendChild(opt);
+    });
+  }
+
+  $('manageDomainBtn').addEventListener('click', () => {
+    $('newDomainInput').value = '';
+    loadDomains();
+    openModal('domainModal');
+  });
+
+  $('addDomainBtn').addEventListener('click', async () => {
+    const name = $('newDomainInput').value.trim();
+    if (!name) return;
+    await addDoc(collection(db, DOMAINS), { name, created_at: new Date().toISOString() });
+    $('newDomainInput').value = '';
+    loadDomains();
+  });
+
+  window.deleteDomain = async (id) => {
+    if (!confirm('해당 영역을 삭제하시겠습니까?')) return;
+    await deleteDoc(doc(db, DOMAINS, id));
+    loadDomains();
+  };
+
+  const gradeCheckboxes = document.querySelectorAll('input[name="targetGrade"]');
+  const checkAllBox = $('checkAllGrades');
+  
+  checkAllBox.addEventListener('change', (e) => {
+    const isChecked = e.target.checked;
+    gradeCheckboxes.forEach(cb => cb.checked = isChecked);
+  });
+  gradeCheckboxes.forEach(cb => {
+    cb.addEventListener('change', () => {
+      const allChecked = Array.from(gradeCheckboxes).every(c => c.checked);
+      checkAllBox.checked = allChecked;
+    });
+  });
+
+  function formatGrades(selectedArray) {
+    if (!selectedArray || selectedArray.length === 0) return "-";
+    if (selectedArray.length === 6) return "전교생";
+    selectedArray.sort((a,b) => a-b);
+    let ranges = [];
+    let start = selectedArray[0], end = selectedArray[0];
+    for (let i = 1; i < selectedArray.length; i++) {
+        if (selectedArray[i] === end + 1) end++;
+        else {
+            ranges.push(start === end ? `${start}학년` : `${start}~${end}학년`);
+            start = end = selectedArray[i];
+        }
+    }
+    ranges.push(start === end ? `${start}학년` : `${start}~${end}학년`);
+    return ranges.join(", ");
+  }
+
+  let currentProgramsData = [];
+  let currentProgramSort = { col: 'created_at', dir: 'asc' };
+
+  window.sortPrograms = (col) => {
+    if (currentProgramSort.col === col) {
+      currentProgramSort.dir = currentProgramSort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      currentProgramSort.col = col;
+      currentProgramSort.dir = 'asc';
+    }
+    renderProgramTable();
+  };
+
+  function renderProgramTable() {
+    const tbody = $('programTableBody');
+    if ($('checkAllProgramsList')) $('checkAllProgramsList').checked = false;
+    if ($('btnDuplicateSelectedPrograms')) $('btnDuplicateSelectedPrograms').style.display = 'none';
+    if ($('btnDeleteSelectedPrograms')) $('btnDeleteSelectedPrograms').style.display = 'none';
+
+    if (currentProgramsData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">데이터 없음</div></div></td></tr>';
+      return;
+    }
+
+    currentProgramsData.sort((a, b) => {
+      if (currentProgramSort.col === 'day_of_week') {
+        const getDayWeight = (str) => {
+          if (!str) return 99;
+          const order = { '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6, '일': 7 };
+          return order[str.trim().charAt(0)] || 99;
+        };
+        const weightA = getDayWeight(a.day_of_week);
+        const weightB = getDayWeight(b.day_of_week);
+        if (weightA !== weightB) {
+           return currentProgramSort.dir === 'asc' ? (weightA - weightB) : (weightB - weightA);
+        }
+        // If weights are equal, fall back to default alphabetical sort for the remaining text
+        const strA = a.day_of_week || '';
+        const strB = b.day_of_week || '';
+        if (strA < strB) return currentProgramSort.dir === 'asc' ? -1 : 1;
+        if (strA > strB) return currentProgramSort.dir === 'asc' ? 1 : -1;
+        return 0;
+      }
+
+      let valA = '', valB = '';
+      if (currentProgramSort.col === 'domain') {
+        valA = a._domainName || '';
+        valB = b._domainName || '';
+      } else if (currentProgramSort.col === 'name') {
+        valA = a.name || '';
+        valB = b.name || '';
+      } else if (currentProgramSort.col === 'instructor') {
+        valA = a._instName || '';
+        valB = b._instName || '';
+      } else {
+        valA = a.created_at || '';
+        valB = b.created_at || '';
+      }
+      
+      if (valA < valB) return currentProgramSort.dir === 'asc' ? -1 : 1;
+      if (valA > valB) return currentProgramSort.dir === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    ['domain', 'name', 'instructor', 'day_of_week'].forEach(col => {
+      const iconSpan = $(`sort-icon-${col}`);
+      if (iconSpan) iconSpan.textContent = currentProgramSort.col === col ? (currentProgramSort.dir === 'asc' ? '▲' : '▼') : '';
+    });
+
+    tbody.innerHTML = currentProgramsData.map((p, index) => {
+      const inputStyle = "width:100%; text-align:center; border:1px solid transparent; border-radius:4px; background:transparent; color:var(--color-text); outline:none; transition:border 0.2s; font-family:inherit;";
+      const focusStyle = "onfocus=\"this.style.border='1px solid var(--color-primary)'; this.style.background='var(--color-surface)';\" onblur=\"this.style.border='1px solid transparent'; this.style.background='transparent';\"";
+
+      return `<tr class="clickable-row">
+        <td style="text-align:center;"><input type="checkbox" class="prog-row-check" value="${p.id}"></td>
+        <td style="text-align:center; color:var(--color-text-sub);">${index + 1}</td>
+        <td style="cursor:pointer;" onclick="editProgram('${p.id}')" title="클릭하여 모달에서 영역 변경">${p._domainName}</td>
+        <td>
+          <input type="text" value="${p.name}" onchange="inlineEditProgram('${p.id}', 'name', this.value)" style="${inputStyle} font-weight:bold; min-width:80px;" ${focusStyle} title="수정 후 포커스 해제 시 자동 저장">
+        </td>
+        <td style="cursor:pointer;" onclick="editProgram('${p.id}')" title="클릭하여 모달에서 강사 변경">${p._instName}</td>
+        <td style="padding:4px; vertical-align:middle;">
+          <div style="display:flex; justify-content:center; align-items:center; gap:4px; flex-wrap:nowrap;">
+            <input type="date" value="${p.start_date || ''}" onchange="inlineEditProgram('${p.id}', 'start_date', this.value)" style="${inputStyle} width:100px; font-size:0.85em; padding:2px;" ${focusStyle}>
+            <span style="color:var(--color-text-sub);">~</span>
+            <input type="date" value="${p.end_date || ''}" onchange="inlineEditProgram('${p.id}', 'end_date', this.value)" style="${inputStyle} width:100px; font-size:0.85em; padding:2px;" ${focusStyle}>
+          </div>
+        </td>
+        <td>
+          <input type="text" value="${p.day_of_week || ''}" onchange="inlineEditProgram('${p.id}', 'day_of_week', this.value)" style="${inputStyle} width:50px;" ${focusStyle}>
+        </td>
+        <td>
+          <input type="text" value="${formatGrades(p.grades).replace(/학년/g, '').trim()}" onchange="inlineEditProgram('${p.id}', 'grades', this.value)" placeholder="1,2" style="${inputStyle} width:60px;" ${focusStyle} title="예: 1,3 또는 전교생">
+        </td>
+        <td>
+          <input type="text" value="${p.notes || ''}" onchange="inlineEditProgram('${p.id}', 'notes', this.value)" placeholder="-" style="${inputStyle} min-width:80px;" ${focusStyle}>
+        </td>
+        <td>
+          <div class="row-actions">
+            <button class="btn-icon-action btn-icon-edit" onclick="editProgram('${p.id}')" title="수정">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+            </button>
+            <button class="btn-icon-action btn-icon-delete" onclick="deleteProgram('${p.id}','${p.name}')" title="삭제">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+
+    const rowChecks = document.querySelectorAll('.prog-row-check');
+    const updateHeaderBtnsState = () => {
+      const anyChecked = Array.from(rowChecks).some(c => c.checked);
+      if ($('btnDeleteSelectedPrograms')) $('btnDeleteSelectedPrograms').style.display = anyChecked ? 'inline-flex' : 'none';
+      if ($('btnBulkEditDates')) $('btnBulkEditDates').style.display = anyChecked ? 'inline-flex' : 'none';
+      if ($('btnDuplicateSelectedPrograms')) $('btnDuplicateSelectedPrograms').style.display = anyChecked ? 'inline-flex' : 'none';
+      if ($('checkAllProgramsList')) {
+        $('checkAllProgramsList').checked = rowChecks.length > 0 && Array.from(rowChecks).every(c => c.checked);
+      }
+    };
+
+    rowChecks.forEach(cb => cb.addEventListener('change', updateHeaderBtnsState));
+
+    if ($('checkAllProgramsList')) {
+      $('checkAllProgramsList').addEventListener('change', (e) => {
+        rowChecks.forEach(cb => cb.checked = e.target.checked);
+        updateHeaderBtnsState();
+      });
+    }
+  }
+
+  if ($('btnDeleteSelectedPrograms')) {
+    $('btnDeleteSelectedPrograms').addEventListener('click', async () => {
+      const selected = Array.from(document.querySelectorAll('.prog-row-check:checked')).map(cb => cb.value);
+      if (selected.length === 0) return;
+      if (!confirm(`선택한 프로그램 ${selected.length}개를 일괄 삭제하시겠습니까?`)) return;
+
+      toast('삭제 중입니다...', 'info');
+      try {
+        await Promise.all(selected.map(id => deleteDoc(doc(db, PROGRAMS, id))));
+        toast('선택한 프로그램이 삭제되었습니다.', 'success');
+        loadPrograms();
+      } catch (err) {
+        toast('삭제 중 오류가 발생했습니다.', 'error');
+        console.error(err);
+      }
+    });
+  }
+
+  // 복제 기능
+  if ($('btnDuplicateSelectedPrograms')) {
+    $('btnDuplicateSelectedPrograms').addEventListener('click', async () => {
+      const selected = Array.from(document.querySelectorAll('.prog-row-check:checked')).map(cb => cb.value);
+      if (selected.length === 0) return;
+      if (!confirm(`선택한 프로그램 ${selected.length}개를 복제하시겠습니까?`)) return;
+
+      toast('복제 중입니다...', 'info');
+      try {
+        const batchPromises = selected.map(async id => {
+           const progData = currentProgramsData.find(p => p.id === id);
+           if (!progData) return;
+           const newProg = { ...progData, name: progData.name + ' (복사본)', created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+           delete newProg.id;
+           delete newProg._domainName;
+           delete newProg._instName;
+           return addDoc(collection(db, PROGRAMS), newProg);
+        });
+        await Promise.all(batchPromises);
+        toast('선택한 프로그램이 복제되었습니다.', 'success');
+        $('checkAllProgramsList').checked = false; // 복제 후 초기화
+        loadPrograms();
+      } catch (err) {
+        toast('복제 중 오류가 발생했습니다.', 'error');
+        console.error(err);
+      }
+    });
+  }
+
+  // 일괄 수정 관련
+  if ($('btnBulkEditDates')) {
+    $('btnBulkEditDates').addEventListener('click', () => {
+       const selected = Array.from(document.querySelectorAll('.prog-row-check:checked')).map(cb => cb.value);
+       if (selected.length === 0) return;
+       $('bulkInputStartDate').value = '';
+       $('bulkInputEndDate').value = '';
+       openModal('bulkEditDatesModal');
+    });
+  }
+
+  if ($('doBulkEditDatesBtn')) {
+    $('doBulkEditDatesBtn').addEventListener('click', async () => {
+       const startDate = $('bulkInputStartDate').value;
+       const endDate = $('bulkInputEndDate').value;
+       if (!startDate || !endDate) {
+          toast('시작일과 종료일을 모두 입력해주세요.', 'error');
+          return;
+       }
+       if (startDate > endDate) {
+          toast('시작일이 종료일보다 클 수 없습니다.', 'error');
+          return;
+       }
+       const selected = Array.from(document.querySelectorAll('.prog-row-check:checked')).map(cb => cb.value);
+       if (selected.length === 0) return;
+
+       const btn = $('doBulkEditDatesBtn');
+       btn.disabled = true;
+       btn.textContent = '처리 중...';
+
+       try {
+          const batchPromises = selected.map(id => updateDoc(doc(db, PROGRAMS, id), {
+            start_date: startDate,
+            end_date: endDate,
+            updated_at: new Date().toISOString()
+          }));
+          await Promise.all(batchPromises);
+          toast(`총 ${selected.length}개 프로그램의 기간이 변경되었습니다.`, 'success');
+          closeModal('bulkEditDatesModal');
+          loadPrograms();
+       } catch (e) {
+          console.error(e);
+          toast('기간 변경 중 오류가 발생했습니다.', 'error');
+       } finally {
+          btn.disabled = false;
+          btn.textContent = '💾 일괄 변경';
+       }
+    });
+  }
+
+  // 프로그램 가져오기 관련
+  if ($('importProgramsBtn')) {
+    $('importProgramsBtn').addEventListener('click', async () => {
+      const currentYear = parseInt($('programYearSelect').value);
+      const sel = $('importYearSelect');
+      sel.innerHTML = '<option value="">데이터를 불러오는 중...</option>';
+      
+      try {
+        const snap = await getDocs(collection(db, PROGRAMS));
+        let availableYears = new Set();
+        snap.forEach(docSnap => {
+          const y = parseInt(docSnap.data().year);
+          if (y && !isNaN(y) && y !== currentYear) {
+            availableYears.add(y);
+          }
+        });
+        
+        sel.innerHTML = '';
+        let yearsArr = Array.from(availableYears).sort((a, b) => b - a);
+        
+        if (yearsArr.length === 0) {
+           let opt = document.createElement('option');
+           opt.value = "";
+           opt.textContent = "가져올 수 있는 개설된 연도가 없습니다";
+           opt.disabled = true;
+           opt.selected = true;
+           sel.appendChild(opt);
+        } else {
+           yearsArr.forEach(y => {
+              let opt = document.createElement('option');
+              opt.value = y;
+              opt.textContent = `${y}년`;
+              sel.appendChild(opt);
+           });
+           
+           // 직전 연도가 목록에 있다면 기본으로 선택
+           if (yearsArr.includes(currentYear - 1)) {
+              sel.value = currentYear - 1;
+           } else {
+              sel.selectedIndex = 0;
+           }
+        }
+      } catch(err) {
+         console.error(err);
+         toast('연도 목록을 불러오지 못했습니다.', 'error');
+         sel.innerHTML = '<option value="">오류 발생</option>';
+      }
+
+      openModal('importProgramsModal');
+    });
+  }
+
+  if ($('doImportProgramsBtn')) {
+    $('doImportProgramsBtn').addEventListener('click', async () => {
+      const targetYear = parseInt($('programYearSelect').value);
+      const fromYear = parseInt($('importYearSelect').value);
+
+      if (!targetYear || !fromYear) return;
+
+      const btn = $('doImportProgramsBtn');
+      btn.disabled = true;
+      btn.textContent = '불러오는 중...';
+
+      try {
+        const q = query(collection(db, PROGRAMS), where('year', '==', fromYear));
+        const snap = await getDocs(q);
+        
+        if (snap.empty) {
+          toast(`${fromYear}년도에 등록된 프로그램이 없습니다.`, 'error');
+        } else {
+          const docsToAdd = snap.docs.map(d => {
+            const data = d.data();
+            return {
+              ...data,
+              year: targetYear,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+          });
+
+          const batchPromises = docsToAdd.map(pData => addDoc(collection(db, PROGRAMS), pData));
+          await Promise.all(batchPromises);
+
+          toast(`${fromYear}년 프로그램 ${docsToAdd.length}개를 성공적으로 복사했습니다.`, 'success');
+          closeModal('importProgramsModal');
+          loadPrograms();
+        }
+      } catch (err) {
+        console.error(err);
+        toast('프로그램을 복사하는 중 오류가 발생했습니다.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '📥 복사하기';
+      }
+    });
+  }
+
+  $('programYearSelect').addEventListener('change', loadPrograms);
+
+  async function loadPrograms() {
+    const year = parseInt($('programYearSelect').value);
+    if (!year) return;
+    
+    if(!instructorsCache || instructorsCache.length === 0) await fetchInstructors();
+
+    // 복합 인덱스 오류 방지를 위해 where 조건만 사용, 정렬은 JS에서 처리함
+    const q = query(collection(db, PROGRAMS), where('year', '==', year));
+    
+    try {
+      const snap = await getDocs(q);
+      const tbody = $('programTableBody');
+
+      if (snap.empty) {
+        currentProgramsData = [];
+        renderProgramTable();
+        return;
+      }
+
+      currentProgramsData = snap.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+      
+      currentProgramsData.forEach(p => {
+        p._domainName = domainsCache.find(d => d.id === p.domain_id)?.name || '-';
+        p._instName = instructorsCache.find(i => i.id === p.instructor_id)?.name_korean || '-';
+      });
+
+      renderProgramTable();
+    } catch (err) {
+      console.error(err);
+      toast('데이터를 불러오지 못했습니다.', 'error');
+    }
+  }
+
+  $('addProgramBtn').addEventListener('click', async () => {
+    $('programModalTitle').textContent = '프로그램 추가';
+    $('programId').value = '';
+    $('inputProgramName').value = '';
+    if($('inputProgramCapacity')) $('inputProgramCapacity').value = '';
+    if($('inputProgramHours')) $('inputProgramHours').value = '';
+    $('inputProgramNotes').value = '';
+    $('inputProgramDomain').value = '';
+    $('inputProgramStartDate').value = '';
+    $('inputProgramEndDate').value = '';
+    if($('inputProgramDayOfWeek')) $('inputProgramDayOfWeek').value = '';
+    
+    await populateInstructorSelect('inputProgramInstructor');
+    $('inputProgramInstructor').value = '';
+
+    gradeCheckboxes.forEach(cb => cb.checked = false);
+    checkAllBox.checked = false;
+
+    openModal('programModal');
+  });
+
+  window.editProgram = async (id) => {
+    const snap = await getDoc(doc(db, PROGRAMS, id));
+    if (!snap.exists()) return;
+    const p = snap.data();
+    
+    $('programModalTitle').textContent = '프로그램 수정';
+    $('programId').value = id;
+    $('inputProgramDomain').value = p.domain_id || '';
+    $('inputProgramName').value = p.name || '';
+    if($('inputProgramCapacity')) $('inputProgramCapacity').value = p.capacity || '';
+    if($('inputProgramHours')) $('inputProgramHours').value = p.hours || '';
+    $('inputProgramNotes').value = p.notes || '';
+    $('inputProgramStartDate').value = p.start_date || '';
+    $('inputProgramEndDate').value = p.end_date || '';
+    if($('inputProgramDayOfWeek')) $('inputProgramDayOfWeek').value = p.day_of_week || '';
+
+    await populateInstructorSelect('inputProgramInstructor');
+    $('inputProgramInstructor').value = p.instructor_id || '';
+
+    gradeCheckboxes.forEach(cb => {
+      cb.checked = (p.grades || []).includes(parseInt(cb.value));
+    });
+    checkAllBox.checked = Array.from(gradeCheckboxes).every(c => c.checked);
+
+    openModal('programModal');
+  };
+
+  window.inlineEditProgram = async (id, field, value) => {
+    try {
+      let updateData = {};
+      
+      if (field === 'capacity') {
+        updateData[field] = value ? parseInt(value, 10) : null;
+      } else if (field === 'hours') {
+        updateData[field] = value ? parseFloat(value) : null;
+      } else if (field === 'grades') {
+        if (value.includes('전')) {
+          updateData.grades = [1, 2, 3, 4, 5, 6];
+        } else {
+          let gradesArr = [];
+          let str = value.replace(/[^0-9~\-,]/g, '');
+          const rangeRegex = /(\d+)[\~-](\d+)/g;
+          let match;
+          while ((match = rangeRegex.exec(str)) !== null) {
+            const start = Math.min(Number(match[1]), Number(match[2]));
+            const end = Math.max(Number(match[1]), Number(match[2]));
+            for (let i = start; i <= end; i++) {
+              if (i >= 1 && i <= 6) gradesArr.push(i);
+            }
+          }
+          str = str.replace(/(\d+)[\~-](\d+)/g, '');
+          const nums = str.match(/\d/g);
+          if (nums) {
+            nums.forEach(n => {
+              const val = Number(n);
+              if (val >= 1 && val <= 6) gradesArr.push(val);
+            });
+          }
+          updateData.grades = Array.from(new Set(gradesArr)).sort((a, b) => a - b);
+        }
+      } else {
+        updateData[field] = value;
+      }
+      
+      updateData.updated_at = new Date().toISOString();
+
+      // Update firestore silently
+      updateDoc(doc(db, PROGRAMS, id), updateData).catch(err => {
+        console.error(err);
+        toast('자동 저장 중 오류가 발생했습니다.', 'error');
+      });
+
+      // Update local memory securely
+      const target = currentProgramsData.find(p => p.id === id);
+      if (target) {
+        Object.assign(target, updateData);
+        if (field === 'grades') {
+          // Find the input element and format it correctly so the user sees the update immediately
+          const inputEl = document.querySelector(`input[onchange="inlineEditProgram('${id}', 'grades', this.value)"]`);
+          if (inputEl) {
+            inputEl.value = formatGrades(updateData.grades).replace(/학년/g, '').trim();
+          }
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  window.deleteProgram = async (id, name) => {
+    if (!confirm(`"${name}" 프로그램을 삭제하시겠습니까?`)) return;
+    await deleteDoc(doc(db, PROGRAMS, id));
+    toast('삭제되었습니다.', 'success');
+    loadPrograms();
+  };
+
+  $('saveProgramBtn').addEventListener('click', async () => {
+    const domainId = $('inputProgramDomain').value;
+    const name = $('inputProgramName').value.trim();
+    const instId = $('inputProgramInstructor').value;
+    const year = parseInt($('programYearSelect').value);
+    const startDate = $('inputProgramStartDate').value;
+    const endDate = $('inputProgramEndDate').value;
+    
+    if (!domainId || !name || !instId || !startDate || !endDate) {
+      toast('영역, 프로그램명, 강사명, 운영 기간은 필수 입력입니다.', 'error');
+      return;
+    }
+
+    if (startDate > endDate) {
+      toast('운영 시작일이 종료일보다 클 수 없습니다.', 'error');
+      return;
+    }
+
+    const selectedGrades = Array.from(gradeCheckboxes)
+      .filter(cb => cb.checked)
+      .map(cb => parseInt(cb.value));
+
+    const capacity = ($('inputProgramCapacity') && $('inputProgramCapacity').value) ? parseInt($('inputProgramCapacity').value) : null;
+    const hours = ($('inputProgramHours') && $('inputProgramHours').value) ? parseFloat($('inputProgramHours').value) : null;
+    
+    const data = {
+      year,
+      domain_id: domainId,
+      name,
+      instructor_id: instId,
+      start_date: startDate,
+      end_date: endDate,
+      grades: selectedGrades,
+      capacity,
+      hours,
+      day_of_week: $('inputProgramDayOfWeek') ? $('inputProgramDayOfWeek').value.trim() : '',
+      notes: $('inputProgramNotes').value.trim(),
+      updated_at: new Date().toISOString()
+    };
+
+    const existingId = $('programId').value;
+    if (existingId) {
+      await updateDoc(doc(db, PROGRAMS, existingId), data);
+      toast('프로그램이 수정되었습니다.', 'success');
+    } else {
+      data.created_at = new Date().toISOString();
+      await addDoc(collection(db, PROGRAMS), data);
+      toast('프로그램이 추가되었습니다.', 'success');
+    }
+    
+    $('programModal').classList.remove('open');
+    loadPrograms();
+  });
+
+  /* ══════════════════════════════════════════
+     출강 기록 — 실시간 시수 테이블 로직
+  ══════════════════════════════════════════ */
+  const schoolMonths = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2];
+
+  let currentWorklogsData = [];
+  let currentWorklogsSort = { col: 'default', dir: 'asc' };
+  let workLogsMapCache = {};
+  let workDocIdsCache = {};
+  let currentWorklogsMode = 'monthly';
+  let currentWorklogsYear = 0;
+
+  window.resetWorklogsSort = () => {
+    currentWorklogsSort = { col: 'default', dir: 'asc' };
+    renderWorklogsTable();
+    toast('기본 정렬 상태로 복구되었습니다.', 'success');
+  };
+
+  $('worklogsInputMode').addEventListener('change', (e) => {
+    currentWorklogsMode = e.target.value;
+    renderWorklogsTable();
+  });
+
+  window.sortWorklogs = (col) => {
+    if (currentWorklogsSort.col === col) {
+      currentWorklogsSort.dir = currentWorklogsSort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      currentWorklogsSort.col = col;
+      currentWorklogsSort.dir = 'asc';
+    }
+    renderWorklogsTable();
+  };
+
+  function renderWorklogsTable() {
+    const thead = $('worklogsTableHead');
+    const tbody = $('worklogsTableBody');
+    if (currentWorklogsData.length === 0) {
+      thead.innerHTML = '';
+      tbody.innerHTML = '<tr><td colspan="16"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">등록된 프로그램이 없습니다.</div><div class="empty-desc">프로그램 관리 탭에서 프로그램을 먼저 추가해주세요.</div></div></td></tr>';
+      return;
+    }
+
+    // 헤더 렌더링
+    if (currentWorklogsMode === 'monthly') {
+      thead.innerHTML = `
+        <tr>
+          <th rowspan="2" class="col-num" style="width:50px; text-align:center;">번호</th>
+          <th rowspan="2" class="col-domain" style="width:120px; cursor:pointer; user-select:none; text-align:center;" onclick="sortWorklogs('domain')" title="영역 정렬">영역 <span id="sort-worklogs-icon-domain" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+          <th rowspan="2" class="col-prog" style="cursor:pointer; user-select:none; text-align:center;" onclick="sortWorklogs('name')" title="프로그램명 정렬">프로그램명 <span id="sort-worklogs-icon-name" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+          <th rowspan="2" class="col-day" style="cursor:pointer; user-select:none; text-align:center;" onclick="sortWorklogs('day_of_week')" title="요일 정렬">요일 <span id="sort-worklogs-icon-day_of_week" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+          <th rowspan="2" class="col-inst" style="cursor:pointer; user-select:none; text-align:center;" onclick="sortWorklogs('instructor')" title="강사명 정렬">강사명 <span id="sort-worklogs-icon-instructor" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+          <th colspan="12" style="text-align:center;">월별 시수</th>
+          <th rowspan="2" class="col-total" style="cursor:pointer; user-select:none; text-align:center;" onclick="sortWorklogs('total')" title="연간누계 정렬">연간<br>누계 <span id="sort-worklogs-icon-total" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+        </tr>
+        <tr>
+          ${schoolMonths.map(m => `<th class="col-month">${m}월</th>`).join('')}
+        </tr>
+      `;
+    } else {
+      thead.innerHTML = `
+        <tr>
+          <th class="col-num" style="width:50px; text-align:center;">번호</th>
+          <th class="col-domain" style="width:120px; cursor:pointer; user-select:none; text-align:center;" onclick="sortWorklogs('domain')" title="영역 정렬">영역 <span id="sort-worklogs-icon-domain" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+          <th class="col-prog" style="cursor:pointer; user-select:none; text-align:center;" onclick="sortWorklogs('name')" title="프로그램명 정렬">프로그램명 <span id="sort-worklogs-icon-name" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+          <th class="col-day" style="cursor:pointer; user-select:none; text-align:center;" onclick="sortWorklogs('day_of_week')" title="요일 정렬">요일 <span id="sort-worklogs-icon-day_of_week" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+          <th class="col-inst" style="cursor:pointer; user-select:none; text-align:center;" onclick="sortWorklogs('instructor')" title="강사명 정렬">강사명 <span id="sort-worklogs-icon-instructor" style="font-size:0.8em; color:var(--color-text-sub);"></span></th>
+          <th style="width:200px; text-align:center;">연간 총 시수 입력</th>
+        </tr>
+      `;
+    }
+
+    currentWorklogsData.sort((a, b) => {
+      const getDayWeight = (str) => {
+        if (!str) return 99;
+        const order = { '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6, '일': 7 };
+        return order[str.trim().charAt(0)] || 99;
+      };
+
+      const getDomainWeight = (domainName) => {
+        if (!domainName) return 99;
+        if (domainName.includes('방과후')) return 1;
+        if (domainName.includes('동아리')) return 2;
+        if (domainName.includes('돌봄')) return 3;
+        if (domainName.includes('유치원')) return 4;
+        return 5;
+      };
+
+      if (currentWorklogsSort.col === 'default') {
+        const dWeightA = getDomainWeight(a._domainName);
+        const dWeightB = getDomainWeight(b._domainName);
+        if (dWeightA !== dWeightB) return dWeightA - dWeightB;
+
+        const dayWeightA = getDayWeight(a.day_of_week);
+        const dayWeightB = getDayWeight(b.day_of_week);
+        if (dayWeightA !== dayWeightB) return dayWeightA - dayWeightB;
+
+        const nameA = a.name || '';
+        const nameB = b.name || '';
+        if (nameA < nameB) return -1;
+        if (nameA > nameB) return 1;
+        return 0;
+      }
+
+      if (currentWorklogsSort.col === 'day_of_week') {
+        const weightA = getDayWeight(a.day_of_week);
+        const weightB = getDayWeight(b.day_of_week);
+        if (weightA !== weightB) {
+           return currentWorklogsSort.dir === 'asc' ? (weightA - weightB) : (weightB - weightA);
+        }
+        
+        const strA = a.day_of_week || '';
+        const strB = b.day_of_week || '';
+        if (strA < strB) return currentWorklogsSort.dir === 'asc' ? -1 : 1;
+        if (strA > strB) return currentWorklogsSort.dir === 'asc' ? 1 : -1;
+        return 0;
+      }
+
+      let valA = '', valB = '';
+      if (currentWorklogsSort.col === 'domain') {
+        valA = a._domainName || '';
+        valB = b._domainName || '';
+      } else if (currentWorklogsSort.col === 'name') {
+        valA = a.name || '';
+        valB = b.name || '';
+      } else if (currentWorklogsSort.col === 'instructor') {
+        valA = a._instName || '';
+        valB = b._instName || '';
+      } else if (currentWorklogsSort.col === 'total') {
+        let totalA = 0, totalB = 0;
+        if (currentWorklogsMode === 'monthly') {
+          schoolMonths.forEach(m => {
+            const hA = parseFloat(workLogsMapCache[`${a.id}_${m}`]);
+            if (!isNaN(hA)) totalA += hA;
+            const hB = parseFloat(workLogsMapCache[`${b.id}_${m}`]);
+            if (!isNaN(hB)) totalB += hB;
+          });
+        } else {
+           const hA = parseFloat(workLogsMapCache[`${a.id}_0`]);
+           if (!isNaN(hA)) totalA = hA;
+           const hB = parseFloat(workLogsMapCache[`${b.id}_0`]);
+           if (!isNaN(hB)) totalB = hB;
+        }
+        return currentWorklogsSort.dir === 'asc' ? totalA - totalB : totalB - totalA;
+      } else {
+        valA = a.created_at || '';
+        valB = b.created_at || '';
+      }
+      
+      if (valA < valB) return currentWorklogsSort.dir === 'asc' ? -1 : 1;
+      if (valA > valB) return currentWorklogsSort.dir === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    // 약간의 딜레이 후 아이콘 업데이트 (DOM 반영 지연 해결)
+    setTimeout(() => {
+      ['domain', 'name', 'instructor', 'day_of_week', 'total'].forEach(col => {
+        const iconSpan = $(`sort-worklogs-icon-${col}`);
+        if (iconSpan) iconSpan.textContent = currentWorklogsSort.col === col ? (currentWorklogsSort.dir === 'asc' ? '▲' : '▼') : '';
+      });
+    }, 0);
+
+    tbody.innerHTML = currentWorklogsData.map((p, index) => {
+      let rowHtml = `<tr>
+        <td class="col-num" style="text-align:center; color:var(--color-text-sub);">${index + 1}</td>
+        <td class="col-domain" style="text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${p._domainName}">${p._domainName}</td>
+        <td class="col-prog" style="text-align:center;" title="${p.name}"><strong>${p.name}</strong></td>
+        <td class="col-day" style="text-align:center;">${p.day_of_week || '-'}</td>
+        <td class="col-inst" style="text-align:center;">${p._instName}</td>`;
+      
+      if (currentWorklogsMode === 'monthly') {
+        let rowTotal = 0;
+        schoolMonths.forEach(m => {
+          const key = `${p.id}_${m}`;
+          const hours = workLogsMapCache[key] || '';
+          if(hours) rowTotal += parseFloat(hours);
+          const docId = workDocIdsCache[key] || '';
+
+          rowHtml += `<td>
+            <input type="number" 
+              class="hours-input" 
+              placeholder=""
+              value="${hours}"
+              data-prog="${p.id}"
+              data-inst="${p.instructor_id}"
+              data-month="${m}"
+              data-docid="${docId}"
+              min="0" step="any">
+          </td>`;
+        });
+        rowHtml += `<td class="col-total" id="total_${p.id}" style="text-align:center;">${rowTotal || ''}</td></tr>`;
+      } else {
+        // 연간 시수 입력 모드 (month를 0으로 저장하여 월별과 구분)
+        const key = `${p.id}_0`;
+        const hours = workLogsMapCache[key] || '';
+        const docId = workDocIdsCache[key] || '';
+
+        rowHtml += `<td style="max-width:200px;">
+          <input type="number" 
+            class="hours-input" 
+            placeholder="연간 시수 총합"
+            value="${hours}"
+            data-prog="${p.id}"
+            data-inst="${p.instructor_id}"
+            data-month="0"
+            data-docid="${docId}"
+            min="0" step="any" style="width:100%; text-align:center;">
+        </td></tr>`;
+      }
+
+      return rowHtml;
+    }).join('');
+
+    // 이벤트 리스너: 값이 변경될 때마다 자동 저장 및 누계 재계산
+    document.querySelectorAll('.hours-input').forEach(input => {
+      input.addEventListener('change', async (e) => {
+        const el = e.target;
+        const progId = el.dataset.prog;
+        const instId = el.dataset.inst;
+        const month  = parseInt(el.dataset.month);
+        const hoursRaw = el.value.trim();
+        const hoursNum = parseFloat(hoursRaw);
+        
+        let docId = el.dataset.docid;
+        
+        // 시수 값이 지워졌거나 0이면 삭제 (선택사항)
+        if (hoursRaw === '' || isNaN(hoursNum) || hoursNum <= 0) {
+          if (docId) {
+            await deleteDoc(doc(db, WORK_LOGS, docId));
+            el.dataset.docid = '';
+            el.value = '';
+          }
+        } 
+        // 값이 있으면 저장 및 업데이트
+        else {
+          const payload = {
+            year: currentWorklogsYear,
+            month,
+            program_id: progId,
+            instructor_id: instId,
+            hours: hoursNum,
+            updated_at: new Date().toISOString()
+          };
+
+          if(docId) {
+            await updateDoc(doc(db, WORK_LOGS, docId), payload);
+          } else {
+            payload.created_at = new Date().toISOString();
+            // 프로그램 고유 문서 ID 방식 사용 권장 (중복 생성 방지 가능)
+            const newDocId = `${currentWorklogsYear}_${progId}_${month}`;
+            await setDoc(doc(db, WORK_LOGS, newDocId), payload, { merge: true });
+            el.dataset.docid = newDocId;
+          }
+        }
+        
+        // CSS 피드백
+        el.style.backgroundColor = 'var(--color-surface-bg)';
+        setTimeout(()=> el.style.backgroundColor='', 500);
+
+        // 연간 누계 다시 계산 (월별 모드일 때만 합계 갱신)
+        if (currentWorklogsMode === 'monthly') {
+          let newTotal = 0;
+          document.querySelectorAll(`.hours-input[data-prog="${progId}"]`).forEach(inp => {
+            const val = parseFloat(inp.value);
+            if(!isNaN(val)) newTotal += val;
+          });
+          const totEl = document.getElementById(`total_${progId}`);
+          if(totEl) totEl.textContent = newTotal || '';
+        }
+
+        // 캐시 업데이트
+        const key = `${progId}_${month}`;
+        if (hoursRaw === '' || isNaN(hoursNum) || hoursNum <= 0) {
+          delete workLogsMapCache[key];
+          delete workDocIdsCache[key];
+        } else {
+          workLogsMapCache[key] = hoursNum;
+          if (el.dataset.docid) workDocIdsCache[key] = el.dataset.docid;
+        }
+      });
+    });
+  }
+
+  $('worklogsYearSelect').addEventListener('change', loadWorklogsTable);
+
+  async function loadWorklogsTable() {
+    const year = parseInt($('worklogsYearSelect').value);
+    if (!year) return;
+    
+    currentWorklogsYear = year;
+
+    if(!instructorsCache || instructorsCache.length === 0) await fetchInstructors();
+    if(domainsCache.length === 0) {
+      const dSnap = await getDocs(query(collection(db, DOMAINS), orderBy('created_at')));
+      domainsCache = dSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+
+    // 1. 해당 연도의 프로그램 목록 불러오기
+    const progQ = query(collection(db, PROGRAMS), where('year', '==', year));
+    const progSnap = await getDocs(progQ);
+    let programs = progSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    if (programs.length === 0) {
+      currentWorklogsData = [];
+      renderWorklogsTable();
+      return;
+    }
+
+    // 2. 해당 연도의 모든 출강 기록(시간) 한 번에 불러오기
+    const workQ = query(collection(db, WORK_LOGS), where('year', '==', year));
+    const workSnap = await getDocs(workQ);
+    workLogsMapCache = {}; 
+    workDocIdsCache = {};  
+
+    workSnap.docs.forEach(docSnap => {
+      const log = docSnap.data();
+      if(log.program_id) {
+        const key = `${log.program_id}_${log.month}`;
+        workLogsMapCache[key] = log.hours;
+        workDocIdsCache[key] = docSnap.id;
+      }
+    });
+
+    currentWorklogsData = programs;
+    currentWorklogsData.forEach(p => {
+      p._domainName = domainsCache.find(d => d.id === p.domain_id)?.name || '-';
+      p._instName = instructorsCache.find(i => i.id === p.instructor_id)?.name_korean || '-';
+    });
+
+    renderWorklogsTable();
+  }
+
+  /* ══════════════════════════════════════════
+     확인서 발급 — iframe 방식
+  ══════════════════════════════════════════ */
+  if ($('checkAllCertPrograms')) {
+    $('checkAllCertPrograms').addEventListener('change', (e) => {
+      const isChecked = e.target.checked;
+      document.querySelectorAll('.cert-prog-check').forEach(cb => {
+        cb.checked = isChecked;
+      });
+    });
+  }
+
+  $('certInstructorSelect').addEventListener('change', async (e) => {
+    const instId = e.target.value;
+    const consTd = $('certInstructorConsignment');
+    const posTd = $('certInstructorPosition');
+    const tbody = $('certProgramTableBody');
+
+    if (!instId) {
+      consTd.textContent = '-';
+      posTd.textContent = '-';
+      tbody.innerHTML = '<tr><td colspan="2"><div class="empty-state" style="padding:20px 0; border:none;"><div class="empty-title" style="color:var(--color-text-sub);">강사를 선택하면 프로그램 목록이 표시됩니다.</div></div></td></tr>';
+      return;
+    }
+
+    const inst = instructorsCache.find(i => i.id === instId);
+    consTd.textContent = inst?.consignment_type || '-';
+    posTd.textContent = inst?.position || '외부강사';
+
+    if (domainsCache.length === 0) {
+      const dSnap = await getDocs(query(collection(db, DOMAINS), orderBy('created_at')));
+      domainsCache = dSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+
+    const q = query(collection(db, PROGRAMS), where('instructor_id', '==', instId));
+    const snap = await getDocs(q);
+    
+    if (snap.empty) {
+       tbody.innerHTML = '<tr><td colspan="2"><div class="empty-state" style="padding:20px 0; border:none;"><div class="empty-title" style="color:var(--color-text-sub);">운영한 프로그램 내역이 없습니다.</div></div></td></tr>';
+       return;
+    }
+
+    let programs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    
+    // 연도별 그룹화
+    const byYear = {};
+    programs.forEach(p => {
+      const y = p.year || 0;
+      if (!byYear[y]) byYear[y] = [];
+      byYear[y].push(p);
+    });
+
+    const sortedYears = Object.keys(byYear).map(Number).sort((a,b) => a - b);
+    
+    tbody.innerHTML = sortedYears.map(year => {
+      const progs = byYear[year];
+      progs.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+      
+      const checkboxes = progs.map(p => {
+        const dName = domainsCache.find(d => d.id === p.domain_id)?.name || '미지정';
+        return `<label style="margin-right:20px; display:inline-flex; align-items:center; gap:6px; font-size:0.95rem; cursor:pointer;">
+          <input type="checkbox" class="cert-prog-check" value="${p.id}" data-year="${year}"> 
+          <span>${p.name}(${dName})</span>
+        </label>`;
+      }).join('');
+
+      return `<tr>
+        <td style="text-align:center; font-weight:600; font-size:1rem;">${year}</td>
+        <td style="text-align:left; padding:12px 16px;">${checkboxes}</td>
+      </tr>`;
+    }).join('');
+
+    // 상태 동기화
+    if ($('checkAllCertPrograms')) $('checkAllCertPrograms').checked = false;
+    const updateCheckAll = () => {
+       const allCbs = document.querySelectorAll('.cert-prog-check');
+       const checkedCbs = document.querySelectorAll('.cert-prog-check:checked');
+       if ($('checkAllCertPrograms')) {
+          $('checkAllCertPrograms').checked = (allCbs.length > 0 && allCbs.length === checkedCbs.length);
+       }
+    };
+    document.querySelectorAll('.cert-prog-check').forEach(cb => {
+       cb.addEventListener('change', updateCheckAll);
+    });
+  });
+
+  $('generateCertBtn').addEventListener('click', async () => {
+    const instId = $('certInstructorSelect').value;
+    if (!instId) { toast('강사를 선택해 주세요.', 'error'); return; }
+
+    const checkedBoxes = Array.from(document.querySelectorAll('.cert-prog-check:checked'));
+    if (checkedBoxes.length === 0) {
+      toast('발급할 프로그램을 1개 이상 선택해 주세요.', 'error');
+      return;
+    }
+
+    const selectedProgIds = checkedBoxes.map(cb => cb.value);
+    const selectedYears = checkedBoxes.map(cb => parseInt(cb.dataset.year));
+    const startY = Math.min(...selectedYears);
+    const endY = Math.max(...selectedYears);
+
+    const settings = JSON.parse(localStorage.getItem('schoolSettings') || '{}');
+    const inst = instructorsCache.find(i => i.id === instId);
+
+    // 1. 프로그램 목록 로드
+    const progQ = query(collection(db, PROGRAMS), where('instructor_id', '==', instId));
+    const progSnap = await getDocs(progQ);
+    const programsData = progSnap.docs.map(d => ({id: d.id, ...d.data()}));
+
+    // 2. 도메인 목록(영역명) 확인
+    if (domainsCache.length === 0) {
+      const dSnap = await getDocs(query(collection(db, DOMAINS), orderBy('created_at')));
+      domainsCache = dSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+
+    // 3. 해당 강사의 전체 출강 기록 조회
+    const workQ = query(collection(db, WORK_LOGS), where('instructor_id', '==', instId));
+    const workSnap = await getDocs(workQ);
+    const allLogs = workSnap.docs.map(d => d.data());
+
+    // 4. 연도별/프로그램별 집계 (출강 이력이 있는 경우만)
+    const aggregatedLogs = [];
+    selectedProgIds.forEach(progId => {
+      const p = programsData.find(x => x.id === progId);
+      if(!p) return;
+      
+      const pLogs = allLogs.filter(l => l.program_id === progId);
+      const totalHours = pLogs.reduce((sum, l) => sum + (parseFloat(l.hours) || 0), 0);
+      
+      const dName = domainsCache.find(d => d.id === p.domain_id)?.name || '';
+      aggregatedLogs.push({
+        year: p.year || 0,
+        start_date: p.start_date || '',
+        end_date: p.end_date || '',
+        hours: totalHours,
+        program_name: p.name,
+        position: inst.position || '외부강사',
+        guidance_notes: `${settings.schoolName || '○○초등학교'} ${dName} ${p.name} 프로그램 운영`
+      });
+    });
+      
+    // 5. 정렬: 과거 연도부터 (오래된 순서)
+    aggregatedLogs.sort((a, b) => a.year - b.year);
+
+    const certData = { instructor: inst, logs: aggregatedLogs, settings, startY, endY, selectedProgramIds: selectedProgIds };
+    sessionStorage.setItem('certData', JSON.stringify(certData));
+
+    const iframe = $('certIframe');
+    iframe.src = `certificate.html?t=${Date.now()}`;
+    $('certPreviewArea').style.display = 'block';
+    $('printCertBtn').disabled = false;
+    toast('미리보기가 생성되었습니다.', 'success');
+  });
+
+  $('printCertBtn').addEventListener('click', () => {
+    const iframe = $('certIframe');
+    // 로컬 파일시스템(file://) 등 보안 한계 회피용 postMessage
+    iframe.contentWindow.postMessage('print', '*');
+  });
+
+  window.addEventListener('message', (e) => {
+    if (e.data === 'closeCertPreview') {
+      $('certPreviewArea').style.display = 'none';
+      $('certIframe').src = '';
+    }
+  });
+
+  /* ══════════════════════════════════════════
+     엑셀 서식 다운로드 및 자료 올리기
+  ══════════════════════════════════════════ */
+  $('btnWorklogsTemplate').addEventListener('click', () => exportWorklogsExcel(true));
+  $('btnWorklogsDownload').addEventListener('click', () => exportWorklogsExcel(false));
+  $('btnWorklogsUpload').addEventListener('click', () => $('fileWorklogsExcel').click());
+  $('fileWorklogsExcel').addEventListener('change', handleWorklogsExcelUpload);
+
+  function exportWorklogsExcel(isTemplate) {
+    if (currentWorklogsData.length === 0) {
+      toast('등록된 프로그램이 없습니다.', 'error');
+      return;
+    }
+
+    const wsData = [];
+    const headers = ['프로그램 ID', '강사 ID', '영역', '프로그램명', '강사명'];
+    if (currentWorklogsMode === 'monthly') {
+      headers.push(...schoolMonths.map(m => `${m}월`));
+    } else {
+      headers.push('연간 총 시수');
+    }
+    wsData.push(headers);
+
+    currentWorklogsData.forEach(p => {
+      const row = [p.id, p.instructor_id, p._domainName, p.name, p._instName];
+      if (currentWorklogsMode === 'monthly') {
+        schoolMonths.forEach(m => {
+          if (isTemplate) row.push('');
+          else row.push(parseFloat(workLogsMapCache[`${p.id}_${m}`]) || '');
+        });
+      } else {
+        if (isTemplate) row.push('');
+        else row.push(parseFloat(workLogsMapCache[`${p.id}_0`]) || '');
+      }
+      wsData.push(row);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    // 컬럼 보이기/숨기기 및 너비 지정 (ID 컬럼은 데이터 조회때문에 필요하지만 시각적으로 숨김)
+    ws['!cols'] = [
+      { hidden: true }, { hidden: true }, 
+      { wch: 15 }, { wch: 25 }, { wch: 15 }
+    ];
+    if (currentWorklogsMode === 'monthly') {
+      for(let i=0; i<12; i++) ws['!cols'].push({wch: 8});
+    } else {
+      ws['!cols'].push({wch: 15});
+    }
+
+    const wb = XLSX.utils.book_new();
+    const sheetName = currentWorklogsMode === 'monthly' ? '월별시수' : '연간시수';
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    
+    const prefix = isTemplate ? '시수입력서식' : '시수데이터';
+    XLSX.writeFile(wb, `${prefix}_${currentWorklogsYear}년_${sheetName}.xlsx`);
+  }
+
+  function handleWorklogsExcelUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const data = new Uint8Array(event.target.result);
+        const wb = XLSX.read(data, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+        if (jsonData.length <= 1) {
+          toast('업로드할 데이터가 없습니다.', 'error');
+          return;
+        }
+
+        const headers = jsonData[0];
+        const progIdIdx = headers.indexOf('프로그램 ID');
+        const instIdIdx = headers.indexOf('강사 ID');
+        
+        if (progIdIdx === -1 || instIdIdx === -1) {
+          toast('제공된 서식 파일이 아닙니다. 다시 내려받은 서식을 사용해주세요.', 'error');
+          return;
+        }
+
+        const isMonthly = headers.includes('3월');
+        if ((currentWorklogsMode === 'monthly' && !isMonthly) || (currentWorklogsMode === 'annual' && isMonthly)) {
+          toast('현재 화면의 입력 방식과 엑셀 서식(월별/연간)이 일치하지 않습니다.', 'error');
+          return;
+        }
+
+        toast('데이터를 저장 중입니다...', 'success');
+        const batchPromises = [];
+
+        for (let i = 1; i < jsonData.length; i++) {
+          const row = jsonData[i];
+          if (!row || row.length === 0) continue;
+          
+          const progId = row[progIdIdx];
+          const instId = row[instIdIdx];
+          if (!progId || !instId) continue;
+          
+          if (isMonthly) {
+            schoolMonths.forEach(m => {
+              const mIdx = headers.indexOf(`${m}월`);
+              if (mIdx !== -1) {
+                const val = parseFloat(row[mIdx]);
+                batchPromises.push(saveOrDeleteWorklog(progId, instId, m, isNaN(val) ? '' : val));
+              }
+            });
+          } else {
+            const aIdx = headers.indexOf('연간 총 시수');
+            if (aIdx !== -1) {
+              const val = parseFloat(row[aIdx]);
+              batchPromises.push(saveOrDeleteWorklog(progId, instId, 0, isNaN(val) ? '' : val));
+            }
+          }
+        }
+
+        if (batchPromises.length > 0) {
+          await Promise.all(batchPromises);
+          toast('자료 올리기가 완료되었습니다.', 'success');
+          // 데이터 리로드
+          $('worklogsYearSelect').dispatchEvent(new Event('change'));
+        } else {
+          toast('저장할 시수 데이터가 없습니다.', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        toast('엑셀 파일 처리 중 오류가 발생했습니다.', 'error');
+      } finally {
+        $('fileWorklogsExcel').value = ''; 
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  async function saveOrDeleteWorklog(progId, instId, month, hoursNum) {
+    const key = `${progId}_${month}`;
+    const docId = workDocIdsCache[key] || '';
+    
+    if (hoursNum === '' || hoursNum <= 0) {
+      if (docId) await deleteDoc(doc(db, WORK_LOGS, docId));
+    } else {
+      const payload = {
+        year: currentWorklogsYear,
+        month: month,
+        program_id: progId,
+        instructor_id: instId,
+        hours: hoursNum,
+        updated_at: new Date().toISOString()
+      };
+      
+      if (docId) {
+        await updateDoc(doc(db, WORK_LOGS, docId), payload);
+      } else {
+        payload.created_at = new Date().toISOString();
+        const newDocId = `${currentWorklogsYear}_${progId}_${month}`;
+        await setDoc(doc(db, WORK_LOGS, newDocId), payload, { merge: true });
+      }
+    }
+  }
+
+
+  /* ══════════════════════════════════════════
+     엑셀 서식 다운로드 및 자료 올리기 (프로그램 관리)
+  ══════════════════════════════════════════ */
+  $('btnProgramsTemplate').addEventListener('click', () => exportProgramsExcel(true));
+  $('btnProgramsDownload').addEventListener('click', () => exportProgramsExcel(false));
+  $('btnProgramsUpload').addEventListener('click', () => $('fileProgramsExcel').click());
+  $('fileProgramsExcel').addEventListener('change', handleProgramsExcelUpload);
+
+  function exportProgramsExcel(isTemplate) {
+    const wsData = [];
+    const headers = [
+      '프로그램 ID', '강사 ID', '도메인 ID',
+      '영역명', '프로그램명', '강사명', 
+      '요일', '시작일(YYYY-MM-DD)', '종료일(YYYY-MM-DD)', 
+      '대상', '인원', '주당시수', '비고'
+    ];
+    wsData.push(headers);
+
+    if (!isTemplate) {
+      currentProgramsData.forEach(p => {
+        wsData.push([
+          p.id || '',
+          p.instructor_id || '',
+          p.domain_id || '',
+          p._domainName || '',
+          p.name || '',
+          p._instName || '',
+          p.day_of_week || '',
+          p.start_date || '',
+          p.end_date || '',
+          p.target_audience || '',
+          p.headcount || '',
+          p.weekly_hours || '',
+          p.remarks || ''
+        ]);
+      });
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    
+    // 숨김 처리 (순서대로 프로그램ID, 강사ID, 도메인ID)
+    ws['!cols'] = [
+      { hidden: true }, { hidden: true }, { hidden: true },
+      { wch: 15 }, { wch: 20 }, { wch: 12 }, 
+      { wch: 10 }, { wch: 15 }, { wch: 15 }, 
+      { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 20 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    const sheetName = '프로그램목록';
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    
+    const prefix = isTemplate ? '프로그램입력서식' : '프로그램데이터';
+    const year = parseInt($('programYearSelect').value);
+    XLSX.writeFile(wb, `${prefix}_${year}년_${sheetName}.xlsx`);
+  }
+
+  function handleProgramsExcelUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const data = new Uint8Array(event.target.result);
+        const wb = XLSX.read(data, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+        if (jsonData.length <= 1) {
+          toast('업로드할 데이터가 없습니다.', 'error');
+          return;
+        }
+
+        const headers = jsonData[0];
+        const progIdIdx = headers.findIndex(h => typeof h === 'string' && h.includes('프로그램 ID'));
+        const instIdIdx = headers.findIndex(h => typeof h === 'string' && h.includes('강사 ID'));
+        const domainIdIdx = headers.findIndex(h => typeof h === 'string' && h.includes('도메인 ID'));
+        const domainNameIdx = headers.findIndex(h => typeof h === 'string' && h.includes('영역명'));
+        const nameIdx = headers.findIndex(h => typeof h === 'string' && h.includes('프로그램명'));
+        const instNameIdx = headers.findIndex(h => typeof h === 'string' && h.includes('강사명'));
+        const dayIdx = headers.findIndex(h => typeof h === 'string' && h.includes('요일'));
+        const startIdx = headers.findIndex(h => typeof h === 'string' && h.includes('시작일'));
+        const endIdx = headers.findIndex(h => typeof h === 'string' && h.includes('종료일'));
+        const targetIdx = headers.findIndex(h => typeof h === 'string' && h.includes('대상'));
+        const headIdx = headers.findIndex(h => typeof h === 'string' && h.includes('인원'));
+        const weeklyIdx = headers.findIndex(h => typeof h === 'string' && h.includes('주당시수'));
+        const remarksIdx = headers.findIndex(h => typeof h === 'string' && h.includes('비고'));
+        
+        if (progIdIdx === -1 || nameIdx === -1 || startIdx === -1) {
+          toast('제공된 서식 파일이 아닙니다. 다시 내려받은 서식을 사용해주세요.', 'error');
+          return;
+        }
+
+        toast('프로그램 정보를 저장 중입니다...', 'success');
+        const batchPromises = [];
+
+        // 데이터가 없는 ID 캐시를 사용해 이름으로 찾을 수 있도록 지원
+        // 도메인과 강사는 이름을 텍스트로 치면 자동으로 찾거나 매칭하지 못하면 누락될 수 있으나, 
+        // 템플릿 사용을 권장하고 도메인/강사는 미리 생성된 ID가 필요.
+        
+        for (let i = 1; i < jsonData.length; i++) {
+          const row = jsonData[i];
+          if (!row || row.length === 0) continue;
+          
+          let progId = row[progIdIdx] || '';
+          let name = row[nameIdx] || '';
+          if (!name) continue; 
+          
+          // ID가 없을 경우 이름으로 역산 시도 (편의성 제공)
+          let domainId = row[domainIdIdx] || '';
+          if (!domainId && row[domainNameIdx]) {
+            const matchedD = domainsCache.find(d => d.name === row[domainNameIdx]);
+            if (matchedD) domainId = matchedD.id;
+          }
+          let instId = row[instIdIdx] || '';
+          if (!instId && row[instNameIdx]) {
+            const matchedI = instructorsCache.find(x => x.name_korean === row[instNameIdx]);
+            if (matchedI) instId = matchedI.id;
+          }
+          
+          const parseExcelDate = (val) => {
+            if (!val) return '';
+            if (val instanceof Date) {
+               return `${val.getFullYear()}-${String(val.getMonth()+1).padStart(2, '0')}-${String(val.getDate()).padStart(2, '0')}`;
+            }
+            if (typeof val === 'number') {
+               const parsed = XLSX.SSF.parse_date_code(val);
+               if (parsed) return `${parsed.y}-${String(parsed.m).padStart(2, '0')}-${String(parsed.d).padStart(2, '0')}`;
+            }
+            if (typeof val === 'string') {
+               let s = val.replace(/\./g, '-').replace(/\//g, '-').replace(/\s+/g, '').trim();
+               if (s.endsWith('-')) s = s.slice(0, -1);
+               return s;
+            }
+            return String(val);
+          };
+
+          const currentProgramYear = parseInt($('programYearSelect').value);
+          const payload = {
+            name: name,
+            year: currentProgramYear,
+            domain_id: domainId,
+            instructor_id: instId,
+            day_of_week: dayIdx !== -1 ? (row[dayIdx] || '') : '',
+            start_date: parseExcelDate(row[startIdx]),
+            end_date: parseExcelDate(row[endIdx]),
+            target_audience: row[targetIdx] || '',
+            headcount: row[headIdx] || '',
+            weekly_hours: row[weeklyIdx] || '',
+            remarks: row[remarksIdx] || '',
+            updated_at: new Date().toISOString()
+          };
+
+          if (progId) {
+            batchPromises.push(updateDoc(doc(db, PROGRAMS, progId), payload));
+          } else {
+            payload.created_at = new Date().toISOString();
+            // 새 프로그램 추가 시 auto ID 생성 필요 (setDoc 대신 addDoc 활용)
+            batchPromises.push(addDoc(collection(db, PROGRAMS), payload));
+          }
+        }
+
+        if (batchPromises.length > 0) {
+          await Promise.all(batchPromises);
+          toast('프로그램 자료 올리기가 완료되었습니다.', 'success');
+          // 데이터 리로드
+          loadPrograms();
+        } else {
+          toast('저장할 프로그램 데이터가 없습니다.', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        toast('엑셀 파일 처리 중 오류가 발생했습니다.', 'error');
+      } finally {
+        $('fileProgramsExcel').value = ''; 
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  /* ══════════════════════════════════════════
+     엑셀 서식 다운로드 및 자료 올리기 (강사 관리)
+  ══════════════════════════════════════════ */
+  $('btnInstructorsTemplate').addEventListener('click', () => exportInstructorsExcel(true));
+  $('btnInstructorsDownload').addEventListener('click', () => exportInstructorsExcel(false));
+  $('btnInstructorsUpload').addEventListener('click', () => $('fileInstructorsExcel').click());
+  $('fileInstructorsExcel').addEventListener('change', handleInstructorsExcelUpload);
+
+  function exportInstructorsExcel(isTemplate) {
+    const wsData = [];
+    const headers = [
+      '강사 ID', '성명(한글)', '성명(한자)', '생년월일(YYYY-MM-DD)', 
+      '위탁구분(개인/업체 등)', '직위(외부강사 등)', '주소'
+    ];
+    wsData.push(headers);
+
+    if (!isTemplate) {
+      instructorsCache.forEach(i => {
+        wsData.push([
+          i.id || '',
+          i.name_korean || '',
+          i.name_hanja || '',
+          i.birth_date || '',
+          i.consignment_type || '개인',
+          i.position || '외부강사',
+          i.address || ''
+        ]);
+      });
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    
+    // 숨김 처리 (순서대로 강사 ID)
+    ws['!cols'] = [
+      { hidden: true },
+      { wch: 15 }, { wch: 15 }, { wch: 20 }, 
+      { wch: 20 }, { wch: 20 }, { wch: 40 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    const sheetName = '강사목록';
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    
+    const prefix = isTemplate ? '강사입력서식' : '강사데이터';
+    XLSX.writeFile(wb, `${prefix}_${now.getFullYear()}년_${sheetName}.xlsx`);
+  }
+
+  function handleInstructorsExcelUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const data = new Uint8Array(event.target.result);
+        const wb = XLSX.read(data, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+        if (jsonData.length <= 1) {
+          toast('업로드할 데이터가 없습니다.', 'error');
+          return;
+        }
+
+        const headers = jsonData[0];
+        const idIdx = headers.indexOf('강사 ID');
+        const nameKorIdx = headers.indexOf('성명(한글)');
+        const nameHanIdx = headers.indexOf('성명(한자)');
+        const birthIdx = headers.indexOf('생년월일(YYYY-MM-DD)');
+        const typeIdx = headers.indexOf('위탁구분(개인/업체 등)');
+        const posIdx = headers.indexOf('직위(외부강사 등)');
+        const addrIdx = headers.indexOf('주소');
+        
+        if (idIdx === -1 || nameKorIdx === -1) {
+          toast('제공된 서식 파일이 아닙니다. 다시 내려받은 서식을 사용해주세요.', 'error');
+          return;
+        }
+
+        toast('강사 정보를 저장 중입니다...', 'success');
+        const batchPromises = [];
+
+        for (let i = 1; i < jsonData.length; i++) {
+          const row = jsonData[i];
+          if (!row || row.length === 0) continue;
+          
+          let instId = row[idIdx] || '';
+          let nameKor = row[nameKorIdx] || '';
+          if (!nameKor) continue; 
+          
+          let birth = row[birthIdx] || '';
+          
+          const payload = {
+            name_korean: nameKor,
+            name_hanja: row[nameHanIdx] || '',
+            birth_date: birth,
+            consignment_type: row[typeIdx] || '개인',
+            position: row[posIdx] || '외부강사',
+            address: row[addrIdx] || '',
+            updated_at: new Date().toISOString()
+          };
+
+          if (instId) {
+            batchPromises.push(updateDoc(doc(db, INSTRUCTORS, instId), payload));
+          } else {
+            payload.created_at = new Date().toISOString();
+            batchPromises.push(addDoc(collection(db, INSTRUCTORS), payload));
+          }
+        }
+
+        if (batchPromises.length > 0) {
+          await Promise.all(batchPromises);
+          toast('강사 자료 올리기가 완료되었습니다.', 'success');
+          // 데이터 리로드 (대시보드 통계 & 강사 테이블 뷰 동시 업데이트)
+          loadDashboard();
+          if (currentPage === 'instructors') {
+            renderInstructorTable();
+          }
+        } else {
+          toast('저장할 강사 데이터가 없습니다.', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        toast('엑셀 파일 처리 중 오류가 발생했습니다.', 'error');
+      } finally {
+        $('fileInstructorsExcel').value = ''; 
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  /* ══════════════════════════════════════════
+     인증 로직 및 앱 초기화 
+  ══════════════════════════════════════════ */
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      alert("가로내 온라인 연구실 통합 로그인이 필요합니다.");
+      window.location.href = '../index.html';
+      return;
+    }
+
+    try {
+      // 권한 정보는 가로내 연구실 DB(dbAuth)에서 확인
+      const snap = await getDoc(doc(dbAuth, "users", user.uid));
+      if (!snap.exists()) {
+        alert("가로내 온라인 연구실 사용자 정보를 찾을 수 없습니다.");
+        window.location.href = '../index.html';
+        return;
+      }
+      
+      const userData = snap.data();
+      if (userData.role !== 'admin' && userData.role !== 'sub-admin') {
+        alert("외부강사 관리시스템은 최고관리자 및 부관리자 권한이 있어야 접근할 수 있습니다.");
+        window.location.href = '../index.html';
+        return;
+      }
+
+      // 접근 허용
+      document.body.style.overflow = '';
+      const overlay = document.getElementById('authOverlay');
+      overlay.style.opacity = '0';
+      setTimeout(() => overlay.style.display = 'none', 500);
+
+      // 데이터 및 대시보드 불러오기 시작
+      loadDashboard();
+
+    } catch (err) {
+      console.error("권한 확인 실패:", err);
+      alert("권한 정보를 불러오는데 실패하였습니다.");
+      window.location.href = '../index.html';
+    }
+  });
+
+</script>
+</body>
+</html>

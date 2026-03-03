@@ -1,0 +1,348 @@
+/* ================================================================
+   print.css — 외부강사 활동 확인서 인쇄 전용 스타일
+   A4 (210mm × 297mm) 기준으로 설계
+   ================================================================ */
+
+/* ──────────────────────────────────────────
+   화면 미리보기 — A4 용지 시뮬레이션
+────────────────────────────────────────── */
+
+/* 화면에서 보여지는 미리보기 래퍼 */
+.certificate-preview-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 32px 16px;
+  background: #6b7280;  /* 짙은 회색 배경으로 A4가 떠 보이는 효과 */
+  min-height: calc(100vh - 64px);
+}
+
+/* A4 용지 영역 */
+.certificate-a4 {
+  width: 210mm;
+  min-height: 297mm;
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.35);
+  padding: 20mm 20mm 24mm;
+  font-family: '나눔명조', 'NanumMyeongjo', 'batang', '바탕', 'Times New Roman', serif;
+  font-size: 11pt;
+  line-height: 1.7;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ──────────────────────────────────────────
+   증명서 내부 구성요소
+────────────────────────────────────────── */
+
+/* 최상단 분류 텍스트 */
+.cert-top-label {
+  text-align: right;
+  font-size: 9pt;
+  color: #555;
+  margin-bottom: 6mm;
+}
+
+/* 발급번호 */
+.cert-issue-no {
+  font-size: 9pt;
+  color: #555;
+  text-align: right;
+}
+
+/* 제목 */
+.cert-title {
+  text-align: center;
+  font-size: 22pt;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  margin: 6mm 0 10mm;
+  color: #000;
+}
+
+/* 부제목 (소괄호 텍스트) */
+.cert-subtitle {
+  text-align: center;
+  font-size: 10pt;
+  color: #444;
+  margin-bottom: 8mm;
+}
+
+/* 구분선 */
+.cert-divider {
+  border: none;
+  border-top: 2px solid #000;
+  margin: 4mm 0;
+}
+.cert-divider.thin {
+  border-top-width: 0.8px;
+  border-color: #555;
+  margin: 2mm 0;
+}
+
+/* 인적사항 섹션 */
+.cert-section-title {
+  font-size: 11pt;
+  font-weight: 800;
+  background: #f0f0f0;
+  padding: 2mm 4mm;
+  border-left: 4px solid #000;
+  margin: 5mm 0 3mm;
+  letter-spacing: 0.04em;
+}
+
+/* 인적사항 테이블 */
+.cert-info-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 5mm;
+}
+
+.cert-info-table th,
+.cert-info-table td {
+  border: 0.8px solid #888;
+  padding: 3mm 4mm;
+  vertical-align: middle;
+}
+
+.cert-info-table th {
+  background: #f5f5f5;
+  font-weight: 700;
+  font-size: 10pt;
+  width: 22%;
+  text-align: center;
+  color: #222;
+}
+
+.cert-info-table td {
+  font-size: 10.5pt;
+  color: #111;
+}
+
+/* 경력 사항 테이블 */
+.cert-log-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 4mm;
+  font-size: 9.5pt;
+}
+
+.cert-log-table thead tr {
+  background: #e8e8e8;
+}
+
+.cert-log-table th {
+  border: 0.8px solid #888;
+  padding: 2.5mm 3mm;
+  text-align: center;
+  font-weight: 700;
+  font-size: 9pt;
+  color: #222;
+}
+
+.cert-log-table td {
+  border: 0.8px solid #888;
+  padding: 2.5mm 3mm;
+  text-align: center;
+  color: #111;
+}
+
+.cert-log-table td.align-left { text-align: left; }
+.cert-log-table td.align-right { text-align: right; }
+
+.cert-log-table tfoot tr {
+  background: #f0f0f0;
+}
+.cert-log-table tfoot td {
+  font-weight: 800;
+  font-size: 9.5pt;
+}
+
+/* 통계 요약 박스 */
+.cert-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3mm;
+  margin: 4mm 0;
+}
+
+.cert-stat-box {
+  border: 0.8px solid #aaa;
+  border-radius: 2mm;
+  padding: 3mm;
+  text-align: center;
+  background: #fafafa;
+}
+
+.cert-stat-label {
+  font-size: 8.5pt;
+  color: #555;
+  margin-bottom: 1mm;
+}
+
+.cert-stat-value {
+  font-size: 14pt;
+  font-weight: 900;
+  color: #000;
+}
+
+.cert-stat-unit {
+  font-size: 8pt;
+  color: #444;
+}
+
+/* 확인 문구 */
+.cert-confirm-text {
+  margin: 6mm 0;
+  font-size: 10.5pt;
+  line-height: 1.9;
+  color: #111;
+  text-indent: 0;
+}
+
+.cert-confirm-text strong {
+  font-size: 11pt;
+  color: #000;
+}
+
+/* ──────────────────────────────────────────
+   하단 — 발급일 + 도장 영역
+────────────────────────────────────────── */
+.cert-footer {
+  margin-top: auto;
+  padding-top: 8mm;
+}
+
+.cert-issue-date {
+  text-align: center;
+  font-size: 12pt;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-bottom: 10mm;
+  color: #000;
+}
+
+.cert-issuer-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8mm;
+}
+
+.cert-issuer-info {
+  text-align: center;
+}
+
+.cert-issuer-title {
+  font-size: 14pt;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  color: #000;
+  margin-bottom: 1mm;
+}
+
+.cert-issuer-sub {
+  font-size: 9.5pt;
+  color: #444;
+}
+
+/* 직인 영역 */
+.cert-stamp {
+  width: 30mm;
+  height: 30mm;
+  border: 2px solid #c00;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #c00;
+  font-size: 9pt;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  opacity: 0.8;
+  position: relative;
+}
+
+.cert-stamp .stamp-inner {
+  border: 1.5px solid #c00;
+  border-radius: 50%;
+  width: 26mm;
+  height: 26mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.cert-stamp-text-top,
+.cert-stamp-text-mid,
+.cert-stamp-text-bot {
+  font-size: 8pt;
+  line-height: 1.2;
+  text-align: center;
+}
+
+/* ──────────────────────────────────────────
+   @media print — 실제 인쇄 시 적용
+────────────────────────────────────────── */
+@media print {
+  /* 인쇄 시 A4 설정 */
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  /* 화면 전용 UI 완전 숨김 */
+  .sidebar,
+  .main-content > .top-header,
+  .print-control-bar,
+  .certificate-preview-wrap > *:not(.certificate-a4),
+  .btn,
+  .nav-item,
+  .theme-toggle,
+  .toast-container,
+  .modal-backdrop {
+    display: none !important;
+  }
+
+  /* 전체 body/html 여백 제거 */
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  /* 미리보기 래퍼를 인쇄용으로 재정의 */
+  .certificate-preview-wrap {
+    display: block !important;
+    padding: 0 !important;
+    background: white !important;
+    min-height: unset;
+  }
+
+  /* A4 용지가 정확히 인쇄 영역에 꽉 차도록 */
+  .certificate-a4 {
+    width: 210mm !important;
+    min-height: 297mm !important;
+    margin: 0 !important;
+    padding: 18mm 20mm 22mm !important;
+    box-shadow: none !important;
+    border: none !important;
+    /* 페이지 넘김 방지 */
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* 테이블 페이지 분리 방지 */
+  .cert-log-table tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* 링크 href 숨김 */
+  a[href]::after { content: none !important; }
+}

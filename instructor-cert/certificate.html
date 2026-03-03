@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>외부강사 활동 확인서</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Noto+Serif+KR:wght@400;700;900&display=swap" rel="stylesheet" />
+  <style>
+  /* ════════════════════════════════════════
+     컨트롤 바 (화면 전용 — 인쇄 시 숨김)
+  ════════════════════════════════════════ */
+  .ctrl-bar {
+    position: sticky; top: 0; z-index: 100;
+    background: #1e293b;
+    padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    font-family: 'Noto Serif KR', serif;
+    box-shadow: 0 2px 10px rgba(0,0,0,.4);
+  }
+  .ctrl-bar .info { color: #94a3b8; font-size: .85rem; }
+  .ctrl-bar .info strong { color: #e2e8f0; }
+  .ctrl-bar .actions { display: flex; gap: 10px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 6px;
+    font-size: .85rem; font-weight: 600; cursor: pointer; border: none;
+    transition: all .15s;
+  }
+  .btn-ghost {
+    background: rgba(255,255,255,.08); color: #cbd5e1;
+    border: 1px solid rgba(255,255,255,.15);
+  }
+  .btn-ghost:hover { background: rgba(255,255,255,.15); }
+  .btn-primary { background: #3b72f2; color: #fff; }
+  .btn-primary:hover { background: #2558d9; }
+
+  /* ════════════════════════════════════════
+     A4 미리보기 래퍼 (회색 배경)
+  ════════════════════════════════════════ */
+  .preview-wrap {
+    background: #5a6272;
+    min-height: calc(100vh - 52px);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 36px 16px 60px;
+  }
+
+  /* ════════════════════════════════════════
+     A4 용지
+  ════════════════════════════════════════ */
+  .cert-a4 {
+    width: 210mm;
+    min-height: 297mm;
+    box-sizing: border-box; /* 패딩 포함 크기 계산 (2페이지 넘어감 방지) */
+    background: #fff;
+    color: #000;
+    box-shadow: 0 6px 36px rgba(0,0,0,.4);
+    padding: 25mm 15mm 20mm 15mm; /* 상단 25mm, 우 15mm, 하 20mm, 좌 15mm */
+    display: flex;
+    flex-direction: column;
+    font-family: 'Nanum Myeongjo', '나눔명조', 'Batang', '바탕', serif;
+  }
+
+  /* ════════════════════════════════════════
+     본문 폼 테이블
+  ════════════════════════════════════════ */
+  .cert-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  /* 열 너비 — 총 7열 */
+  .cert-table col.c0 { width: 5%; }    /* 섹션 라벨 */
+  .cert-table col.c1 { width: 14%; }   /* 성명 / 부터 */
+  .cert-table col.c2 { width: 14%; }   /* 한글한자 / 까지 */
+  .cert-table col.c3 { width: 6%; }    /* 이름값 / 시간 */
+  .cert-table col.c4 { width: 15%; }   /* 이름값B / 프로그램명 */
+  .cert-table col.c5 { width: 14%; }   /* 생년월일 / 직위 */
+  .cert-table col.c6 { width: 32%; }   /* 날짜값 / 지도사항 */
+
+  .cert-table td {
+    border: 0.6px solid #444;
+    padding: 1.5mm 2mm;
+    font-size: 11pt;
+    vertical-align: middle;
+    word-break: keep-all;
+  }
+
+  /* 제목 행 */
+  .td-title {
+    text-align: center;
+    font-size: 19pt !important;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    padding: 2mm 3mm 2mm 3mm !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+  }
+
+  /* 섹션 세로 라벨 */
+  .td-section {
+    writing-mode: vertical-lr;
+    text-orientation: mixed;
+    text-align: center;
+    vertical-align: middle;
+    letter-spacing: 1px;
+    font-size: 11pt;
+    font-weight: 700;
+    padding: 2mm 0 !important;
+    word-break: break-all;
+  }
+
+  /* 필드 라벨 */
+  .td-label {
+    text-align: center;
+    vertical-align: middle;
+    font-weight: 600;
+    font-size: 11pt;
+    letter-spacing: 0.1em;
+    background: transparent;
+    white-space: nowrap;
+    line-height: 130%; 
+    padding: 2mm 1mm !important;
+  }
+
+  /* 서브 라벨 (한글/한자) */
+  .td-sublabel {
+    text-align: center;
+    vertical-align: middle;
+    font-size: 11pt;
+    letter-spacing: 0.05em;
+    line-height: 130%;
+    padding: 2mm 2mm !important;
+  }
+
+  /* 값 입력 셀 */
+  .td-val {
+    font-size: 11pt;
+    vertical-align: middle;
+    padding: 2mm 3mm !important;
+    line-height: 130%; 
+  }
+
+  /* 데이터 행 */
+  .td-data {
+    font-size: 10.5pt;
+    text-align: center;
+    vertical-align: middle;
+    height: 9.5mm; /* 높이 축소 */
+    padding: 1mm 1mm !important; /* 상하 여백 대폭 축소 */
+  }
+  .td-data.align-left {
+    text-align: left;
+    padding-left: 2mm !important;
+  }
+
+  /* 합계 행 */
+  .td-total-label {
+    text-align: center;
+    font-weight: 700;
+    font-size: 11pt;
+    vertical-align: middle;
+  }
+  .td-total-val {
+    text-align: center;
+    font-weight: 800;
+    font-size: 11.5pt;
+    vertical-align: middle;
+  }
+
+  /* ════════════════════════════════════════
+     하단 확인 텍스트 + 서명
+  ════════════════════════════════════════ */
+  .cert-footer {
+    margin-top: 4mm; /* 표와 확인문구 사이 약간의 간격 */
+    padding: 0 2mm;
+  }
+  .cert-confirm {
+    font-size: 14pt;
+    line-height: 1.4;
+    margin-bottom: 2em; /* 확인 문구와 날짜 사이에 한 줄 정도 띄움 */
+    color: #111;
+  }
+  .cert-date {
+    margin-top: 2mm;
+    text-align: center;
+    font-size: 14pt;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: #000;
+  }
+  .cert-principal {
+    margin-top: 6mm; /* 날짜와 직인 사이에 간격 추가 */
+    text-align: center;
+    font-size: 22pt;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    color: #000;
+  }
+
+  /* ════════════════════════════════════════
+     @media print — 실제 인쇄
+  ════════════════════════════════════════ */
+  @media print {
+    @page { size: A4 portrait; margin: 25mm 15mm 20mm 15mm; }
+
+    .ctrl-bar { display: none !important; }
+
+    html, body {
+      margin: 0 !important;
+      padding: 0 !important;
+      background: white !important;
+    }
+
+    .preview-wrap {
+      display: block !important;
+      padding: 0 !important;
+      background: white !important;
+      min-height: unset;
+    }
+
+    .cert-a4 {
+      display: block !important; /* flex 해제하여 자연스러운 페이지 나누기 허용 */
+      width: 100% !important;
+      min-height: unset !important;
+      box-sizing: border-box !important;
+      margin: 0 !important;
+      padding: 0 !important; /* A4 자체 패딩을 제거하고 @page 여백(margin)으로 대체 */
+      box-shadow: none !important;
+    }
+
+    .cert-table {
+      page-break-inside: auto;
+    }
+    .cert-table tr {
+      page-break-inside: avoid;
+      page-break-after: auto;
+    }
+
+    .cert-table td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    a[href]::after { content: none !important; }
+  }
+  </style>
+</head>
+<body>
+
+<!-- 컨트롤 바 (화면 전용) -->
+<div class="ctrl-bar" id="ctrlBar">
+  <div class="info">
+    🖨️ <strong>외부강사 활동 확인서</strong> 미리보기 &nbsp;|&nbsp; <span id="barName">-</span>
+    <div style="margin-top:4px; font-size:0.75rem; color:#facc15; font-weight:400; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+      💡 팁: 항목이 많아 2장으로 넘어가면 인쇄 설정(설정 더보기)에서 <strong>'비율(배율)'을 90% 이하로 줄이거나 여백을 조절</strong>하여 한 장에 맞출 수 있습니다.
+    </div>
+  </div>
+  <div class="actions">
+    <button class="btn btn-ghost" onclick="window.parent.postMessage('closeCertPreview', '*');">✖ 닫기</button>
+    <button class="btn btn-primary" onclick="window.print()">🖨️ 인쇄 / PDF 저장</button>
+  </div>
+</div>
+
+<!-- A4 미리보기 -->
+<div class="preview-wrap">
+  <div class="cert-a4">
+
+    <!-- ════ 본문 테이블 ════ -->
+    <table class="cert-table" id="certTable">
+      <colgroup>
+        <col class="c0" /><col class="c1" /><col class="c2" />
+        <col class="c3" /><col class="c4" /><col class="c5" /><col class="c6" />
+      </colgroup>
+      <tbody>
+
+        <!-- ── 제목 ── -->
+        <tr>
+          <td colspan="7" class="td-title" id="certTitle">
+            돌봄·방과후학교 개인위탁 외부강사 활동 확인서
+          </td>
+        </tr>
+
+        <!-- ── 인적사항: 성명 ── -->
+        <tr>
+          <td rowspan="2" class="td-section">인&nbsp;적&nbsp;사&nbsp;항</td>
+          <td colspan="2" class="td-label">성&nbsp;&nbsp;&nbsp;명</td>
+          <td colspan="2" class="td-val" id="cellNameFull"></td>
+          <td class="td-label">생 년 월 일</td>
+          <td class="td-val" id="cellBirthDate"></td>
+        </tr>
+
+        <!-- ── 인적사항: 주소 ── -->
+        <tr>
+          <td colspan="2" class="td-label">주&nbsp;&nbsp;&nbsp;&nbsp;소</td>
+          <td colspan="4" class="td-val" id="cellAddress"></td>
+        </tr>
+
+        <!-- ── 경력사항: 기간 헤더 ── -->
+        <tr>
+          <td id="careerSectionLabel" style="border-bottom:none; padding:0 !important; position:relative;">
+            <div class="td-section" style="position:absolute; top:0; left:0; width:100%; height:80mm; padding:0 !important; border:none; display:flex; justify-content:center; align-items:center; background:transparent;">경&nbsp;력&nbsp;&nbsp;사&nbsp;항</div>
+          </td>
+          <td colspan="3" class="td-label">기&nbsp;&nbsp;&nbsp;&nbsp;간</td>
+          <td rowspan="2" class="td-label">프로그램명</td>
+          <td rowspan="2" class="td-label">직&nbsp;&nbsp;위</td>
+          <td rowspan="2" class="td-label">지&nbsp;&nbsp;도&nbsp;&nbsp;사&nbsp;&nbsp;항</td>
+        </tr>
+
+        <!-- ── 경력사항: 기간 서브헤더 ── -->
+        <tr>
+          <td style="border-top:none; border-bottom:none;"></td>
+          <td class="td-label">부&nbsp;&nbsp;터</td>
+          <td class="td-label">까&nbsp;&nbsp;지</td>
+          <td class="td-label">시간</td>
+        </tr>
+
+        <!-- ── 경력사항: 데이터 행 (JS가 채움) ── -->
+        <tr id="dataRowStart" style="display:none;"></tr>
+
+      </tbody>
+    </table>
+
+    <!-- ════ 하단 확인 텍스트 ════ -->
+    <div class="cert-footer">
+      <p class="cert-confirm" id="certConfirmText">
+        위와 같이 돌봄·방과후학교 개인위탁 외부강사 활동 내용을 확인합니다.
+      </p>
+      <p class="cert-date" id="certDate"></p>
+      <p class="cert-principal" id="certPrincipal"></p>
+    </div>
+
+  </div><!-- /cert-a4 -->
+</div><!-- /preview-wrap -->
+
+
+<script>
+/* ════════════════════════════════════════════════════════
+   외부강사 활동 확인서 — 데이터 바인딩 & 테이블 렌더링
+════════════════════════════════════════════════════════ */
+(function () {
+  'use strict';
+
+  /* ── 유틸 ───────────────────────────────────────── */
+  const $ = id => document.getElementById(id);
+
+  /** "YYYY-MM-DD" → "YYYY.MM.DD." */
+  function fmtDate(s) {
+    if (!s) return '';
+    const [y, m, d] = s.split('-');
+    return `${y}.${String(m).padStart(2, '0')}.${String(d).padStart(2, '0')}.`;
+  }
+
+  /** 총시수 합산 */
+  function sumHours(logs) {
+    return logs.reduce((t, l) => t + (Number(l.hours) || 0), 0);
+  }
+
+  /* ── 샘플 데이터 (sessionStorage에 없을 때 사용) ── */
+  let certData = null;
+  try { certData = JSON.parse(sessionStorage.getItem('certData')); } catch(e){}
+
+  if (!certData) {
+    certData = {
+      instructor: {
+        name_korean:  '홍길동',
+        name_chinese: '洪吉童',
+        birth_date:   '1985-03-15',
+        position:     '강사',
+        address:      '경남 하동군 적량면 공월길 30'
+      },
+      logs: [
+        { year:2023, month:3,  school_name:'황천초등학교', program_name:'생태연극놀이', start_date:'2023-03-02', end_date:'2024-02-29', hours:98,  position:'강사', guidance_notes:'황천초등학교 돌봄·방과후학교 생태체험놀이 프로그램 운영' },
+        { year:2024, month:3,  school_name:'황천초등학교', program_name:'생태연극놀이', start_date:'2024-03-04', end_date:'2025-02-28', hours:72,  position:'강사', guidance_notes:'황천초등학교 돌봄·방과후학교 생태연극놀이 프로그램 운영' },
+        { year:2025, month:3,  school_name:'황천초등학교', program_name:'생태연극놀이', start_date:'2025-03-04', end_date:'2026-02-28', hours:86,  position:'강사', guidance_notes:'황천초등학교 돌봄·방과후학교 생태연극놀이 프로그램 운영' },
+      ],
+      settings: { schoolName: '황천초등학교', principalName: '', schoolAddress: '' }
+    };
+  }
+
+  /* ── 데이터 렌더링 ───────────────────────────────── */
+  const { instructor: inst, logs, settings } = certData;
+  const schoolName = (settings && settings.schoolName) || '○○초등학교';
+  
+  const consType = inst.consignment_type || '개인';
+  const displayConsType = consType.endsWith('위탁') ? consType : consType + '위탁';
+  const posType = inst.position || '외부강사';
+
+  $('certTitle').textContent = `돌봄·방과후학교 ${displayConsType} ${posType} 활동 확인서`;
+
+  // 컨트롤 바 강사명
+  const barEl = $('barName');
+  if (barEl) barEl.textContent = inst.name_korean || '';
+
+  // 인적사항
+  const nameKr = inst.name_korean || '';
+  const nameCh = inst.name_chinese ? `(${inst.name_chinese})` : '';
+  $('cellNameFull').textContent = `${nameKr} ${nameCh}`.trim();
+  $('cellBirthDate').textContent   = fmtDate(inst.birth_date).replace(/\./g, '. ').trim();
+  $('cellAddress').textContent     = inst.address || '';
+
+  /* ── 경력사항 데이터 행 생성 ────────────────────── */
+  const MIN_ROWS = 10;  // 최소 빈 줄 수 (종이 양식처럼 고정 라인 유지)
+  const totalRows  = Math.max(logs.length, MIN_ROWS);
+  const totalHours = sumHours(logs);
+
+  // 기존 더미 tr 제거
+  const dummy = $('dataRowStart');
+  if (dummy) dummy.remove();
+
+  // rowspan을 사용하지 않고 CSS로 투명셀 처리함으로써 인쇄 잘림 방지
+
+  // tbody에 행 삽입할 참조 (table > tbody)
+  const tbody = document.querySelector('#certTable tbody');
+
+  // 데이터 행 삽입
+  for (let i = 0; i < totalRows; i++) {
+    const log = logs[i] || null;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="border-top:none; border-bottom:none;"></td>
+      <td class="td-data">${log ? fmtDate(log.start_date) : ''}</td>
+      <td class="td-data">${log ? fmtDate(log.end_date)   : ''}</td>
+      <td class="td-data">${log ? log.hours               : ''}</td>
+      <td class="td-data">${log ? (log.program_name || '') : ''}</td>
+      <td class="td-data">${log ? (log.position || inst.position || '강사') : ''}</td>
+      <td class="td-data align-left">${log ? (log.guidance_notes || '') : ''}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  // 합계 행 삽입
+  const totalTr = document.createElement('tr');
+  totalTr.innerHTML = `
+    <td style="border-top:none;"></td>
+    <td colspan="2" class="td-total-label">총&nbsp;&nbsp;시&nbsp;&nbsp;간</td>
+    <td class="td-total-val">${totalHours}</td>
+    <td colspan="3" class="td-data"></td>
+  `;
+  tbody.appendChild(totalTr);
+
+  /* ── 하단 텍스트 ─────────────────────────────────── */
+  // 확인 문구
+  $('certConfirmText').textContent =
+    `위와 같이 돌봄·방과후학교 ${displayConsType} ${posType} 활동 내용을 확인합니다.`;
+
+  // 발급일
+  const today = new Date();
+  const tm = String(today.getMonth() + 1).padStart(2, '0');
+  const td = String(today.getDate()).padStart(2, '0');
+  $('certDate').textContent = `${today.getFullYear()}. ${tm}. ${td}.`;
+
+  // 학교장
+  $('certPrincipal').textContent = `${schoolName}장\u00A0\u00A0(직인)`;
+
+  // 외부(상위 부모)에서 인쇄 트리거 시 대응
+  window.addEventListener('message', (e) => {
+    if (e.data === 'print') {
+      window.print();
+    }
+  });
+
+})();
+</script>
+
+</body>
+</html>

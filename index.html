@@ -186,6 +186,44 @@
       #login-container input, #login-container select { position: relative; z-index: 99 !important; }
       #login-container .multi-select-container { position: relative; z-index: 100 !important; }
       #login-container .multi-select-popover { z-index: 105 !important; }
+
+      /* 강사관리 네비게이션 버튼 (보라/자홍색 계열) - 통합 분리형 */
+      .instructor-nav-btn {
+          padding: 0.6rem 1rem !important; /* nav-item 스타일 상속 대체 */
+          background: linear-gradient(135deg, #d946ef 0%, #9333ea 100%) !important;
+          color: white !important;
+          font-weight: 600 !important; /* 다른 상단 메뉴와 동일한 굵기 */
+          border-radius: 50px !important;
+          position: relative;
+          overflow: hidden;
+          text-decoration: none !important;
+          display: inline-flex !important;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid transparent !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03) !important;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .instructor-nav-btn:hover {
+          background: linear-gradient(135deg, #e879f9 0%, #a855f7 100%) !important;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(217, 70, 239, 0.4);
+      }
+      .btn-instructor-bg {
+          position: absolute;
+          top: 0; left: -100%;
+          width: 50%; height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+          transform: skewX(-20deg);
+          animation: shine 4s infinite;
+          z-index: 1;
+      }
+      @keyframes shine {
+          0% { left: -100%; }
+          20% { left: 200%; }
+          100% { left: 200%; }
+      }
     </style>
   </head>
   <body>
@@ -393,6 +431,10 @@
             <button class="nav-item" data-category="training" onclick="switchTab('training')">연수관리</button>
             <button class="nav-item" data-category="datayard">자료마당</button>
             <button class="nav-item" data-category="support" onclick="switchTab('support')">온학교 e지원</button>
+            <button onclick="window.open('instructor-cert/index.html', '_blank')" class="instructor-nav-btn admin-feature hidden" title="강사관리">
+               <div class="btn-instructor-bg"></div>
+               <span style="position:relative; z-index:2;">강사관리</span>
+            </button>
             <button class="nav-item hidden" id="nav-admin-btn" data-category="admin">관리자</button>
           </nav>
 

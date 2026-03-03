@@ -1,0 +1,135 @@
+{
+  "_schema_version": "1.0.0",
+  "_description": "외부강사 활동 확인서 발급 시스템 - Firestore 데이터베이스 스키마",
+  "_last_updated": "2026-02-24",
+
+  "collections": {
+    "instructors": {
+      "_description": "강사의 고유 인적사항 관리 컬렉션. 문서 ID는 Firestore 자동 생성 ID 사용.",
+      "_document_id": "auto-generated (e.g. 'xyz123abc')",
+      "_indexes": ["name_korean", "created_at"],
+
+      "sample_document_1": {
+        "id": "ABC123xyz",
+        "name_korean": "홍길동",
+        "name_chinese": "洪吉童",
+        "birth_date": "1985-03-15",
+        "address": "경상남도 창원시 의창구 상남동 123-45",
+        "position": "외부강사",
+        "created_at": "2026-01-05T09:00:00Z",
+        "updated_at": "2026-02-01T14:30:00Z"
+      },
+
+      "sample_document_2": {
+        "id": "DEF456uvw",
+        "name_korean": "김미래",
+        "name_chinese": "金未來",
+        "birth_date": "1990-07-22",
+        "address": "경상남도 창원시 성산구 사파동 678-9",
+        "position": "외부강사",
+        "created_at": "2026-01-10T10:00:00Z",
+        "updated_at": "2026-01-10T10:00:00Z"
+      }
+    },
+
+    "work_logs": {
+      "_description": "강사별 월별 출강 기록 컬렉션. instructor_id + year + month 복합 쿼리로 누계 계산.",
+      "_document_id": "auto-generated (e.g. '{instructor_id}_{year}_{month:02d}'로 결정론적 ID 권장)",
+      "_document_id_convention": "{instructor_id}_{YYYY}_{MM}  예: ABC123xyz_2025_03",
+      "_composite_indexes": [
+        "instructor_id + year (연도별 합산용)",
+        "instructor_id + year + month (월별 조회용)"
+      ],
+
+      "sample_document_1": {
+        "id": "ABC123xyz_2025_03",
+        "instructor_id": "ABC123xyz",
+        "school_name": "○○초등학교",
+        "program_name": "방과후 미술교실",
+        "year": 2025,
+        "month": 3,
+        "start_date": "2025-03-04",
+        "end_date": "2025-03-28",
+        "hours": 16,
+        "guidance_notes": "기초 드로잉, 수채화 기법 지도",
+        "created_at": "2025-03-31T17:00:00Z",
+        "updated_at": "2025-03-31T17:00:00Z"
+      },
+
+      "sample_document_2": {
+        "id": "ABC123xyz_2025_04",
+        "instructor_id": "ABC123xyz",
+        "school_name": "○○초등학교",
+        "program_name": "방과후 미술교실",
+        "year": 2025,
+        "month": 4,
+        "start_date": "2025-04-01",
+        "end_date": "2025-04-25",
+        "hours": 20,
+        "guidance_notes": "색채 이론, 유화 기초 지도",
+        "created_at": "2025-04-30T17:00:00Z",
+        "updated_at": "2025-04-30T17:00:00Z"
+      },
+
+      "sample_document_3": {
+        "id": "ABC123xyz_2025_05",
+        "instructor_id": "ABC123xyz",
+        "school_name": "○○초등학교",
+        "program_name": "방과후 미술교실",
+        "year": 2025,
+        "month": 5,
+        "start_date": "2025-05-01",
+        "end_date": "2025-05-30",
+        "hours": 24,
+        "guidance_notes": "판화, 조소 기초 지도",
+        "created_at": "2025-05-31T17:00:00Z",
+        "updated_at": "2025-05-31T17:00:00Z"
+      },
+
+      "sample_document_4": {
+        "id": "ABC123xyz_2026_01",
+        "instructor_id": "ABC123xyz",
+        "school_name": "○○초등학교",
+        "program_name": "방과후 미술교실",
+        "year": 2026,
+        "month": 1,
+        "start_date": "2026-01-03",
+        "end_date": "2026-01-31",
+        "hours": 18,
+        "guidance_notes": "겨울 특강 - 한국화 기법, 캘리그라피",
+        "created_at": "2026-01-31T17:00:00Z",
+        "updated_at": "2026-01-31T17:00:00Z"
+      }
+    }
+  },
+
+  "_query_patterns": {
+    "특정강사_전체기록": {
+      "collection": "work_logs",
+      "where": "instructor_id == '{instructor_id}'",
+      "order_by": ["year ASC", "month ASC"],
+      "use_case": "증명서 발급 시 전체 경력 목록 + 총시수 계산"
+    },
+    "특정강사_연도별": {
+      "collection": "work_logs",
+      "where": ["instructor_id == '{instructor_id}'", "year == {year}"],
+      "use_case": "연도별 시수 합산 통계"
+    },
+    "특정강사_월별": {
+      "collection": "work_logs",
+      "where": [
+        "instructor_id == '{instructor_id}'",
+        "year == {year}",
+        "month == {month}"
+      ],
+      "use_case": "특정 월 기록 단건 조회/편집"
+    }
+  },
+
+  "_calculated_fields": {
+    "_note": "아래 필드는 Firestore에 저장하지 않고 JavaScript에서 실시간 계산",
+    "annual_total_hours": "work_logs에서 해당 instructor_id + year 필터링 후 hours 합산",
+    "grand_total_hours": "work_logs에서 해당 instructor_id 전체 hours 합산",
+    "activity_period": "work_logs의 첫 start_date ~ 마지막 end_date"
+  }
+}
