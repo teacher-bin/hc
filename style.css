@@ -57,7 +57,7 @@ body.dark-mode {
 
 .header-user-panel {
   position: absolute;
-  right: calc(1rem - 100px); /* 총 100px(기존 50px + 추가 50px) 이동 */
+  right: calc(1rem - 120px); /* 20px 추가 이동하여 위치 최적화 */
   top: 50%;          /* 헤더 중앙선 기준 */
   transform: translateY(-20px); /* 기존 -15px에서 위쪽으로 5px 더 이동 */
   display: flex;
@@ -514,7 +514,7 @@ main {
 
 .nav-item, .header-icon-btn {
   pointer-events: auto;
-  padding: 0.6rem 1rem; /* Reduced padding for better fit */
+  padding: 0.45rem 0.85rem; /* 버튼 크기 슬림화 */
   border: 1px solid var(--border-color);
   background: var(--widget-bg);
   backdrop-filter: blur(10px);
@@ -739,7 +739,8 @@ footer {
   background: var(--card-bg);
   border-radius: 12px;
   box-shadow: var(--shadow-soft);
-  overflow: hidden; 
+  overflow-x: auto;
+  overflow-y: hidden;
   margin-bottom: 2rem;
   border: 1px solid var(--border-color);
 }
@@ -756,10 +757,12 @@ footer {
 .status-table th,
 .status-table td {
   border: 1px solid var(--border-color);
-  padding: 0.85rem;
+  padding: 0.4rem 0.5rem; /* 기존 0.85rem에서 대폭 축소하여 공간 확보 */
   text-align: center;
   color: var(--text-main);
   background: var(--card-bg); /* Explicitly set background */
+  word-break: keep-all; /* 단어 단위로 줄바꿈 유지하여 불필요한 두 줄 들여쓰기 방지 */
+  white-space: pre-wrap; /* 사용자가 엔터키로 입력한 줄바꿈을 반영하면서 박스를 넘기면 줄바꿈 허용 */
 }
 
 .status-table th {
@@ -822,9 +825,11 @@ footer {
   border: 1px solid transparent;
   background: transparent;
   text-align: center;
-  padding: 8px;
+  padding: 4px 6px; /* 8px에서 축소하여 입력 영역 확보 */
   border-radius: 4px;
   color: inherit; /* Ensure text is visible in dark mode */
+  font-family: inherit;
+  font-size: inherit;
 }
 
 .editable-input:focus {
@@ -3991,10 +3996,13 @@ html.intro-active .intro-section {
 }
 
 .intro-mini-footer {
-  margin-top: 4rem;
-  opacity: 0.6;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  opacity: 0.7;
   font-size: 0.85rem;
   color: var(--text-muted);
+  text-align: center;
+  width: 100%;
 }
 
 /* Edit Controls Style */
@@ -6987,7 +6995,7 @@ body.dark-mode #bus-section::before {
   }
 
   .header-container {
-    padding: 0.5rem 1rem !important;
+    padding: 0.45rem 0.85rem !important; /* 패딩 축소로 크기 조절 */
     flex-direction: column !important;
     gap: 0.8rem !important;
     min-height: auto !important;

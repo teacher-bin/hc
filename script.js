@@ -806,15 +806,21 @@
           document.getElementById('add-tab-master-btn').onclick = addNewTab;
       } else {
           const isAdmin = window.currentUserRole === 'admin' || window.currentUserRole === 'sub-admin';
+          let htmlContent = `
+              <button id="excel-download-btn" class="btn-secondary" onclick="exportStatusToExcel()" style="margin-right: 6px; background: #10b981; color: white; border-color: #059669;">
+                  <i class="fas fa-file-excel"></i> 엑셀 다운로드
+              </button>
+          `;
           if (isAdmin) {
-              area.innerHTML = `
+              htmlContent += `
                   <button id="edit-status-btn" class="btn-primary">
                       <i class="fas fa-edit"></i> 현황 편집
                   </button>
               `;
+          }
+          area.innerHTML = htmlContent;
+          if (isAdmin) {
               document.getElementById('edit-status-btn').onclick = () => toggleStatusEditMode(false);
-          } else {
-              area.innerHTML = '';
           }
       }
   }
@@ -969,16 +975,17 @@
               });
           });
 
-          // Column widths sync (New)
+          // Column widths sync (New) - 주석 처리: 창 크기나 overflow로 인해 찌그러진 offsetWidth가 사용자 설정값을 덮어쓰는 버그 방지
+          /*
           const ths = table.querySelectorAll('thead th');
           if (ths.length > 0) {
               const newWidths = [];
               ths.forEach(th => {
-                  // offsetWidth includes padding and border
                   newWidths.push(th.offsetWidth);
               });
               tabTableData.widths = newWidths;
           }
+          */
       });
   }
 
@@ -1025,6 +1032,7 @@
 
           btn.onclick = (e) => {
               if (e.target.closest('.delete-tab-btn')) return;
+              if (isStatusEditMode) syncStatusDataFromDOM(); // 탭 이동 전 현재 탭의 인풋값 동기화
               activeTabId = id;
               renderStatusTabs();
               renderStatusContent();
@@ -1066,22 +1074,19 @@
       let html = `<div class="table-container"><div class="table-grid-wrapper table-grid-${gridCols}">`;
       
       tabData.tables.forEach((table, tIdx) => {
+          const tableWidthCSS = table.customSized ? 'max-content' : '100%';
           html += `<div class="editable-table-wrapper" style="margin-bottom:2rem; width:100%;">
-                    <table class="status-table ${isStatusEditMode ? 'editable-table' : ''}" data-tid="${tIdx}" style="width:100%;">
+                    <table class="status-table ${isStatusEditMode ? 'editable-table' : ''}" data-tid="${tIdx}" style="width:${tableWidthCSS};">
                       <thead><tr>`;
           table.headers.forEach((h, hIndex) => {
               const w = table.widths && table.widths[hIndex] ? table.widths[hIndex] + 'px' : 'auto';
-              html += `<th data-col="${hIndex}" style="width: ${w}">
-                          <div class="header-inner">
-                            ${isStatusEditMode ? `<input class="editable-input" value="${h}" onchange="statusData['${activeTabId}'].tables[${tIdx}].headers[${hIndex}]=this.value">` : h}
-                          </div>
-                       </th>`;
+              html += `<th data-col="${hIndex}" style="width: ${w}"><div class="header-inner">${isStatusEditMode ? `<textarea class="editable-input" rows="1" style="resize:vertical; overflow:hidden;" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'" onchange="statusData['${activeTabId}'].tables[${tIdx}].headers[${hIndex}]=this.value">${h}</textarea>` : h}</div></th>`;
           });
           html += `</tr></thead><tbody>`;
           table.rows.forEach((row, rIdx) => {
               html += `<tr>`;
               row.forEach((cell, cIndex) => {
-                  html += `<td>${isStatusEditMode ? `<input class="editable-input" value="${cell}" onchange="statusData['${activeTabId}'].tables[${tIdx}].rows[${rIdx}][${cIndex}]=this.value">` : cell}</td>`;
+                  html += `<td>${isStatusEditMode ? `<textarea class="editable-input" rows="1" style="resize:vertical; overflow:hidden;" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'" onchange="statusData['${activeTabId}'].tables[${tIdx}].rows[${rIdx}][${cIndex}]=this.value">${cell}</textarea>` : cell}</td>`;
               });
               html += `</tr>`;
           });
@@ -1093,6 +1098,7 @@
                 <button class="btn-mini danger" onclick="statusRowAction('${activeTabId}', ${tIdx}, 'remove')"><i class="fas fa-minus"></i> 행 삭제</button>
                 <button class="btn-mini" onclick="statusColAction('${activeTabId}', ${tIdx}, 'add')"><i class="fas fa-plus"></i> 열 추가</button>
                 <button class="btn-mini danger" onclick="statusColAction('${activeTabId}', ${tIdx}, 'remove')"><i class="fas fa-minus"></i> 열 삭제</button>
+                <button class="btn-mini" onclick="statusEqualizeWidth('${activeTabId}', ${tIdx})"><i class="fas fa-arrows-alt-h"></i> 너비 같게</button>
                 <button class="btn-mini danger" onclick="removeTableFromTab('${activeTabId}', ${tIdx})">표 삭제</button>
               </div>`;
           }
@@ -1111,8 +1117,12 @@
               const tIdx = table.dataset.tid;
               if (activeTabId && statusData[activeTabId] && statusData[activeTabId].tables[tIdx]) {
                   const tableData = statusData[activeTabId].tables[tIdx];
-                  if (!tableData.widths) tableData.widths = Array(tableData.headers.length).fill(100);
+                  if (!tableData.widths) {
+                      const ths = table.querySelectorAll('thead th');
+                      tableData.widths = Array.from(ths).map(th => th.offsetWidth);
+                  }
                   tableData.widths[colIdx] = newWidth;
+                  tableData.customSized = true;
               }
           });
       }
@@ -1179,6 +1189,25 @@
       }
       if (window.logUserAction) window.logUserAction('status', type === 'add' ? '열추가' : '열삭제', `탭: ${statusData[tabId].title}, 표: ${tIdx + 1}번`);
       renderStatusContent();
+  };
+
+  window.statusEqualizeWidth = (tabId, tIdx) => {
+      const table = statusData[tabId].tables[tIdx];
+      if (table && table.headers.length > 0) {
+          // 작성 중이던 텍스트 데이터가 날아가지 않도록 DOM 입력값 먼저 동기화
+          if (isStatusEditMode) syncStatusDataFromDOM();
+
+          if (!table.widths) table.widths = Array(table.headers.length).fill(100);
+          
+          const totalWidth = table.widths.reduce((sum, w) => sum + (typeof w === 'number' ? w : 100), 0);
+          const equalWidth = Math.max(50, Math.floor(totalWidth / table.headers.length));
+          
+          table.widths = Array(table.headers.length).fill(equalWidth);
+          table.customSized = true;
+          
+          if (window.logUserAction) window.logUserAction('status', '너비동기화', `탭: ${statusData[tabId].title}, 표: ${tIdx + 1}번 너비 같게 지정`);
+          renderStatusContent();
+      }
   };
 
   window.addEventListener('firebase-ready', initStatusEditing);
@@ -1411,6 +1440,46 @@
       });
     }
   }
+
+  window.exportStatusToExcel = () => {
+      if (!activeTabId || !statusData[activeTabId]) return;
+      const tabData = statusData[activeTabId];
+      if (!tabData.tables || tabData.tables.length === 0) {
+          alert("추출할 표 데이터가 없습니다.");
+          return;
+      }
+
+      try {
+          let wb = XLSX.utils.book_new();
+          const ws_data = [];
+          
+          tabData.tables.forEach((table, idx) => {
+              if (idx > 0) {
+                  ws_data.push([]); // 표 구분을 위한 빈 줄
+                  ws_data.push([]);
+              }
+              if (table.headers) ws_data.push(table.headers);
+              if (table.rows) {
+                  table.rows.forEach(r => ws_data.push(r));
+              }
+          });
+          
+          let sheetName = tabData.title || "명부";
+          if (sheetName.length > 31) sheetName = sheetName.substring(0, 31); // 엑셀 시트명은 최대 31자 제한
+          
+          const ws = XLSX.utils.aoa_to_sheet(ws_data);
+          XLSX.utils.book_append_sheet(wb, ws, sheetName);
+          
+          const today = new Date();
+          const dateStr = `${today.getFullYear()}${(today.getMonth()+1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}`;
+          const fileName = `[${tabData.title}]명부_${dateStr}.xlsx`;
+          
+          XLSX.writeFile(wb, fileName);
+      } catch (e) {
+          console.error("Excel download error:", e);
+          alert("엑셀 다운로드 중 오류가 발생했습니다.");
+      }
+  };
 
   function updateDatayardOrderFromDOM() {
     const container = document.getElementById("datayard-container");
@@ -4980,29 +5049,49 @@
             const idMatch = url.match(/id=([^&]+)/);
             if (idMatch) downloadUrl = `https://drive.google.com/uc?export=download&id=${idMatch[1]}`;
         }
+    } else if (url.includes('docs.google.com')) {
+        // Detect Google Docs/Sheets/Slides links and convert to direct download export URLs
+        const docsRegex = /\/(document|spreadsheets|presentation)\/d\/(.+?)\/(edit|view|open|preview)/;
+        const match = url.match(docsRegex);
+        if (match && match[1] && match[2]) {
+            const type = match[1];
+            const docId = match[2];
+            if (type === 'spreadsheets') {
+                downloadUrl = `https://docs.google.com/spreadsheets/d/${docId}/export?format=xlsx`;
+            } else if (type === 'document') {
+                downloadUrl = `https://docs.google.com/document/d/${docId}/export?format=docx`;
+            } else if (type === 'presentation') {
+                downloadUrl = `https://docs.google.com/presentation/d/${docId}/export/pptx`;
+            }
+        }
     }
 
     // B. Attempt Blob-based download to bypass browser's built-in preview/PDF viewer
-    try {
-        const response = await fetch(downloadUrl);
-        if (response.ok) {
-            const blob = await response.blob();
-            const blobUrl = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = blobUrl;
-            a.download = title || 'download';
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(blobUrl);
-            document.body.removeChild(a);
-            return;
+    // 구글 문서/드라이브 링크는 고유의 다운로드 프로토콜(파일 확장자, 파일명 자동 지정)이 있으므로 자체 렌더링을 피함
+    const isGoogleLinks = downloadUrl.includes('drive.google.com') || downloadUrl.includes('docs.google.com');
+    
+    if (!isGoogleLinks) {
+        try {
+            const response = await fetch(downloadUrl);
+            if (response.ok) {
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = blobUrl;
+                a.download = title || 'download';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(blobUrl);
+                document.body.removeChild(a);
+                return;
+            }
+        } catch (err) {
+            console.warn("Direct blob fetch failed (likely CORS), falling back to location-based download:", err);
         }
-    } catch (err) {
-        console.warn("Direct blob fetch failed (likely CORS), falling back to location-based download:", err);
     }
 
-    // C. Fallback for non-CORS sources (Some browsers may still preview)
+    // C. Fallback for non-CORS sources (또는 구글 링크 원본 다운로드)
     window.location.href = downloadUrl;
   };
 

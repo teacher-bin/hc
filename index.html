@@ -189,7 +189,7 @@
 
       /* 강사관리 네비게이션 버튼 (보라/자홍색 계열) - 통합 분리형 */
       .instructor-nav-btn {
-          padding: 0.6rem 1rem !important; /* nav-item 스타일 상속 대체 */
+          padding: 0.45rem 0.85rem !important; /* 크기 슬림화 */
           background: linear-gradient(135deg, #d946ef 0%, #9333ea 100%) !important;
           color: white !important;
           font-weight: 600 !important; /* 다른 상단 메뉴와 동일한 굵기 */
@@ -224,7 +224,42 @@
           20% { left: 200%; }
           100% { left: 200%; }
       }
+      /* 단순화된 테마 전환 버튼 스타일 */
+      .theme-toggle-btn {
+          width: 42px !important;
+          height: 42px !important;
+          padding: 0 !important;
+          font-size: 1.15rem !important;
+          position: relative;
+          color: var(--text-muted) !important;
+      }
+      .theme-toggle-btn .moon-icon { display: block; }
+      .theme-toggle-btn .sun-icon { display: none; }
+      
+      body.dark-mode .theme-toggle-btn .moon-icon { display: none; }
+      body.dark-mode .theme-toggle-btn .sun-icon { display: block; color: #f59e0b !important; }
+
+      /* 모바일 최적화: 특정 메뉴 숨김 */
+      @media (max-width: 768px) {
+          .instructor-nav-btn,
+          .theme-toggle-btn {
+              display: none !important;
+          }
+      }
     </style>
+    <script>
+      // 단순화된 테마 버튼 클릭 시 체크박스 트리거
+      document.addEventListener('DOMContentLoaded', () => {
+          const btn = document.getElementById('theme-toggle-btn');
+          const cb = document.getElementById('checkbox');
+          if (btn && cb) {
+              btn.onclick = () => {
+                  cb.checked = !cb.checked;
+                  cb.dispatchEvent(new Event('change'));
+              };
+          }
+      });
+    </script>
   </head>
   <body>
     <!-- Login Section -->
@@ -431,22 +466,24 @@
             <button class="nav-item" data-category="training" onclick="switchTab('training')">연수관리</button>
             <button class="nav-item" data-category="datayard">자료마당</button>
             <button class="nav-item" data-category="support" onclick="switchTab('support')">온학교 e지원</button>
-            <button onclick="window.open('instructor-cert/index.html', '_blank')" class="instructor-nav-btn admin-feature hidden" title="강사관리">
+            <button onclick="window.open('special-edu/index.html', '_blank')" class="instructor-nav-btn" style="background: linear-gradient(135deg, #ff9a16 0%, #ff4b2b 100%) !important; color: #ffffff !important; box-shadow: 0 4px 12px rgba(255, 75, 43, 0.4);" title="계기교육 포털">
+               <div class="btn-instructor-bg"></div>
+               <span style="position:relative; z-index:2;"><i class="fas fa-calendar-alt" style="margin-right: 4px;"></i>계기교육</span>
+            </button>
+            <button onclick="window.open('instructor-cert/index.html', '_blank')" class="instructor-nav-btn admin-feature hidden" title="강사관리" style="padding: 0.45rem 0.85rem !important;">
                <div class="btn-instructor-bg"></div>
                <span style="position:relative; z-index:2;">강사관리</span>
             </button>
-            <button class="nav-item hidden" id="nav-admin-btn" data-category="admin">관리자</button>
+            <button class="nav-item hidden" id="nav-admin-btn" data-category="admin" style="padding: 0.45rem 0.85rem !important; height: auto !important; min-height: 0 !important;">관리자</button>
           </nav>
 
           <div class="header-user-panel">
             <div class="header-top-row">
-              <label class="theme-switch" for="checkbox">
-                <input type="checkbox" id="checkbox" />
-                <div class="slider round">
-                  <i class="fas fa-sun"></i>
-                  <i class="fas fa-moon"></i>
-                </div>
-              </label>
+              <button id="theme-toggle-btn" class="header-icon-btn theme-toggle-btn" title="다크/라이트 모드 전환">
+                <i class="fas fa-sun sun-icon"></i>
+                <i class="fas fa-moon moon-icon"></i>
+                <input type="checkbox" id="checkbox" style="display: none;" />
+              </button>
               <div class="profile-icon-group" style="position: relative; display: flex;">
                 <button id="profile-btn" class="header-icon-btn profile-btn" title="프로필 설정"><i class="fas fa-user-circle"></i></button>
                 <i id="header-admin-crown" class="fas fa-crown header-admin-crown hidden"></i>
@@ -454,6 +491,7 @@
               <button id="logout-btn" class="header-icon-btn logout-btn" title="로그아웃"><i class="fas fa-sign-out-alt"></i></button>
             </div>
             <div id="user-greeting" class="user-greeting"></div>
+          </div>
           </div>
         </div>
       </div>
@@ -1512,9 +1550,10 @@
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th style="width: 30%; text-align: center;">버튼 이름</th>
-                                <th style="width: 15%; text-align: center;">아이콘</th>
+                                <th style="width: 25%; text-align: center;">버튼 이름</th>
+                                <th style="width: 10%; text-align: center;">아이콘</th>
                                 <th style="width: 40%; text-align: center;">링크(URL)</th>
+                                <th style="width: 10%; text-align: center;">상태</th>
                                 <th style="width: 15%; text-align: center;">관리</th>
                             </tr>
                         </thead>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>가로내 계기수업 포털</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&family=Gaegu:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Decorative Blobs -->
+  <div class="bg-blobs">
+    <div class="blob"></div>
+    <div class="blob"></div>
+  </div>
+
+  <div class="app-container">
+    <header class="app-header">
+      <div class="header-left">
+        <button class="btn-back" onclick="location.href='../index.html'" title="뒤로가기">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <div class="app-brand">
+          <h1>가로내 계기교육 포털</h1>
+          <p class="app-subtitle">가로내 선생님들과 함께 만드는 월별 계기교육 자료실</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <button id="theme-toggle" class="theme-toggle" title="다크모드 전환">
+          <i class="fas fa-moon"></i>
+        </button>
+        <div class="auth-controls">
+          <button id="admin-login-btn" class="btn-login">
+            <i class="fas fa-user-circle"></i> 가로내 회원 로그인
+          </button>
+          <div id="admin-controls" class="hidden">
+            <button id="add-item-btn" class="btn-add"><i class="fas fa-plus-circle"></i> 자료 등록</button>
+            <button id="admin-logout-btn" class="btn-logout"><i class="fas fa-power-off"></i></button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="month-selector-wrapper">
+      <nav class="month-tabs" id="month-tabs">
+        <!-- JS renders months 3 to 2 -->
+      </nav>
+    </div>
+
+    <div class="main-layout" id="calendar-layout">
+      <!-- Left: Mini Calendar -->
+      <div class="calendar-glass-card">
+        <div class="cal-top">
+          <button class="cal-nav" id="cal-prev-btn"><i class="fas fa-chevron-left"></i></button>
+          <div class="cal-month" id="cal-month-title">3월</div>
+          <button class="cal-nav" id="cal-next-btn"><i class="fas fa-chevron-right"></i></button>
+        </div>
+        <div class="cal-grid">
+          <div class="cal-label sun">일</div>
+          <div class="cal-label">월</div>
+          <div class="cal-label">화</div>
+          <div class="cal-label">수</div>
+          <div class="cal-label">목</div>
+          <div class="cal-label">금</div>
+          <div class="cal-label sat">토</div>
+        </div>
+        <div class="cal-grid" id="calendar-days">
+          <!-- JS renders days -->
+        </div>
+      </div>
+      
+      <!-- Right: Schedule List -->
+      <div class="schedule-glass-card">
+        <div class="sch-header">
+          <span class="sch-badge" id="schedule-date-badge">바로가기</span>
+          <h2 class="sch-title" id="schedule-title">이달의 계기교육</h2>
+        </div>
+        <div class="sch-scroll" id="schedule-items">
+          <!-- JS renders items -->
+        </div>
+      </div>
+    </div>
+
+    <main class="cards-container" id="content-area">
+      <div class="loading-spinner">
+        <i class="fas fa-circle-notch fa-spin"></i> 데이터를 안전하게 불러오는 중입니다...
+      </div>
+    </main>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div id="edit-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title">수업 자료 편집</h2>
+        <button class="close-btn" id="close-modal-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="edit-form">
+          <input type="hidden" id="edit-id" />
+          
+          <div class="row">
+            <div class="form-group col">
+              <label>해당 월</label>
+              <select id="edit-month" required>
+                <option value="3">3월</option><option value="4">4월</option>
+                <option value="5">5월</option><option value="6">6월</option>
+                <option value="7">7월</option><option value="8">8월</option>
+                <option value="9">9월</option><option value="10">10월</option>
+                <option value="11">11월</option><option value="12">12월</option>
+                <option value="1">1월</option><option value="2">2월</option>
+              </select>
+            </div>
+            <div class="form-group col">
+              <label>날짜 (MM.DD)</label>
+              <input type="text" id="edit-date" required placeholder="03.01" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>수업 주제</label>
+            <input type="text" id="edit-title" required placeholder="예: 3.1절의 의미" />
+          </div>
+
+          <div class="form-group">
+            <label>대표 이미지 URL</label>
+            <input type="text" id="edit-image" placeholder="https://..." />
+          </div>
+
+          <div class="form-group">
+            <label>주요 활동 내용 (줄바꿈 구분)</label>
+            <textarea id="edit-checklist" rows="4" placeholder="- 태극기 그리기\n- 독립선언서 낭독하기"></textarea>
+          </div>
+
+          <!-- Dynamic Resources -->
+          <div class="form-group">
+            <label>수업 자료 구성</label>
+            <div id="resource-list" class="resource-list-container">
+              <!-- JS renders dynamic resource items here -->
+            </div>
+            <button type="button" id="btn-add-resource" class="btn-add-resource">
+              <i class="fas fa-plus"></i> 자료 추가
+            </button>
+          </div>
+
+          <div class="form-group">
+            <label>자료 출처</label>
+            <input type="text" id="edit-source" placeholder="예: 비상교육, 천재교육, 유튜브 채널명 등" />
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-logout" id="cancel-modal-btn">취소</button>
+            <button type="submit" class="btn-login">저장 완료</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, getDoc, addDoc, doc, updateDoc, deleteDoc, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCQmDCL-PuN2A9AgOzIpObCeNtvIFDJmhU",
+      authDomain: "studio-8412089884-f8185.firebaseapp.com",
+      projectId: "studio-8412089884-f8185",
+      storageBucket: "studio-8412089884-f8185.firebasestorage.app",
+      messagingSenderId: "928283224778",
+      appId: "1:928283224778:web:01cb08827402140aace233"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    window.firebaseApi = { db, collection, getDocs, getDoc, addDoc, doc, updateDoc, deleteDoc, query, orderBy, where, auth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut };
+  </script>
+  <script src="script.js"></script>
+</body>
+</html>

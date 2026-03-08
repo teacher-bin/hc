@@ -12,9 +12,6 @@ window.initTableResizing = function(onResizeEndCallback) {
     headers.forEach((header, index) => {
       // Skip if handle already exists
       if (header.querySelector('.resize-handle')) return;
-      
-      // No handle on last column (optional, but usually good practice)
-      if (index === headers.length - 1) return;
 
       const handle = document.createElement('div');
       handle.className = 'resize-handle';
@@ -43,6 +40,17 @@ window.initTableResizing = function(onResizeEndCallback) {
 function startResize(e, header, index, table, callback) {
   e.preventDefault();
   e.stopPropagation();
+
+  if (!table.dataset.resized) {
+      const headers = Array.from(table.querySelectorAll('th'));
+      const currentWidths = headers.map(h => h.offsetWidth);
+      headers.forEach((h, i) => {
+          h.style.width = currentWidths[i] + 'px';
+      });
+      table.style.width = 'max-content';
+      table.style.minWidth = '0';
+      table.dataset.resized = 'true';
+  }
 
   const startX = e.pageX;
   const startWidth = header.offsetWidth;

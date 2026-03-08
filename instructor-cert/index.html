@@ -907,24 +907,59 @@
   function closeModal(id) { $(id).classList.remove('open'); }
 
   /* ══════════════════════════════════════════
-     설정 저장/불러오기
+     설정 저장/불러오기 (Firebase & LocalStorage)
   ══════════════════════════════════════════ */
-  function loadSettings() {
-    const s = JSON.parse(localStorage.getItem('schoolSettings') || '{}');
-    if (s.schoolName)    { $('settingSchoolName').value = s.schoolName; $('schoolName').textContent = s.schoolName; }
-    if (s.principalName) $('settingPrincipalName').value = s.principalName;
-    if (s.schoolAddress) $('settingSchoolAddress').value = s.schoolAddress;
+  const SETTINGS_COLLECTION = "settings";
+
+  async function loadSettings() {
+    try {
+      const docRef = doc(db, SETTINGS_COLLECTION, "schoolSettings");
+      const docSnap = await getDoc(docRef);
+      
+      let s = {};
+      if (docSnap.exists()) {
+        s = docSnap.data();
+        // 캐시용으로 로컬스토리지 백업
+        localStorage.setItem('schoolSettings', JSON.stringify(s));
+      } else {
+        // 파이어베이스에 데이터가 없을 경우 로컬스토리지 읽기 시도
+        s = JSON.parse(localStorage.getItem('schoolSettings') || '{}');
+      }
+
+      if (s.schoolName)    { $('settingSchoolName').value = s.schoolName; $('schoolName').textContent = s.schoolName; }
+      if (s.principalName) $('settingPrincipalName').value = s.principalName;
+      if (s.schoolAddress) $('settingSchoolAddress').value = s.schoolAddress;
+
+    } catch (e) {
+      console.error("설정 불러오기 실패:", e);
+      // 실패 시 로컬스토리지에 캐시된 데이터로 폴백(fallback)
+      const s = JSON.parse(localStorage.getItem('schoolSettings') || '{}');
+      if (s.schoolName)    { $('settingSchoolName').value = s.schoolName; $('schoolName').textContent = s.schoolName; }
+      if (s.principalName) $('settingPrincipalName').value = s.principalName;
+      if (s.schoolAddress) $('settingSchoolAddress').value = s.schoolAddress;
+    }
   }
 
-  $('saveSettingsBtn').addEventListener('click', () => {
+  $('saveSettingsBtn').addEventListener('click', async () => {
     const s = {
       schoolName:     $('settingSchoolName').value.trim(),
       principalName:  $('settingPrincipalName').value.trim(),
       schoolAddress:  $('settingSchoolAddress').value.trim()
     };
-    localStorage.setItem('schoolSettings', JSON.stringify(s));
-    $('schoolName').textContent = s.schoolName || '○○초등학교';
-    toast('설정이 저장되었습니다.', 'success');
+    
+    try {
+      // Firebase에 저장
+      const docRef = doc(db, SETTINGS_COLLECTION, "schoolSettings");
+      await setDoc(docRef, s, { merge: true });
+      
+      // 로컬 스토리지도 업데이트 (캐시)
+      localStorage.setItem('schoolSettings', JSON.stringify(s));
+      $('schoolName').textContent = s.schoolName || '○○초등학교';
+      toast('설정이 안전하게 저장되었습니다.', 'success');
+    } catch (e) {
+      console.error("설정 저장 실패:", e);
+      toast('설정 저장 중 오류가 발생했습니다.', 'error');
+    }
   });
 
   loadSettings();
@@ -2473,7 +2508,18 @@
     const startY = Math.min(...selectedYears);
     const endY = Math.max(...selectedYears);
 
-    const settings = JSON.parse(localStorage.getItem('schoolSettings') || '{}');
+    // 최신 설정을 Firebase에서 가져오기 시도, 실패 시 캐시된 LocalStorage 사용
+    let settings = JSON.parse(localStorage.getItem('schoolSettings') || '{}');
+    try {
+      const docSnap = await getDoc(doc(db, SETTINGS_COLLECTION, "schoolSettings"));
+      if (docSnap.exists()) {
+        settings = docSnap.data();
+        localStorage.setItem('schoolSettings', JSON.stringify(settings)); // 캐시 갱신
+      }
+    } catch(e) { 
+      console.error('인증서 생성 시 학교 설정 로드 실패 (캐시 사용):', e); 
+    }
+
     const inst = instructorsCache.find(i => i.id === instId);
 
     // 1. 프로그램 목록 로드

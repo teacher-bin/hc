@@ -137,7 +137,8 @@
     .nav-item[data-category="bus"],
     #bus-section,
     #nav-admin-btn,
-    #user-greeting {
+    #user-greeting,
+    .instructor-nav-btn {
         display: none !important;
     }
 

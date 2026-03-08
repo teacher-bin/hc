@@ -233,14 +233,20 @@ function renderAdminOverlayButtons() {
                 <td style="text-align: left; padding-left: 12px;">
                     <div style="display:inline-flex; align-items:center;">
                         <span class="drag-handle" style="cursor:grab; margin-right:12px; color:#94a3b8;"><i class="fas fa-grip-vertical"></i></span>
-                        <strong>${btn.title}</strong>
+                        <strong style="${btn.isActive === false ? 'color:#94a3b8; text-decoration:line-through;' : ''}">${btn.title}</strong>
                     </div>
                 </td>
                 <td style="text-align: center;">
-                    <div style="display:inline-flex; align-items:center; justify-content:center;">${iconHtml}</div>
+                    <div style="display:inline-flex; align-items:center; justify-content:center; ${btn.isActive === false ? 'opacity:0.5;' : ''}">${iconHtml}</div>
                 </td>
                 <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align: center;">
-                    <a href="${btn.url}" target="_blank" class="overlay-admin-link">${btn.url}</a>
+                    <a href="${btn.url}" target="_blank" class="overlay-admin-link" style="${btn.isActive === false ? 'color:#94a3b8; pointer-events:none;' : ''}">${btn.url}</a>
+                </td>
+                <td style="text-align: center;">
+                    <label class="switch" style="transform: scale(0.85); margin: 0; display: inline-block; vertical-align: middle;">
+                        <input type="checkbox" onchange="window.toggleOverlayButtonStatus('${btn.id}', this.checked)" ${btn.isActive !== false ? 'checked' : ''}>
+                        <span class="slider round"></span>
+                    </label>
                 </td>
                 <td style="text-align: center;">
                     <div style="display: inline-flex; gap: 8px; justify-content: center;">
@@ -271,6 +277,14 @@ function renderAdminOverlayButtons() {
     });
 }
 
+window.toggleOverlayButtonStatus = async function(id, isActive) {
+    const btn = overlayButtonsList.find(b => b.id === id);
+    if (btn) {
+        btn.isActive = isActive;
+        await saveOverlayButtonsConfig();
+    }
+};
+
 // ---------------- USER UI ----------------
 
 let activeTargetBtnId = null;
@@ -283,6 +297,9 @@ function renderFloatingButtons() {
     container.innerHTML = '';
 
     overlayButtonsList.forEach(btnInfo => {
+        // 토글 버튼에서 OFF로 설정된 경우 렌더링 패스
+        if (btnInfo.isActive === false) return;
+
         const btn = document.createElement('button');
         btn.className = `floating-overlay-btn color-${btnInfo.color || 'green'}`;
         btn.dataset.id = btnInfo.id;
