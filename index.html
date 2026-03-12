@@ -1134,8 +1134,66 @@
 
     <!-- Bus Section (배차신청) -->
     <section id="bus-section" class="category-content hidden">
-      <div id="bus-controls" class="section-controls">
-        <button id="bus-request-btn" class="btn-primary" onclick="window.openBusModal()"><i class="fas fa-plus-circle"></i> 배차 신청</button>
+      <!-- Bus Dashboard (Month Tabs, Mini Calendar, Summary) -->
+      <div class="bus-dashboard-wrapper">
+        <div class="bus-month-selector-wrapper">
+          <nav class="bus-month-tabs" id="bus-month-tabs">
+            <!-- JS 렌더링: 3월~2월 -->
+          </nav>
+        </div>
+
+        <div class="bus-main-layout" id="bus-calendar-layout">
+          <!-- Left: Mini Calendar -->
+          <div class="bus-calendar-glass-card">
+            <div class="bus-cal-top">
+              <button class="bus-cal-nav" id="bus-cal-prev-btn"><i class="fas fa-chevron-left"></i></button>
+              <div class="bus-cal-month" id="bus-cal-month-title">3월</div>
+              <button class="bus-cal-nav" id="bus-cal-next-btn"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div class="bus-cal-grid">
+              <div class="bus-cal-label sun">일</div>
+              <div class="bus-cal-label">월</div>
+              <div class="bus-cal-label">화</div>
+              <div class="bus-cal-label">수</div>
+              <div class="bus-cal-label">목</div>
+              <div class="bus-cal-label">금</div>
+              <div class="bus-cal-label sat">토</div>
+            </div>
+            <div class="bus-cal-grid" id="bus-calendar-days">
+              <!-- JS 렌더링: 날짜들 -->
+            </div>
+          </div>
+          
+          <!-- Right: Request Summary List -->
+          <div class="bus-schedule-glass-card">
+            <div class="bus-sch-header" id="bus-sch-header-bg">
+              <div class="bus-sch-header-content">
+                <h2 class="bus-sch-title" id="bus-schedule-title">이달의 배차 현황</h2>
+                <button id="bus-quick-add-btn" class="bus-quick-add-btn" title="해당 날짜에 바로 신청하기">
+                  <i class="fas fa-plus"></i>
+                </button>
+              </div>
+              <div class="bus-animation-area">
+                <div class="scenery-item" id="bus-scenery">🌸</div>
+              </div>
+            </div>
+            <div class="bus-sch-scroll" id="bus-schedule-items">
+              <!-- JS 렌더링: 이달의 배차 신청 내역 -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 접수 상태 필터 버튼 -->
+      <div class="bus-filter-bar">
+        <button id="bus-filter-completed-btn" class="bus-filter-toggle-btn" onclick="window.setBusFilter('completed')">
+          <i class="fas fa-check-double"></i>
+          <span>접수완료 목록</span>
+        </button>
+        <button id="bus-filter-done-btn" class="bus-filter-toggle-btn is-done-view" onclick="window.setBusFilter('done')">
+          <i class="fas fa-flag-checkered"></i>
+          <span>운행완료 목록</span>
+        </button>
       </div>
 
       <div class="bus-table-wrapper spreadsheet-mode">

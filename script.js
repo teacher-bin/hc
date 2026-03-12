@@ -3704,6 +3704,12 @@
   // ================= Bus Request Section Logic (Spreadsheet Version) =================
   let localBusData = [];
   let busSortConfig = { field: 'date', direction: 'asc' }; // 정렬 설정
+  let busTableFilter = 'pending'; // 'pending' | 'completed' | 'done'
+
+  // Bus Dashboard State
+  let busDashboardYear = new Date().getFullYear();
+  let busDashboardMonth = new Date().getMonth() + 1;
+  let busDashboardSelectedDate = null; // YYYY-MM-DD
 
   async function initBus() {
     if (localBusData.length === 0) {
@@ -3711,8 +3717,10 @@
     } else {
       renderBusTable();
     }
+    autoPromoteToCompleted(); // 날짜 경과 접수완료→운행완료 자동 전환
     initBusEditing();
     initBusSorting(); // 정렬 리스너 초기화
+    initBusDashboardLogic(); // 대시보드 로직 초기화
   }
 
   async function loadBusRequestsFromFirebase() {
@@ -3794,27 +3802,103 @@
     });
   }
 
+  // 날짜 경과 접수완료 → 운행완료 자동 전환
+  async function autoPromoteToCompleted() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+    for (const req of localBusData) {
+      // 접수완료 상태이면서 날짜가 지난 건만 운행완료로 전환
+      if (req.isAccepted === true && req.status !== '운행완료' && req.date && req.date < todayStr) {
+        req.status = '운행완료';
+        // Firebase 동기화
+        if (window.db) {
+          const { db, firestoreUtils } = window;
+          try {
+            await firestoreUtils.setDoc(firestoreUtils.doc(db, "busRequests", req.id), {
+              status: '운행완료'
+            }, { merge: true });
+          } catch (err) {
+            console.error("Auto promote error:", err);
+          }
+        }
+      }
+    }
+    renderBusTable();
+  }
+
   function renderBusTable() {
     const tableBody = document.getElementById("bus-table-body");
     if (!tableBody) return;
 
     tableBody.innerHTML = "";
-    
-    localBusData.forEach((req) => {
+
+    // 필터 상태에 따라 데이터 분리 (3가지)
+    const filteredData = localBusData.filter(r => {
+      if (busTableFilter === 'done') return r.status === '운행완료';
+      if (busTableFilter === 'completed') return r.isAccepted === true && r.status !== '운행완료';
+      return r.isAccepted !== true; // pending
+    });
+
+    // 필터 버튼 UI 업데이트 (활성/비활성)
+    const completedBtn = document.getElementById('bus-filter-completed-btn');
+    const doneBtn = document.getElementById('bus-filter-done-btn');
+    if (completedBtn) {
+      if (busTableFilter === 'completed') {
+        completedBtn.innerHTML = '<i class="fas fa-list-check"></i><span>접수 중인 목록</span>';
+        completedBtn.classList.add('active');
+      } else {
+        completedBtn.innerHTML = '<i class="fas fa-check-double"></i><span>접수완료 목록</span>';
+        completedBtn.classList.remove('active');
+      }
+    }
+    if (doneBtn) {
+      if (busTableFilter === 'done') {
+        doneBtn.innerHTML = '<i class="fas fa-list-check"></i><span>접수 중인 목록</span>';
+        doneBtn.classList.add('active');
+      } else {
+        doneBtn.innerHTML = '<i class="fas fa-flag-checkered"></i><span>운행완료 목록</span>';
+        doneBtn.classList.remove('active');
+      }
+    }
+
+    // 빈 목록 안내
+    if (filteredData.length === 0) {
+      const emptyMeta = {
+        pending:   { icon: 'fa-inbox',          text: '접수 중인 배차 신청 내역이 없습니다.' },
+        completed: { icon: 'fa-check-circle',   text: '접수완료된 배차 내역이 없습니다.' },
+        done:      { icon: 'fa-flag-checkered', text: '운행완료된 배차 내역이 없습니다.' }
+      };
+      const m = emptyMeta[busTableFilter];
+      tableBody.innerHTML = `<tr><td colspan="15" style="text-align:center; padding:2.5rem 1rem; color:var(--text-muted); font-size:0.95rem;">
+        <i class="fas ${m.icon}" style="font-size:2rem; display:block; margin-bottom:0.6rem; opacity:0.35;"></i>
+        ${m.text}
+      </td></tr>`;
+      if (typeof renderBusDashboard === 'function') renderBusDashboard();
+      return;
+    }
+
+    filteredData.forEach((req) => {
       const tr = document.createElement("tr");
       tr.dataset.id = req.id;
       
       const total = (parseInt(req.teacherCount) || 0) + (parseInt(req.studentCount) || 0);
       const isAccepted = req.isAccepted === true;
-      const statusText = isAccepted ? '접수완료' : (req.status || '접수중');
+      const isDone = req.status === '운행완료';
+      const statusText = isDone ? '운행완료' : (isAccepted ? '접수완료' : '접수중');
+      const badgeClass = isDone ? 'done' : (isAccepted ? 'completed' : 'pending');
+
+      // 운행완료 뷰에서는 체크박스 비활성화, 수정/삭제도 제한
+      const checkboxDisabled = isDone ? 'disabled' : '';
       
       tr.innerHTML = `
         <td class="text-center">
-            <input type="checkbox" class="bus-checkbox" ${isAccepted ? 'checked' : ''} 
+            <input type="checkbox" class="bus-checkbox" ${isAccepted ? 'checked' : ''} ${checkboxDisabled}
                    onchange="window.toggleBusStatus('${req.id}', this.checked)">
         </td>
         <td class="text-center">
-            <span class="badge-bus-status ${isAccepted ? 'completed' : 'pending'}" id="status-badge-${req.id}">
+            <span class="badge-bus-status ${badgeClass}" id="status-badge-${req.id}">
                 ${statusText}
             </span>
         </td>
@@ -3839,6 +3923,217 @@
       `;
       tableBody.appendChild(tr);
     });
+    
+    // 테이블이 다시 그려질 때 대시보드도 갱신
+    if (typeof renderBusDashboard === 'function') {
+        renderBusDashboard();
+    }
+  }
+
+  function initBusDashboardLogic() {
+      const tabsContainer = document.getElementById('bus-month-tabs');
+      if (tabsContainer) {
+          const months = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2];
+          tabsContainer.innerHTML = months.map(m => `<button class="bus-month-tab" data-month="${m}">${m}월</button>`).join('');
+          
+          tabsContainer.querySelectorAll('.bus-month-tab').forEach(btn => {
+              btn.addEventListener('click', (e) => {
+                  const m = parseInt(e.target.dataset.month);
+                  busDashboardMonth = m;
+                  
+                  const now = new Date();
+                  const schoolYear = (now.getMonth() + 1 < 3) ? now.getFullYear() - 1 : now.getFullYear();
+                  busDashboardYear = (m < 3) ? schoolYear + 1 : schoolYear;
+                  
+                  busDashboardSelectedDate = null;
+                  renderBusDashboard();
+              });
+          });
+      }
+
+      const prevBtn = document.getElementById('bus-cal-prev-btn');
+      if (prevBtn) {
+          prevBtn.onclick = () => {
+              busDashboardMonth--;
+              if(busDashboardMonth < 1) { busDashboardMonth = 12; busDashboardYear--; }
+              busDashboardSelectedDate = null;
+              renderBusDashboard();
+          };
+      }
+
+      const nextBtn = document.getElementById('bus-cal-next-btn');
+      if (nextBtn) {
+          nextBtn.onclick = () => {
+              busDashboardMonth++;
+              if(busDashboardMonth > 12) { busDashboardMonth = 1; busDashboardYear++; }
+              busDashboardSelectedDate = null;
+              renderBusDashboard();
+          };
+      }
+
+      const quickAddBtn = document.getElementById('bus-quick-add-btn');
+      if (quickAddBtn) {
+          quickAddBtn.onclick = () => {
+              // 현재 선택된 날짜가 있으면 그 날짜로, 없으면 이달의 1일 또는 오늘 날짜 권장
+              const targetDate = busDashboardSelectedDate || `${busDashboardYear}-${String(busDashboardMonth).padStart(2,'0')}-01`;
+              window.openBusModal(null, targetDate); // openBusModal이 날짜 인자를 받도록 처리 필요 여부 확인
+          };
+      }
+  }
+
+  function renderBusDashboard() {
+      // 1. Update Tabs
+      document.querySelectorAll('.bus-month-tab').forEach(btn => {
+          if (parseInt(btn.dataset.month) === busDashboardMonth) {
+              btn.classList.add('active');
+          } else {
+              btn.classList.remove('active');
+          }
+      });
+
+      const monthTitle = document.getElementById('bus-cal-month-title');
+      if (monthTitle) monthTitle.textContent = `${busDashboardMonth}월`;
+
+      // 2. Update Calendar
+      const daysContainer = document.getElementById('bus-calendar-days');
+      if(!daysContainer) return;
+      daysContainer.innerHTML = '';
+      
+      const firstDay = new Date(busDashboardYear, busDashboardMonth - 1, 1);
+      const lastDay = new Date(busDashboardYear, busDashboardMonth, 0);
+      const startingDay = firstDay.getDay(); // 0(Sun) ~ 6(Sat)
+      
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+      const dataDays = new Set();
+      localBusData.forEach(req => {
+          if (!req.date) return;
+          const [y, m, d] = req.date.split('-');
+          if (parseInt(y) === busDashboardYear && parseInt(m) === busDashboardMonth) {
+              dataDays.add(parseInt(d));
+          }
+      });
+
+      for (let i = 0; i < startingDay; i++) {
+          daysContainer.innerHTML += `<div class="bus-day-cell empty"></div>`;
+      }
+      
+      for (let i = 1; i <= lastDay.getDate(); i++) {
+          const cellDay = new Date(busDashboardYear, busDashboardMonth - 1, i).getDay();
+          let classes = ['bus-day-cell'];
+          if (cellDay === 0) classes.push('sun');
+          if (cellDay === 6) classes.push('sat');
+          
+          const dateStr = `${busDashboardYear}-${String(busDashboardMonth).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+          
+          if (dateStr === todayStr) classes.push('today');
+          if (dateStr === busDashboardSelectedDate) classes.push('selected');
+          if (dataDays.has(i)) classes.push('has-data');
+          
+          const div = document.createElement('div');
+          div.className = classes.join(' ');
+          div.textContent = i;
+          div.dataset.date = dateStr;
+          
+          div.onclick = () => {
+              if (busDashboardSelectedDate === dateStr) {
+                  busDashboardSelectedDate = null;
+              } else {
+                  busDashboardSelectedDate = dateStr;
+              }
+              renderBusDashboard(); 
+          };
+          daysContainer.appendChild(div);
+      }
+
+      // 3. Update Summary List
+      const listContainer = document.getElementById('bus-schedule-items');
+      const listTitle = document.getElementById('bus-schedule-title');
+      
+      const headerBg = document.getElementById('bus-sch-header-bg');
+      const scenery = document.getElementById('bus-scenery');
+      
+      const monthMeta = {
+          3: { cls: 'month-3', emoji: '🎒' },
+          4: { cls: 'month-4', emoji: '🌸' },
+          5: { cls: 'month-5', emoji: '🎁' },
+          6: { cls: 'month-6', emoji: '🌱' },
+          7: { cls: 'month-7', emoji: '🌊' },
+          8: { cls: 'month-8', emoji: '☀️' },
+          9: { cls: 'month-9', emoji: '🌾' },
+          10: { cls: 'month-10', emoji: '🍁' },
+          11: { cls: 'month-11', emoji: '🍂' },
+          12: { cls: 'month-12', emoji: '🎄' },
+          1: { cls: 'month-1', emoji: '🌅' },
+          2: { cls: 'month-2', emoji: '🎓' }
+      };
+
+      const meta = monthMeta[busDashboardMonth] || { cls: 'month-3', emoji: '🌸' };
+      
+      if (headerBg) {
+          headerBg.className = `bus-sch-header ${meta.cls}`;
+      }
+      if (scenery) {
+          scenery.textContent = meta.emoji;
+      }
+      
+      let filteredData = localBusData.filter(r => {
+          if(!r.date) return false;
+          const [y, m] = r.date.split('-');
+          return parseInt(y) === busDashboardYear && parseInt(m) === busDashboardMonth;
+      });
+
+      if (listTitle) listTitle.textContent = `이달의 배차 현황`;
+      
+      if (!listContainer) return;
+      listContainer.innerHTML = '';
+      
+      if (filteredData.length === 0) {
+          listContainer.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 3.5rem 1rem; font-size: 1rem; display: flex; flex-direction: column; align-items: center; gap: 15px;">
+                <i class="fas fa-calendar-times" style="font-size: 2.5rem; opacity: 0.3; color: var(--primary-color);"></i>
+                <div style="font-family: 'Gaegu', cursive; font-size: 1.4rem; font-weight: 500;">이 날은 배차 신청 내역이 없어요!</div>
+                <button class="btn-primary" style="margin-top: 5px; padding: 6px 15px; font-size: 0.85rem;" onclick="document.getElementById('bus-quick-add-btn').click()">지금 신청하기</button>
+            </div>`;
+          return;
+      }
+      
+      filteredData.sort((a, b) => a.date.localeCompare(b.date) || (a.startTime || '').localeCompare(b.startTime || ''));
+
+      let firstSelectedItem = null;
+      filteredData.forEach(req => {
+          const isDone = req.status === '운행완료';
+          const isCompleted = req.isAccepted;
+          const badgeClass = isDone ? 'done' : (isCompleted ? 'completed' : 'pending');
+          const badgeText = isDone ? '운행완료' : (isCompleted ? '접수완료' : '접수중');
+          const time = req.timeRange || '';
+          
+          const isSelected = req.date === busDashboardSelectedDate;
+          const item = document.createElement('div');
+          item.className = 'bus-sch-item' + (isSelected ? ' selected' : '');
+          if (isSelected && !firstSelectedItem) firstSelectedItem = item;
+          item.innerHTML = `
+            <div class="bus-sch-item-info">
+              <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
+                <span class="badge-bus-status ${badgeClass}" style="width: fit-content;">${badgeText}</span>
+                <span class="bus-sch-item-title" style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${req.date.substring(5).replace('-','.')} ${req.destination}</span>
+              </div>
+              <div class="bus-sch-item-meta" style="margin-left: 2px;">
+                ${time} | 인솔: ${req.leadTeacher || '미정'} | 탑승 ${parseInt(req.studentCount||0)+parseInt(req.teacherCount||0)}명
+              </div>
+            </div>
+            <i class="fas fa-chevron-right" style="color: var(--primary-color);"></i>
+          `;
+          item.onclick = () => window.openBusModal(req.id);
+          listContainer.appendChild(item);
+      });
+
+      if (firstSelectedItem) {
+          setTimeout(() => {
+              firstSelectedItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }, 100);
+      }
   }
 
   window.updateBusField = (id, field, value) => {
@@ -3856,7 +4151,7 @@
     }
   };
 
-  window.toggleBusStatus = (id, isChecked) => {
+  window.toggleBusStatus = async (id, isChecked) => {
     const data = localBusData.find(r => r.id === id);
     if (data) {
         data.isAccepted = isChecked;
@@ -3867,13 +4162,41 @@
             window.logUserAction('bus', isChecked ? '접수' : '취소', `${data.date} ${data.destination}행 배차 ${data.status}`);
         }
 
+        // Firebase 저장 추가
+        if (window.db) {
+            const { db, firestoreUtils } = window;
+            try {
+                await firestoreUtils.setDoc(firestoreUtils.doc(db, "busRequests", id), { 
+                    isAccepted: isChecked, 
+                    status: data.status 
+                }, { merge: true });
+            } catch (err) {
+                console.error("Bus status save error:", err);
+            }
+        }
+
         // Update UI Badge
         const badge = document.getElementById(`status-badge-${id}`);
         if (badge) {
             badge.textContent = data.status;
             badge.className = `badge-bus-status ${isChecked ? 'completed' : 'pending'}`;
         }
+        
+        // 테이블 재렌더링 (필터에 따라 항목이 즉시 이동)
+        renderBusTable();
+
+        // Update Dashboard
+        if (typeof renderBusDashboard === 'function') {
+            renderBusDashboard();
+        }
     }
+  };
+
+  // 필터 설정 함수 (3단계: pending / completed / done)
+  window.setBusFilter = (filter) => {
+    // 같은 필터를 다시 누르면 기본(pending)으로 복귀
+    busTableFilter = busTableFilter === filter ? 'pending' : filter;
+    renderBusTable();
   };
 
   function initBusEditing() {
@@ -3967,7 +4290,7 @@
     }
   }
 
-  window.openBusModal = (id = null) => {
+  window.openBusModal = (id = null, targetDate = null) => {
     const modal = document.getElementById("busModal");
     const form = document.getElementById("busForm");
     const title = document.getElementById("busModalTitle");
@@ -4004,7 +4327,7 @@
       }
     } else {
       title.textContent = "배차 신청";
-      document.getElementById("bus-date").value = new Date().toISOString().split('T')[0];
+      document.getElementById("bus-date").value = targetDate || new Date().toISOString().split('T')[0];
       document.getElementById("bus-start-hour").value = "08";
       document.getElementById("bus-start-min").value = "30";
       document.getElementById("bus-end-hour").value = "16";

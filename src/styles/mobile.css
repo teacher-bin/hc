@@ -400,11 +400,7 @@
         border-bottom: none !important; 
     }
 
-    /* Bus Section - Restriction */
-    #bus-section #bus-controls,
-    #bus-section #bus-request-btn {
-        display: none !important;
-    }
+    /* Bus Section Filter Bar - 모바일에서는 bus-section 자체가 숨김(display:none) */
     .bus-table-wrapper {
         overflow: visible !important;
         padding-top: 5px !important;
