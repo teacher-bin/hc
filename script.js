@@ -3096,13 +3096,65 @@
         eventList.innerHTML = '';
         const otherEvents = todayEvents.filter(ev => ev.eventType !== 'life');
 
-        if (otherEvents.length === 0) {
+        let pendingBusData = [];
+        if (typeof canManageBus === 'function' && canManageBus() && typeof localBusData !== 'undefined') {
+             pendingBusData = localBusData.filter(r => r.isAccepted !== true && r.status !== '운행완료');
+             pendingBusData.sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.startTime || '').localeCompare(b.startTime || ''));
+        }
+
+        if (otherEvents.length === 0 && pendingBusData.length === 0) {
             const li = document.createElement('li');
             li.className = 'no-event';
-            li.textContent = '오늘 학사일정이 없습니다.';
+            li.textContent = '오늘 주요 학사일정 및 대기 항목이 없습니다.';
             eventList.appendChild(li);
         } else {
             categories.forEach(cat => {
+                if (cat.id === 'doc') {
+                     // ================= Render Pending Bus Widget Data (Above "처리할 공문") =================
+                     if (pendingBusData.length > 0) {
+                          const titleDiv = document.createElement('div');
+                          titleDiv.className = 'category-title';
+                          titleDiv.innerHTML = `<i class="fas fa-bus"></i> 접수대기 중`;
+                          eventList.appendChild(titleDiv);
+
+                          const groupDiv = document.createElement('div');
+                          groupDiv.className = 'category-group';
+                          
+                          pendingBusData.forEach(req => {
+                               const li = document.createElement('li');
+                               li.className = 'event-item type-bus'; // Same visual language
+                               
+                               const formattedDate = req.date ? req.date.substring(5).replace('-', '.') : '';
+                               const destination = req.destination || '목적지 미상';
+                               
+                               li.innerHTML = `<i class="fas fa-bus" style="color:#6366f1;"></i><span>${formattedDate} ${destination}</span>`;
+                               
+                               let info = [];
+                               if (req.timeRange) info.push(`<li><b>시간:</b> ${req.timeRange}</li>`);
+                               if (req.leadTeacher) info.push(`<li><b>인솔:</b> ${req.leadTeacher}</li>`);
+                               info.push(`<li><b>탑승:</b> ${(parseInt(req.studentCount)||0)+(parseInt(req.teacherCount)||0)}명</li>`);
+                               if (req.purpose) info.push(`<li><b>목적:</b> ${req.purpose}</li>`);
+
+                               if (info.length > 0) {
+                                   const tooltipContent = `<ul class="tooltip-list">${info.join('')}</ul>`;
+                                   li.onmouseenter = (e) => showFloatingTooltip(e, tooltipContent);
+                                   li.onmouseleave = hideFloatingTooltip;
+                               }
+
+                               li.onclick = () => {
+                                   const navBus = document.querySelector('[data-category="bus"]');
+                                   if (navBus) navBus.click();
+                                   setTimeout(() => {
+                                       if (typeof window.openBusModal === 'function') window.openBusModal(req.id);
+                                   }, 50);
+                               };
+
+                               groupDiv.appendChild(li);
+                          });
+                          eventList.appendChild(groupDiv);
+                     }
+                }
+
                 const catEvents = otherEvents.filter(ev => cat.types.includes(ev.eventType));
                 
                 if (catEvents.length > 0) {
@@ -3711,6 +3763,38 @@
   let busDashboardMonth = new Date().getMonth() + 1;
   let busDashboardSelectedDate = null; // YYYY-MM-DD
 
+  function canManageBus() {
+      const isGlobalAdmin = window.currentUserRole === 'admin' || window.currentUserRole === 'sub-admin';
+      const isDriver = window.currentUserPosition === '주무관' && 
+                       Array.isArray(window.currentUserTasks) && 
+                       window.currentUserTasks.includes('운전');
+      return isGlobalAdmin || isDriver;
+  }
+
+  // ================= Pending Bus Widget (Admin/Driver Only) =================
+  let isPendingBusWidgetSyncSetup = false;
+  
+  function setupPendingBusWidgetSync() {
+      // 위젯 통합으로 인해 이 부분은 단순히 firebase-ready 리스너 역할만 담당
+      if (!window.db || isPendingBusWidgetSyncSetup) return;
+      isPendingBusWidgetSyncSetup = true;
+
+      const { db, firestoreUtils } = window;
+      firestoreUtils.onSnapshot(firestoreUtils.collection(db, "busRequests"), (querySnapshot) => {
+          const loaded = [];
+          querySnapshot.forEach(doc => {
+              loaded.push({ id: doc.id, ...doc.data() });
+          });
+          localBusData = loaded;
+
+          if (typeof sortBusData === 'function') sortBusData();
+          if (typeof renderBusTable === 'function' && window.currentCategory === "bus") renderBusTable();
+          
+          if (typeof renderTodayWidget === 'function') renderTodayWidget(); // 트리거!
+      });
+  }
+  // ============================================================================
+
   async function initBus() {
     if (localBusData.length === 0) {
       await loadBusRequestsFromFirebase();
@@ -4113,17 +4197,27 @@
           const item = document.createElement('div');
           item.className = 'bus-sch-item' + (isSelected ? ' selected' : '');
           if (isSelected && !firstSelectedItem) firstSelectedItem = item;
+          let adminActionHtml = '';
+          if(canManageBus() && !isDone) {
+               const actionBtnText = isCompleted ? '접수취소' : '접수완료';
+               const bgType = isCompleted ? '#ef4444' : '#3b82f6';
+               const hoverType = isCompleted ? '#dc2626' : '#2563eb';
+               const icon = isCompleted ? 'fa-times' : 'fa-check';
+               adminActionHtml = `<button type="button" class="btn-sm" style="margin-left:auto; background:${bgType}; color:#ffffff; border:none; font-size:0.75rem; padding:5px 12px; border-radius:6px; z-index:10; font-weight:700; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.15); transition:all 0.2s; display:flex; align-items:center; gap:5px;" onmouseover="this.style.background='${hoverType}'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='${bgType}'; this.style.transform='none';" onclick="event.stopPropagation(); window.toggleBusStatus('${req.id}', ${!isCompleted})"><i class="fas ${icon}"></i>${actionBtnText}</button>`;
+          }
+
           item.innerHTML = `
-            <div class="bus-sch-item-info">
-              <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
+            <div class="bus-sch-item-info" style="display:flex; flex-direction:column; width:100%;">
+              <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px; width: 100%;">
                 <span class="badge-bus-status ${badgeClass}" style="width: fit-content;">${badgeText}</span>
                 <span class="bus-sch-item-title" style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${req.date.substring(5).replace('-','.')} ${req.destination}</span>
+                ${adminActionHtml}
               </div>
               <div class="bus-sch-item-meta" style="margin-left: 2px;">
                 ${time} | 인솔: ${req.leadTeacher || '미정'} | 탑승 ${parseInt(req.studentCount||0)+parseInt(req.teacherCount||0)}명
               </div>
             </div>
-            <i class="fas fa-chevron-right" style="color: var(--primary-color);"></i>
+            ${adminActionHtml ? '' : '<i class="fas fa-chevron-right" style="color: var(--primary-color);"></i>'}
           `;
           item.onclick = () => window.openBusModal(req.id);
           listContainer.appendChild(item);
@@ -4294,9 +4388,15 @@
     const modal = document.getElementById("busModal");
     const form = document.getElementById("busForm");
     const title = document.getElementById("busModalTitle");
+    const adminActions = document.getElementById("bus-modal-admin-actions");
     
     form.reset();
     document.getElementById("bus-id").value = id || "";
+
+    if (adminActions) {
+      adminActions.innerHTML = '';
+      adminActions.classList.add('hidden');
+    }
     
     if (id) {
       title.textContent = "배차 신청 수정";
@@ -4324,6 +4424,17 @@
         document.getElementById("bus-teacher-count").value = data.teacherCount || "0";
         document.getElementById("bus-student-count").value = data.studentCount || "0";
         document.getElementById("bus-purpose").value = data.purpose || "";
+
+        // Admin Actions inside Modal
+        if (canManageBus() && data.status !== '운행완료' && adminActions) {
+            adminActions.classList.remove('hidden');
+            const isCompleted = data.isAccepted;
+            const actionBtnText = isCompleted ? '접수취소' : '접수완료';
+            const bgType = isCompleted ? '#ef4444' : '#3b82f6';
+            const hoverType = isCompleted ? '#dc2626' : '#2563eb';
+            const icon = isCompleted ? 'fa-times' : 'fa-check';
+            adminActions.innerHTML = `<button type="button" class="btn-sm" style="background:${bgType}; color:#ffffff; border:none; font-size:0.85rem; padding:7px 16px; border-radius:8px; font-weight:700; cursor:pointer; box-shadow:0 3px 8px rgba(0,0,0,0.15); transition:all 0.2s; display:flex; align-items:center; gap:6px;" onmouseover="this.style.background='${hoverType}'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='${bgType}'; this.style.transform='none';" onclick="window.toggleBusStatusFromModal('${id}', ${!isCompleted})"><i class="fas ${icon}"></i>${actionBtnText}</button>`;
+        }
       }
     } else {
       title.textContent = "배차 신청";
@@ -4335,6 +4446,11 @@
     }
     
     modal.classList.add("active");
+  };
+
+  window.toggleBusStatusFromModal = async (id, isChecked) => {
+      await window.toggleBusStatus(id, isChecked);
+      document.getElementById("busModal").classList.remove("active");
   };
 
   window.removeBusRow = async (id) => {
@@ -4365,7 +4481,7 @@
   };
 
   window.addEventListener('firebase-ready', () => {
-    if (currentCategory === "bus") loadBusRequestsFromFirebase();
+    setupPendingBusWidgetSync();
   });
 
   // 사이트 제목 클릭 시 홈으로 이동

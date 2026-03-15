@@ -12988,11 +12988,6 @@ body.dark-mode .training-table-modern tbody td {
     color: #f1f5f9 !important;
 }
 
-body.dark-mode .training-table-modern tbody tr:hover {
-    background-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-
 /* Force high visibility for key columns */
 body.dark-mode .training-table-modern .col-title,
 body.dark-mode td.col-title,
@@ -14035,38 +14030,6 @@ body.dark-mode .iframe-action-btn.close-btn:hover {
     /* Table Horizontal Scroll */
     .account-table-wrapper, .bus-table-wrapper, .editable-table-wrapper {
         overflow-x: auto !important;
-    }
-
-    /* 5. Intro Landing Header Stack */
-    .intro-header-bar {
-        flex-direction: column !important;
-        gap: 1rem !important;
-        padding: 0 !important;
-        align-items: center !important;
-    }
-
-    .intro-header-bar::after {
-        display: none !important;
-    }
-
-    .intro-cheer-message {
-        align-items: center !important;
-        text-align: center !important;
-        margin-bottom: 0.5rem !important;
-    }
-  
-    .intro-search-area {
-        width: 95% !important;
-        margin: 0 auto !important;
-    }
-  
-    .intro-naver-search {
-        width: 100% !important;
-    }
-
-    .intro-naver-search input {
-        width: 100% !important;
-        font-size: 0.9rem !important;
     }
 }
 
