@@ -1804,154 +1804,28 @@
 
   window.initDatayard = initDatayard;
 
-  // 온학교 e지원 렌더링 함수 (원본 사이트 구조 1:1 재현)
+  // 온학교 e지원 렌더링 함수 (원본 사이트 구조 1:1 재현 및 격리)
   function renderHelppage() {
     helppageSection.innerHTML = `
-      <div class="helppage-header">
-        <h2>경상남도교육청 학교업무 도움자료</h2>
-        <p>학교 업무에 필요한 자료를 쉽게 찾아보세요!</p>
-      </div>
-      <div class="helppage-grid"></div>
-      <div class="helppage-footer">
-        <p>출처: 경남교육청 온학교 e지원(<a href="https://hryoon0.github.io/helppage/" target="_blank">https://hryoon0.github.io/helppage/</a>)</p>
-      </div>
+      <iframe src="helppage/index.html" id="helppage-iframe" scrolling="no" style="width: 100%; min-height: 100vh; border: none; background: transparent; display: block; overflow: hidden; position: relative; z-index: 1;"></iframe>
     `;
-    const grid = helppageSection.querySelector(".helppage-grid");
+    helppageSection.style.padding = "0";
+    helppageSection.style.overflow = "hidden";
+    helppageSection.style.display = "flex";
+    helppageSection.style.flexDirection = "column";
 
-    helppageConfig.forEach((config) => {
-      const card = document.createElement("div");
-      card.className = `helppage-card-container`;
-      
-      card.innerHTML = `
-        <div class="helppage-main-card">
-          <button class="helppage-main-toggle" data-id="${config.id}">
-            <div class="header-info">
-              <div class="icon-box ${config.color}-bg">
-                <i class="fas ${config.icon} ${config.color}-text"></i>
-              </div>
-              <div class="title-group">
-                <h3>${config.title}</h3>
-                <p>${config.desc}</p>
-              </div>
-            </div>
-            <i class="fas fa-chevron-down main-chevron"></i>
-          </button>
-          
-          <div id="${config.id}-content" class="hidden-content hidden">
-            <div class="search-wrapper">
-              <div class="relative-search">
-                <input type="text" placeholder="원하는 업무를 검색해 보세요." class="category-search-input" data-id="${config.id}">
-                <i class="fas fa-search search-icon"></i>
-              </div>
-            </div>
-            <div id="${config.id}-sections" class="sub-sections-container">
-              <!-- 하위 섹션들이 검색에 따라 렌더링됨 -->
-            </div>
-          </div>
-        </div>
-      `;
-
-      // 1단계 토글 이벤트
-      const toggleBtn = card.querySelector(".helppage-main-toggle");
-      const content = card.querySelector(".hidden-content");
-      const chevron = card.querySelector(".main-chevron");
-
-      toggleBtn.addEventListener("click", () => {
-        const isHidden = content.classList.contains("hidden");
-        if (isHidden) {
-          content.classList.remove("hidden");
-          chevron.style.transform = "rotate(180deg)";
-          renderHelppageSubSections(config.id);
-        } else {
-          content.classList.add("hidden");
-          chevron.style.transform = "rotate(0deg)";
+    // iframe 리사이징 이벤트 수신 (이중 스크롤바 방지)
+    window.addEventListener('message', function(e) {
+      if (e.data && e.data.type === 'resize') {
+        const iframe = document.getElementById('helppage-iframe');
+        if (iframe) {
+          iframe.style.height = e.data.height + 'px';
         }
-      });
-
-      // 검색 이벤트
-      const searchInput = card.querySelector(".category-search-input");
-      searchInput.addEventListener("input", (e) => {
-        searchHelppageItems(config.id, e.target.value.toLowerCase());
-      });
-
-      grid.appendChild(card);
-    });
-  }
-
-  // 하위 섹션 렌더링 함수
-  function renderHelppageSubSections(categoryId, searchTerm = "") {
-    const config = helppageConfig.find(c => c.id === categoryId);
-    const container = document.getElementById(`${categoryId}-sections`);
-    const data = config.data;
-
-    container.innerHTML = "";
-
-    Object.entries(data).forEach(([sectionTitle, sectionData]) => {
-      // 검색어 필터링
-      const matchingItems = sectionData.items.filter(item => 
-        item.title.toLowerCase().includes(searchTerm) || 
-        sectionTitle.toLowerCase().includes(searchTerm)
-      );
-
-      if (searchTerm && matchingItems.length === 0 && !sectionTitle.toLowerCase().includes(searchTerm)) {
-        return;
       }
-
-      const sectionEl = document.createElement("div");
-      sectionEl.className = "sub-section-item";
-      
-      const subId = `${categoryId}-${sectionTitle.replace(/\s+/g, '-')}`;
-      const isAutoOpen = searchTerm.length > 0;
-
-      sectionEl.innerHTML = `
-        <button class="sub-section-toggle" data-target="${subId}">
-          <div class="sub-header-left">
-            <div class="sub-icon-box ${sectionData.color}-100-bg">
-              <i class="${sectionData.icon} ${sectionData.color}-600-text"></i>
-            </div>
-            <span>${sectionTitle}</span>
-          </div>
-          <i class="fas fa-chevron-down sub-chevron" style="${isAutoOpen ? 'transform: rotate(180deg)' : ''}"></i>
-        </button>
-        <div id="${subId}-list" class="sub-items-list ${isAutoOpen ? '' : 'hidden'}">
-          ${(searchTerm && matchingItems.length > 0 ? matchingItems : sectionData.items).map(item => `
-            <a href="${item.url}" target="_blank" class="file-item">
-              <i class="fas fa-file-alt"></i>
-              <span>${item.title}</span>
-              <i class="fas fa-external-link-alt link-icon"></i>
-            </a>
-          `).join("")}
-        </div>
-      `;
-
-      // 2단계 토글 이벤트
-      const subToggle = sectionEl.querySelector(".sub-section-toggle");
-      const subList = sectionEl.querySelector(".sub-items-list");
-      const subChevron = sectionEl.querySelector(".sub-chevron");
-
-      subToggle.addEventListener("click", () => {
-        const isHidden = subList.classList.contains("hidden");
-        if (isHidden) {
-          subList.classList.remove("hidden");
-          subChevron.style.transform = "rotate(180deg)";
-        } else {
-          subList.classList.add("hidden");
-          subChevron.style.transform = "rotate(0deg)";
-        }
-      });
-
-      container.appendChild(sectionEl);
     });
-
-    if (container.children.length === 0 && searchTerm) {
-      container.innerHTML = '<div class="no-results">검색 결과가 없습니다.</div>';
-    }
   }
 
-  // 검색 로직
-  function searchHelppageItems(categoryId, searchTerm) {
-    renderHelppageSubSections(categoryId, searchTerm);
-  }
+
 
   // ================= FullCalendar Logic =================
   // ================= FullCalendar Logic =================
@@ -5615,7 +5489,18 @@
         window.currentCategory = category;
 
         // 6. Update Body Background Theme (for full-page background)
-        document.body.classList.remove('bg-theme-training', 'bg-theme-admin');
+        document.body.classList.remove('bg-theme-training', 'bg-theme-admin', 'bg-theme-support');
+        
+        const helppageBg = document.getElementById('helppage-bg-elements');
+        if (helppageBg) {
+            if (category === 'support') {
+                helppageBg.classList.remove('hidden');
+                document.body.classList.add('bg-theme-support');
+            } else {
+                helppageBg.classList.add('hidden');
+            }
+        }
+        
         if (category === 'training') document.body.classList.add('bg-theme-training');
         if (category === 'admin') document.body.classList.add('bg-theme-admin');
     };

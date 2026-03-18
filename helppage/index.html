@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>경상남도교육청 학교업무 도움자료</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Noto Sans KR 폰트를 기본 폰트로 설정 */
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        /* 배경 래퍼 */
+        .bg-nature-wrap {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+            background: linear-gradient(180deg, #eaf5f0 0%, #f2f8f5 15%, #f7faf9 40%, #f4f9f6 70%, #eef6f1 100%);
+        }
+        .bg-nature-wrap > div, .bg-nature-wrap > svg {
+            position: absolute;
+        }
+        /* 왼쪽 상단 산 장식 */
+        .bg-mountain-left {
+            top: 0; left: 0;
+            width: 350px; height: 300px;
+        }
+        /* 오른쪽 상단 산 장식 */
+        .bg-mountain-right {
+            top: 0; right: 0;
+            width: 300px; height: 280px;
+        }
+        /* 왼쪽 하단 장식 */
+        .bg-bottom-left {
+            bottom: 0; left: 0;
+            width: 400px; height: 300px;
+        }
+        /* 오른쪽 하단 장식 */
+        .bg-bottom-right {
+            bottom: 0; right: 0;
+            width: 380px; height: 280px;
+        }
+        /* 중간 좌측 장식 */
+        .bg-mid-left {
+            top: 40%; left: 0;
+            width: 200px; height: 250px;
+            transform: translateY(-50%);
+        }
+        /* 중간 우측 장식 */
+        .bg-mid-right {
+            top: 45%; right: 0;
+            width: 180px; height: 220px;
+            transform: translateY(-50%);
+        }
+        /* 학교 일러스트 */
+        .school-illustration {
+            position: absolute;
+            top: 40px;
+            right: 80px;
+            width: 140px;
+            height: 140px;
+            z-index: 1;
+            pointer-events: none;
+        }
+        @media (max-width: 768px) {
+            .school-illustration {
+                width: 90px; height: 90px;
+                top: 20px; right: 20px;
+            }
+            .bg-mountain-left { width: 200px; height: 180px; }
+            .bg-mountain-right { width: 180px; height: 160px; }
+            .bg-bottom-left { width: 250px; height: 200px; }
+            .bg-bottom-right { width: 230px; height: 180px; }
+            .bg-mid-left { width: 120px; height: 160px; }
+            .bg-mid-right { width: 110px; height: 140px; }
+        }
+        /* 카드 등장 애니메이션 */
+        @keyframes cardEntrance {
+            0% {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            60% {
+                opacity: 1;
+                transform: translateY(-6px) scale(1.02);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        .card-entrance {
+            opacity: 0;
+            animation: cardEntrance 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        /* 스프링 바운스 슬라이드 애니메이션 */
+        .slide-content {
+            display: grid;
+            grid-template-rows: 0fr;
+            opacity: 0;
+            transform: translateY(-8px);
+            transition: grid-template-rows 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                        opacity 0.3s ease,
+                        transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .slide-content > * {
+            overflow: hidden;
+        }
+        .slide-content.open {
+            grid-template-rows: 1fr;
+            opacity: 1;
+            transform: translateY(0);
+            transition: grid-template-rows 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                        opacity 0.4s ease 0.05s,
+                        transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+    </style>
+</head>
+<body class="min-h-screen" style="background: transparent !important; overflow-y: hidden;">
+<style>
+/* 배경 요소 숨김 - 메인 페이지 디자인 사용 (이중 방사 방지) */
+.bg-nature-wrap, .school-illustration {
+    display: none !important;
+}
+
+/* 기존 스타일 오버라이드 (다크모드 지원 포함) */
+body.dark-mode {
+    background: transparent !important;
+}
+body.dark-mode .bg-white {
+    background-color: #27272a !important;
+    border-color: #3f3f46 !important;
+}
+body.dark-mode .text-gray-900,
+body.dark-mode .text-gray-800,
+body.dark-mode .text-gray-700 {
+    color: #e4e4e7 !important;
+}
+body.dark-mode .text-gray-600,
+body.dark-mode .text-gray-500 {
+    color: #a1a1aa !important;
+}
+body.dark-mode .bg-gray-50 {
+    background-color: #3f3f46 !important;
+}
+body.dark-mode .border-gray-200,
+body.dark-mode .border-gray-100 {
+    border-color: #3f3f46 !important;
+}
+body.dark-mode input::placeholder {
+    color: #a1a1aa !important;
+}
+body.dark-mode input {
+    background-color: #18181b !important;
+    color: #e4e4e7 !important;
+    border-color: #3f3f46 !important;
+}
+body.dark-mode .bg-blue-50 { background-color: rgba(59, 130, 246, 0.1) !important; }
+body.dark-mode .text-blue-600 { color: #60a5fa !important; }
+body.dark-mode .bg-green-50 { background-color: rgba(34, 197, 94, 0.1) !important; }
+body.dark-mode .text-green-600 { color: #4ade80 !important; }
+body.dark-mode .bg-purple-50 { background-color: rgba(168, 85, 247, 0.1) !important; }
+body.dark-mode .text-purple-600 { color: #c084fc !important; }
+body.dark-mode .bg-orange-50 { background-color: rgba(249, 115, 22, 0.1) !important; }
+body.dark-mode .text-orange-600 { color: #fb923c !important; }
+body.dark-mode .bg-amber-50 { background-color: rgba(245, 158, 11, 0.1) !important; }
+body.dark-mode .text-amber-600 { color: #fcd34d !important; }
+body.dark-mode .bg-red-50 { background-color: rgba(239, 68, 68, 0.1) !important; }
+body.dark-mode .text-red-500, body.dark-mode .text-red-600 { color: #f87171 !important; }
+body.dark-mode a:hover {
+    background-color: #3f3f46 !important;
+}
+</style>
+    <div class="bg-nature-wrap">
+        <!-- 왼쪽 상단 수채화 산 장식 -->
+        <div class="bg-mountain-left">
+            <svg viewBox="0 0 400 320" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;opacity:0.7;">
+                <ellipse cx="60" cy="0" rx="200" ry="120" fill="url(#cloudL1)"/>
+                <path d="M0 320 L0 140 Q30 80 80 100 Q130 50 180 90 Q220 40 270 80 Q310 60 350 100 Q380 130 400 160 L400 320Z" fill="url(#mountainL1)"/>
+                <path d="M0 320 L0 180 Q40 130 100 160 Q150 110 200 140 Q250 100 300 140 L350 320Z" fill="url(#mountainL2)"/>
+                <path d="M0 320 L0 220 Q50 180 120 210 Q180 170 250 200 L300 320Z" fill="url(#mountainL3)"/>
+                <defs>
+                    <linearGradient id="cloudL1" x1="0" y1="0" x2="200" y2="120">
+                        <stop offset="0%" stop-color="#b8dce8" stop-opacity="0.4"/>
+                        <stop offset="100%" stop-color="#d4eef5" stop-opacity="0.1"/>
+                    </linearGradient>
+                    <linearGradient id="mountainL1" x1="100" y1="40" x2="100" y2="320">
+                        <stop offset="0%" stop-color="#8cc5a8" stop-opacity="0.35"/>
+                        <stop offset="100%" stop-color="#b5dcc5" stop-opacity="0.1"/>
+                    </linearGradient>
+                    <linearGradient id="mountainL2" x1="80" y1="100" x2="80" y2="320">
+                        <stop offset="0%" stop-color="#a3d4b7" stop-opacity="0.3"/>
+                        <stop offset="100%" stop-color="#c8e6d2" stop-opacity="0.08"/>
+                    </linearGradient>
+                    <linearGradient id="mountainL3" x1="60" y1="170" x2="60" y2="320">
+                        <stop offset="0%" stop-color="#bce0cb" stop-opacity="0.25"/>
+                        <stop offset="100%" stop-color="#ddf0e3" stop-opacity="0.05"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+        </div>
+        <!-- 오른쪽 상단 수채화 산 장식 -->
+        <div class="bg-mountain-right">
+            <svg viewBox="0 0 350 300" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;opacity:0.6;">
+                <ellipse cx="300" cy="0" rx="180" ry="100" fill="url(#cloudR1)"/>
+                <path d="M0 160 Q40 80 100 110 Q150 50 200 80 Q250 30 300 70 Q330 50 350 80 L350 300 L0 300Z" fill="url(#mountainR1)"/>
+                <path d="M50 300 Q80 140 150 170 Q200 120 260 150 Q310 110 350 140 L350 300Z" fill="url(#mountainR2)"/>
+                <path d="M100 300 Q140 200 200 220 Q260 180 320 210 L350 300Z" fill="url(#mountainR3)"/>
+                <defs>
+                    <linearGradient id="cloudR1" x1="200" y1="0" x2="350" y2="100">
+                        <stop offset="0%" stop-color="#a8d1e0" stop-opacity="0.3"/>
+                        <stop offset="100%" stop-color="#c8e4ef" stop-opacity="0.08"/>
+                    </linearGradient>
+                    <linearGradient id="mountainR1" x1="200" y1="30" x2="200" y2="300">
+                        <stop offset="0%" stop-color="#7fbfdb" stop-opacity="0.3"/>
+                        <stop offset="100%" stop-color="#b5d8e8" stop-opacity="0.08"/>
+                    </linearGradient>
+                    <linearGradient id="mountainR2" x1="200" y1="110" x2="200" y2="300">
+                        <stop offset="0%" stop-color="#95cada" stop-opacity="0.25"/>
+                        <stop offset="100%" stop-color="#c5e2ed" stop-opacity="0.05"/>
+                    </linearGradient>
+                    <linearGradient id="mountainR3" x1="220" y1="180" x2="220" y2="300">
+                        <stop offset="0%" stop-color="#a8d5e2" stop-opacity="0.2"/>
+                        <stop offset="100%" stop-color="#d5ebf2" stop-opacity="0.03"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+        </div>
+        <!-- 중간 좌측 나뭇잎/풀 장식 -->
+        <div class="bg-mid-left">
+            <svg viewBox="0 0 200 250" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;opacity:0.5;">
+                <path d="M0 0 Q20 40 10 80 Q30 60 50 90 Q40 120 20 140 Q35 130 60 150 Q30 180 0 200 L0 0Z" fill="url(#midL1)"/>
+                <ellipse cx="0" cy="100" rx="80" ry="60" fill="url(#midL2)"/>
+                <ellipse cx="10" cy="160" rx="60" ry="40" fill="url(#midL3)"/>
+                <defs>
+                    <linearGradient id="midL1" x1="0" y1="0" x2="60" y2="200">
+                        <stop offset="0%" stop-color="#8cc5a8" stop-opacity="0.4"/>
+                        <stop offset="100%" stop-color="#b5dcc5" stop-opacity="0.1"/>
+                    </linearGradient>
+                    <radialGradient id="midL2" cx="0" cy="0.5" r="1">
+                        <stop offset="0%" stop-color="#a3d4b7" stop-opacity="0.25"/>
+                        <stop offset="100%" stop-color="#c8e6d2" stop-opacity="0"/>
+                    </radialGradient>
+                    <radialGradient id="midL3" cx="0.1" cy="0.5" r="1">
+                        <stop offset="0%" stop-color="#90c8ae" stop-opacity="0.2"/>
+                        <stop offset="100%" stop-color="#c5e3d0" stop-opacity="0"/>
+                    </radialGradient>
+                </defs>
+            </svg>
+        </div>
+        <!-- 중간 우측 장식 -->
+        <div class="bg-mid-right">
+            <svg viewBox="0 0 180 220" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;opacity:0.45;">
+                <path d="M180 20 Q160 50 170 90 Q150 70 130 100 Q145 130 165 150 Q140 140 120 160 Q150 190 180 210 L180 20Z" fill="url(#midR1)"/>
+                <ellipse cx="180" cy="110" rx="70" ry="55" fill="url(#midR2)"/>
+                <defs>
+                    <linearGradient id="midR1" x1="180" y1="20" x2="120" y2="210">
+                        <stop offset="0%" stop-color="#7fbfdb" stop-opacity="0.35"/>
+                        <stop offset="100%" stop-color="#b5d8e8" stop-opacity="0.08"/>
+                    </linearGradient>
+                    <radialGradient id="midR2" cx="1" cy="0.5" r="1">
+                        <stop offset="0%" stop-color="#95cada" stop-opacity="0.2"/>
+                        <stop offset="100%" stop-color="#c5e2ed" stop-opacity="0"/>
+                    </radialGradient>
+                </defs>
+            </svg>
+        </div>
+        <!-- 왼쪽 하단 자연 장식 -->
+        <div class="bg-bottom-left">
+            <svg viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;opacity:0.55;">
+                <ellipse cx="50" cy="300" rx="180" ry="100" fill="url(#blCloud1)"/>
+                <path d="M0 120 Q40 160 30 200 Q60 170 90 190 Q120 150 160 180 Q190 140 230 170 Q200 220 160 250 Q100 280 0 300 L0 120Z" fill="url(#blMtn1)"/>
+                <path d="M0 180 Q50 200 40 240 Q80 210 120 230 Q100 260 60 280 L0 300 L0 180Z" fill="url(#blMtn2)"/>
+                <ellipse cx="200" cy="280" rx="120" ry="40" fill="url(#blGrass)"/>
+                <defs>
+                    <radialGradient id="blCloud1" cx="0.2" cy="1" r="1">
+                        <stop offset="0%" stop-color="#b8dce8" stop-opacity="0.25"/>
+                        <stop offset="100%" stop-color="#d4eef5" stop-opacity="0"/>
+                    </radialGradient>
+                    <linearGradient id="blMtn1" x1="0" y1="120" x2="100" y2="300">
+                        <stop offset="0%" stop-color="#8cc5a8" stop-opacity="0.35"/>
+                        <stop offset="100%" stop-color="#bce0cb" stop-opacity="0.1"/>
+                    </linearGradient>
+                    <linearGradient id="blMtn2" x1="0" y1="180" x2="60" y2="300">
+                        <stop offset="0%" stop-color="#a3d4b7" stop-opacity="0.3"/>
+                        <stop offset="100%" stop-color="#d0ebd8" stop-opacity="0.05"/>
+                    </linearGradient>
+                    <radialGradient id="blGrass" cx="0.5" cy="0.8" r="0.8">
+                        <stop offset="0%" stop-color="#a8d5b8" stop-opacity="0.2"/>
+                        <stop offset="100%" stop-color="#c8e6d2" stop-opacity="0"/>
+                    </radialGradient>
+                </defs>
+            </svg>
+        </div>
+        <!-- 오른쪽 하단 자연 장식 -->
+        <div class="bg-bottom-right">
+            <svg viewBox="0 0 380 280" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;opacity:0.5;">
+                <ellipse cx="330" cy="280" rx="160" ry="90" fill="url(#brCloud1)"/>
+                <path d="M380 100 Q340 140 350 180 Q310 150 270 170 Q240 140 200 160 Q230 200 270 230 Q320 260 380 280 L380 100Z" fill="url(#brMtn1)"/>
+                <path d="M380 170 Q340 190 350 230 Q310 210 270 230 Q300 260 340 270 L380 280 L380 170Z" fill="url(#brMtn2)"/>
+                <defs>
+                    <radialGradient id="brCloud1" cx="0.85" cy="1" r="1">
+                        <stop offset="0%" stop-color="#a8d1e0" stop-opacity="0.22"/>
+                        <stop offset="100%" stop-color="#c8e4ef" stop-opacity="0"/>
+                    </radialGradient>
+                    <linearGradient id="brMtn1" x1="380" y1="100" x2="280" y2="280">
+                        <stop offset="0%" stop-color="#7fbfdb" stop-opacity="0.3"/>
+                        <stop offset="100%" stop-color="#b5d8e8" stop-opacity="0.08"/>
+                    </linearGradient>
+                    <linearGradient id="brMtn2" x1="380" y1="170" x2="300" y2="280">
+                        <stop offset="0%" stop-color="#95cada" stop-opacity="0.25"/>
+                        <stop offset="100%" stop-color="#c5e2ed" stop-opacity="0.05"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+        </div>
+    </div>
+    <!-- 학교 일러스트 -->
+    <div class="school-illustration">
+        <svg viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;">
+            <!-- 나무 (왼쪽) -->
+            <rect x="15" y="90" width="8" height="30" rx="2" fill="#8B6F47"/>
+            <ellipse cx="19" cy="78" rx="16" ry="22" fill="#5DAE6B"/>
+            <ellipse cx="14" cy="82" rx="12" ry="16" fill="#4A9B58"/>
+            <!-- 나무 (오른쪽) -->
+            <rect x="135" y="95" width="7" height="25" rx="2" fill="#8B6F47"/>
+            <ellipse cx="138" cy="84" rx="14" ry="18" fill="#5DAE6B"/>
+            <ellipse cx="142" cy="88" rx="10" ry="14" fill="#4A9B58"/>
+            <!-- 학교 건물 본체 -->
+            <rect x="35" y="65" width="90" height="55" rx="3" fill="#F5E6C8"/>
+            <rect x="35" y="65" width="90" height="55" rx="3" stroke="#D4C4A0" stroke-width="1"/>
+            <!-- 지붕 -->
+            <path d="M30 68 L80 30 L130 68Z" fill="#E8524A"/>
+            <path d="M30 68 L80 30 L130 68Z" stroke="#D4443C" stroke-width="1"/>
+            <!-- 지붕 위 장식 -->
+            <rect x="75" y="22" width="10" height="12" rx="1" fill="#FFD93D"/>
+            <polygon points="80,14 74,22 86,22" fill="#FFD93D"/>
+            <!-- 시계 -->
+            <circle cx="80" cy="50" r="10" fill="white" stroke="#D4C4A0" stroke-width="1.5"/>
+            <line x1="80" y1="50" x2="80" y2="43" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="80" y1="50" x2="85" y2="52" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
+            <!-- 창문들 -->
+            <rect x="42" y="75" width="14" height="14" rx="2" fill="#87CEEB" stroke="#D4C4A0" stroke-width="1"/>
+            <line x1="49" y1="75" x2="49" y2="89" stroke="#D4C4A0" stroke-width="0.8"/>
+            <line x1="42" y1="82" x2="56" y2="82" stroke="#D4C4A0" stroke-width="0.8"/>
+            <rect x="62" y="75" width="14" height="14" rx="2" fill="#87CEEB" stroke="#D4C4A0" stroke-width="1"/>
+            <line x1="69" y1="75" x2="69" y2="89" stroke="#D4C4A0" stroke-width="0.8"/>
+            <line x1="62" y1="82" x2="76" y2="82" stroke="#D4C4A0" stroke-width="0.8"/>
+            <rect x="104" y="75" width="14" height="14" rx="2" fill="#87CEEB" stroke="#D4C4A0" stroke-width="1"/>
+            <line x1="111" y1="75" x2="111" y2="89" stroke="#D4C4A0" stroke-width="0.8"/>
+            <line x1="104" y1="82" x2="118" y2="82" stroke="#D4C4A0" stroke-width="0.8"/>
+            <!-- 문 -->
+            <rect x="84" y="96" width="16" height="24" rx="8 8 0 0" fill="#6B4226"/>
+            <circle cx="96" cy="110" r="1.5" fill="#FFD93D"/>
+            <!-- 잔디 -->
+            <ellipse cx="80" cy="122" rx="70" ry="6" fill="#7BC67E"/>
+            <ellipse cx="80" cy="124" rx="75" ry="5" fill="#6AB86D"/>
+            <!-- 구름 -->
+            <ellipse cx="30" cy="25" rx="18" ry="8" fill="white" opacity="0.8"/>
+            <ellipse cx="140" cy="20" rx="14" ry="6" fill="white" opacity="0.7"/>
+        </svg>
+    </div>
+    <header class="relative" style="z-index:2;">
+        <div class="max-w-6xl mx-auto px-4 py-8">
+            <h1 class="text-center text-3xl font-bold text-gray-800">경상남도교육청 학교업무 도움자료</h1>
+            <p class="text-center text-gray-500 mt-2">
+                학교 업무에 필요한 자료를 쉽게 찾아보세요! 
+                <span class="text-sm text-gray-500 ml-2 font-medium">(6개 분야, 총 <span class="text-blue-600 font-bold">2,989</span>개 <span class="font-bold text-gray-700">※ 2026.3.1.자 현행화</span>)</span>
+            </p>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 card-entrance" style="animation-delay: 0ms;">
+                <button
+                    onclick="toggleSection('kindergarten')"
+                    class="w-full p-6 text-left flex items-center justify-between hover:bg-gray-50 transition-colors duration-200 rounded-t-lg"
+                >
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                            <i class="fas fa-child text-blue-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">유치원</h3>
+                            <p class="text-sm text-gray-600">유치원 관련 업무자료</p>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-down text-gray-400 transition-transform duration-200" id="kindergarten-arrow"></i>
+                </button>
+                
+                <div id="kindergarten-content" class="slide-content rounded-b-lg">
+                    <div>
+                        <div class="border-t border-gray-100">
+                            <div class="p-4 bg-gray-50">
+                                <div class="relative">
+                                    <input
+                                        type="text"
+                                        id="kindergarten-search"
+                                        placeholder="원하는 업무를 검색해 보세요."
+                                        class="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                        oninput="searchKindergarten()"
+                                    >
+                                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                                </div>
+                            </div>
+                            <div id="kindergarten-sections" class="p-4"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 card-entrance" style="animation-delay: 80ms;">
+                <button
+                    onclick="toggleSection('elementary')"
+                    class="w-full p-6 text-left flex items-center justify-between hover:bg-gray-50 transition-colors duration-200 rounded-t-lg"
+                >
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                            <i class="fas fa-book text-green-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">초등학교</h3>
+                            <p class="text-sm text-gray-600">초등학교 관련 업무자료</p>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-down text-gray-400 transition-transform duration-200" id="elementary-arrow"></i>
+                </button>
+                
+                <div id="elementary-content" class="slide-content rounded-b-lg">
+                    <div>
+                        <div class="border-t border-gray-100">
+                            <div class="p-4 bg-gray-50">
+                                <div class="relative">
+                                    <input
+                                        type="text"
+                                        id="elementary-search"
+                                        placeholder="원하는 업무를 검색해 보세요."
+                                        class="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors duration-200"
+                                        oninput="searchElementary()"
+                                    >
+                                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                                </div>
+                            </div>
+                            <div id="elementary-sections" class="p-4"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 card-entrance" style="animation-delay: 160ms;">
+                <button
+                    onclick="toggleSection('secondary')"
+                    class="w-full p-6 text-left flex items-center justify-between hover:bg-gray-50 transition-colors duration-200 rounded-t-lg"
+                >
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+                            <i class="fas fa-solid fa-chalkboard text-purple-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">중고등학교</h3>
+                            <p class="text-sm text-gray-600">중고등학교 관련 업무자료</p>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-down text-gray-400 transition-transform duration-200" id="secondary-arrow"></i>
+                </button>
+                
+                <div id="secondary-content" class="slide-content rounded-b-lg">
+                    <div>
+                        <div class="border-t border-gray-100">
+                            <div class="p-4 bg-gray-50">
+                                <div class="relative">
+                                    <input
+                                        type="text"
+                                        id="secondary-search"
+                                        placeholder="원하는 업무를 검색해 보세요."
+                                        class="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors duration-200"
+                                        oninput="searchSecondary()"
+                                    >
+                                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                                </div>
+                            </div>
+                            <div id="secondary-sections" class="p-4"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 card-entrance" style="animation-delay: 240ms;">
+                <button
+                    onclick="toggleSection('special')"
+                    class="w-full p-6 text-left flex items-center justify-between hover:bg-gray-50 transition-colors duration-200 rounded-t-lg"
+                >
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mr-4">
+                            <i class="fas fa-heart text-orange-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">특수학교(급)</h3>
+                            <p class="text-sm text-gray-600">특수학교 관련 업무자료</p>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-down text-gray-400 transition-transform duration-200" id="special-arrow"></i>
+                </button>
+                
+                <div id="special-content" class="slide-content rounded-b-lg">
+                    <div>
+                        <div class="border-t border-gray-100">
+                            <div class="p-4 bg-gray-50">
+                                <div class="relative">
+                                    <input
+                                        type="text"
+                                        id="special-search"
+                                        placeholder="원하는 업무를 검색해 보세요."
+                                        class="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200"
+                                        oninput="searchSpecial()"
+                                    >
+                                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                                </div>
+                            </div>
+                            <div id="special-sections" class="p-4"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 card-entrance" style="animation-delay: 320ms;">
+                <button
+                    onclick="toggleSection('admin')"
+                    class="w-full p-6 text-left flex items-center justify-between hover:bg-gray-50 transition-colors duration-200 rounded-t-lg"
+                >
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center mr-4">
+                            <i class="fas fa-solid fa-tag text-amber-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900"> 교무행정</h3>
+                            <p class="text-sm text-gray-600">교무행정 관련 업무자료</p>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-down text-gray-400 transition-transform duration-200" id="admin-arrow"></i>
+                </button>
+                
+                <div id="admin-content" class="slide-content rounded-b-lg">
+                    <div>
+                        <div class="border-t border-gray-100">
+                            <div class="p-4 bg-gray-50">
+                                <div class="relative">
+                                    <input
+                                        type="text"
+                                        id="admin-search"
+                                        placeholder="원하는 업무를 검색해 보세요."
+                                        class="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors duration-200"
+                                        oninput="searchAdmin()"
+                                    >
+                                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                                </div>
+                            </div>
+                            <div id="admin-sections" class="p-4"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 card-entrance" style="animation-delay: 400ms;">
+                <button
+                    onclick="toggleSection('staff')"
+                    class="w-full p-6 text-left flex items-center justify-between hover:bg-gray-50 transition-colors duration-200 rounded-t-lg"
+                >
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mr-4">
+                            <i class="fas fa-solid fa-file text-red-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">일반행정</h3>
+                            <p class="text-sm text-gray-600">일반행정 관련 업무자료</p>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-down text-gray-400 transition-transform duration-200" id="staff-arrow"></i>
+                </button>
+                
+                <div id="staff-content" class="slide-content rounded-b-lg">
+                    <div>
+                        <div class="border-t border-gray-100">
+                            <div class="p-4 bg-gray-50">
+                                <div class="relative">
+                                    <input
+                                        type="text"
+                                        id="staff-search"
+                                        placeholder="원하는 업무를 검색해 보세요."
+                                        class="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors duration-200"
+                                        oninput="searchStaff()"
+                                    >
+                                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                                </div>
+                            </div>
+                            <div id="staff-sections" class="p-4"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-white/40 backdrop-blur-md border-t border-gray-200/20 fixed bottom-0 left-0 w-full" style="z-index: 10;">
+        <div class="max-w-6xl mx-auto px-4 py-6">
+            <p class="text-center text-gray-600 text-sm">© 경상남도교육청 모든 권리 보유</p>
+        </div>
+    </footer>
+
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+    <script>
+    // 부모 프레임의 다크모드/라이트모드 감지
+    function syncTheme() {
+        if (window.parent && window.parent.document.body) {
+            if (window.parent.document.body.classList.contains('dark-mode')) {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+        }
+    }
+    window.addEventListener('message', (e) => {
+        if (e.data === 'theme-toggled') syncTheme();
+    });
+    // 초기 동기화
+    syncTheme();
+    // 부모 속성 감시 (옵저버)
+    if (window.parent && window.parent.document.body) {
+        const observer = new MutationObserver(syncTheme);
+        observer.observe(window.parent.document.body, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    // iframe 높이 조절
+    function sendHeight() {
+        const h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight, document.body.offsetHeight, document.documentElement.offsetHeight);
+        if (window.parent) {
+            window.parent.postMessage({ type: 'resize', height: h }, '*');
+        }
+    }
+    window.addEventListener('load', sendHeight);
+    document.addEventListener('click', () => setTimeout(sendHeight, 550));
+    const heightObserver = new MutationObserver(sendHeight);
+    heightObserver.observe(document.body, { childList: true, subtree: true, attributes: true });
+    </script>
+</body>
+</html>
