@@ -534,6 +534,12 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Curriculum: Table Body Element NOT FOUND!");
             return;
         }
+
+        // 화면 쪼그라듦(=스크롤 리셋) 방지를 위한 기존 높이 유지
+        if (body.offsetHeight > 0) {
+            body.style.minHeight = body.offsetHeight + 'px';
+        }
+
         body.innerHTML = "";
 
         const y = currDate.getFullYear();
@@ -714,6 +720,31 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 }
             });
+        });
+
+        // 탭 열렸을 때 오늘 날짜 위치로 스크롤 (제목 표시줄 밑으로)
+        if (window.shouldScrollToToday) {
+            window.shouldScrollToToday = false; // 한 번 스크롤 후 초기화
+            setTimeout(() => {
+                const todayCell = document.querySelector('.curr-cell.is-today');
+                if (todayCell) {
+                    const row = todayCell.closest('.curr-row');
+                    if (row) {
+                        const header = document.querySelector('.curr-table-header');
+                        // 표의 '제목 표시줄'(테이블 헤더) 높이만 고려하여 가려지지 않게 배제
+                        const offset = parseInt(header ? header.offsetHeight : 50) + 2;
+                        
+                        // 절대 좌표 계산보다 브라우저 자체 스크롤 메서드가 훨씬 안정적(DOM 변화나 애니메이션 영향 적음)
+                        row.style.scrollMarginTop = offset + 'px';
+                        row.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
+            }, 300); // 렌더링 완료 대기용
+        }
+
+        // 렌더링 완료 후 미세 지연을 두어 화면 높이 고정 해제 (초기화 방지용)
+        requestAnimationFrame(() => {
+            if (body) body.style.minHeight = '';
         });
     }
 

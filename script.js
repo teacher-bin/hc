@@ -1,4 +1,4 @@
-﻿document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () => {
   const linksGrid = document.querySelector("#links-grid");
   const navItems = document.querySelectorAll(".nav-item");
   const digitalClock = document.getElementById("digital-clock");
@@ -5460,7 +5460,10 @@
             targetEl.style.display = 'block';
             
             // Lazy Load / Refresh
-            if(category === 'curriculum' && window.renderCurriculum) window.renderCurriculum();
+            if(category === 'curriculum') {
+                window.shouldScrollToToday = true;
+                if(window.renderCurriculum) window.renderCurriculum();
+            }
             if(category === 'calendar' && calendar) calendar.render();
             if(category === 'training' && window.initTraining) {
                 if (!window.trainingInitialized) {
