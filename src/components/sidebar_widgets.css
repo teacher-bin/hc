@@ -125,6 +125,68 @@ body.hide-widget .sidebar-container {
   transition: max-height 0.4s ease, opacity 0.3s ease;
 }
 
+/* 오늘의 급식 스타일 */
+.widget-meal-info {
+  margin-top: 5px;
+  padding: 8px 12px;
+  background: rgba(74, 144, 226, 0.08);
+  border-radius: 12px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  border-left: 3px solid #ff7675; /* 부드러운 빨간색 포인트 */
+  animation: slideDownIn 0.5s ease-out;
+}
+
+.widget-meal-info strong {
+  color: var(--primary-color);
+  font-weight: 700;
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.85rem;
+}
+
+.meal-more-btn {
+  display: inline-block;
+  margin-left: 10px;
+  vertical-align: middle;
+  font-size: 0.75rem;
+  color: var(--primary-color);
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 2px 8px;
+  border: 1px solid var(--primary-color);
+  border-radius: 20px;
+  transition: all 0.2s ease;
+}
+
+body.dark-mode .meal-more-btn {
+  background: rgba(74, 144, 226, 0.1);
+  color: #60a5fa;
+  border-color: #60a5fa;
+}
+
+.meal-more-btn:hover {
+  background: var(--primary-color);
+  color: white;
+}
+
+body.dark-mode .widget-meal-info {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+}
+
+body.dark-mode .widget-meal-info strong {
+  color: #60a5fa;
+}
+
+@keyframes slideDownIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .widget-content::-webkit-scrollbar {
   display: none;
 }
@@ -401,6 +463,7 @@ body.dark-mode .event-item.is-holiday {
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
 }
 

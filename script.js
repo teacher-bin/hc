@@ -5415,7 +5415,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // 1. Hide all main sections
         const sections = [
             'status-section', 
-            'shortcut-section', 
+            'intro-section', 
             'datayard-section', 
             'curriculum-section', 
             'helppage-section', 
@@ -5423,7 +5423,8 @@ document.addEventListener("DOMContentLoaded", () => {
             'bus-section', 
             'calendar-section', 
             'admin-section', 
-            'training-section' 
+            'training-section',
+            'meal-section'
         ];
         
         sections.forEach(id => {
@@ -5443,7 +5444,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let targetId = '';
         switch(category) {
             case 'status': targetId = 'status-section'; break;
-            case 'all': targetId = 'shortcut-section'; break; // Home maps to shortcut section
+            case 'all': targetId = 'intro-section'; break; // Home maps to intro section
             case 'datayard': targetId = 'datayard-section'; break;
             case 'curriculum': targetId = 'curriculum-section'; break;
             case 'support': targetId = 'helppage-section'; break; 
@@ -5452,9 +5453,18 @@ document.addEventListener("DOMContentLoaded", () => {
             case 'calendar': targetId = 'calendar-section'; break; 
             case 'admin': targetId = 'admin-section'; break;
             case 'training': targetId = 'training-section'; break;
+            case 'meal': targetId = 'meal-section'; if(window.renderMealView) window.renderMealView(); break;
         }
 
         const targetEl = document.getElementById(targetId);
+        
+        // Background mode control
+        if (category === 'meal') {
+            document.body.classList.add('meal-tab-mode');
+        } else {
+            document.body.classList.remove('meal-tab-mode');
+        }
+
         if(targetEl) {
             targetEl.classList.remove('hidden');
             targetEl.style.display = 'block';
@@ -5472,6 +5482,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 } else if (typeof window.loadTrainings === 'function') {
                     window.loadTrainings();
                 }
+            }
+            if(category === 'meal' && window.renderWeeklyView) {
+                window.renderWeeklyView();
             }
         }
 
@@ -5722,7 +5735,8 @@ window.renderMenuSettings = () => {
         'bus': '배차신청',
         'datayard': '자료마당',
         'support': '온학교 e지원',
-        'training': '연수관리'
+        'training': '연수관리',
+        'meal': '급식정보'
     };
     
     const widgetNames = {

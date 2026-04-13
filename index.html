@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
@@ -37,6 +37,8 @@
     <link rel="stylesheet" href="src/components/board_modal.css" />
     <link rel="stylesheet" href="src/components/curriculum_confirm.css" />
     <link rel="stylesheet" href="src/styles/mobile.css" />
+    <link rel="stylesheet" href="src/components/meal_section.css" />
+    <script src="meal.js" defer></script>
     <style>
       /* CRITICAL LOGIN STYLES - OVERRIDE EVERYTHING */
       #login-container {
@@ -656,6 +658,7 @@
             <button class="nav-item" data-category="curriculum">학사일정</button>
             <button class="nav-item" data-category="bus">배차신청</button>
             <button class="nav-item" data-category="training" onclick="switchTab('training')">연수관리</button>
+            <button class="nav-item" data-category="meal">급식정보</button>
             <button class="nav-item" data-category="datayard">자료마당</button>
             <button class="nav-item" data-category="support" onclick="switchTab('support')">온학교 e지원</button>
             <button onclick="window.open('special-edu/index.html', '_blank')" class="instructor-nav-btn" style="background: linear-gradient(135deg, #ff9a16 0%, #ff4b2b 100%) !important; color: #ffffff !important; box-shadow: 0 4px 12px rgba(255, 75, 43, 0.4);" title="계기교육 포털">
@@ -762,6 +765,30 @@
         </div>
         <div id="status-panels-container">
           <!-- JavaScript를 통해 활성화된 패널(표)이 여기에 렌더링됩니다 -->
+        </div>
+      </section>
+
+      <section id="meal-section" class="category-content hidden">
+        <div class="meal-container">
+          <div class="meal-header-area">
+            <div class="meal-title-group">
+              <h2><i class="fas fa-utensils"></i> 급식 정보</h2>
+            </div>
+            <div class="meal-view-switcher">
+              <button class="meal-view-btn active" id="view-weekly-btn">주간 급식</button>
+              <button class="meal-view-btn" id="view-monthly-btn">월간 급식</button>
+            </div>
+          </div>
+          <div id="meal-content-area">
+            <div class="meal-nav-bar">
+              <button class="meal-nav-btn" onclick="window.changeMealPeriod(-1)"><i class="fas fa-chevron-left"></i> 이전</button>
+              <div class="meal-range-display" id="meal-range-text">4/13 ~ 4/19 <i class="fas fa-calendar-alt"></i></div>
+              <button class="meal-nav-btn" onclick="window.changeMealPeriod(1)">다음 <i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div id="meal-list-container">
+              <!-- Data rendered here -->
+            </div>
+          </div>
         </div>
       </section>
 
