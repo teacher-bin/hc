@@ -4,13 +4,52 @@
 .sidebar-container {
   position: fixed;
   left: 2rem;
-  top: 180px;
-  width: 290px; /* Increased from 260px */
+  top: 162px;         /* 180px → 162px: padding-top(18px) 보정으로 위젯 시작 위치 동일 유지 */
+  width: 290px;
   z-index: 1500;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem; /* Reverted to 1.5rem as requested */
-  pointer-events: none; /* Allow clicks to pass through gaps */
+  gap: 1.5rem;
+  pointer-events: auto;
+  box-sizing: border-box;
+  /* 상단: float 애니메이션(10px) + 그림자 여백(8px) = 18px
+     하단: 그림자 여백 충분히 확보
+     좌우: 그림자 & 스크롤바 여백 */
+  padding: 18px 10px 32px 4px;
+  max-height: calc(100vh - 182px); /* top(162px) + 하단 여백(20px) 기준 */
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* 기본은 스크롤바 숨김 */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* Show scrollbar on hover (Webkit) */
+.sidebar-container:hover {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
+}
+
+.sidebar-container::-webkit-scrollbar {
+  width: 0;
+  transition: width 0.2s;
+}
+
+.sidebar-container:hover::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-container:hover::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-container:hover::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.4);
+  border-radius: 4px;
+}
+
+body.dark-mode .sidebar-container:hover::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
 }
 
 /* Hide sidebar when body has hide-widget class */
@@ -119,9 +158,10 @@ body.hide-widget .sidebar-container {
 }
 
 .widget-content {
-  max-height: 570px; /* Increased to 570px as requested */
-  overflow-y: auto;
-  scrollbar-width: none;
+  /* sidebar-container가 전체 스크롤을 담당 */
+  /* max-height는 collapsed 전환 애니메이션을 위해 명시 필요 */
+  max-height: 2000px;
+  overflow: hidden;
   transition: max-height 0.4s ease, opacity 0.3s ease;
 }
 
@@ -187,9 +227,6 @@ body.dark-mode .widget-meal-info strong {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.widget-content::-webkit-scrollbar {
-  display: none;
-}
 
 
 .today-event-list {
@@ -197,15 +234,15 @@ body.dark-mode .widget-meal-info strong {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem; /* Increased gap for better separation */
+  gap: 0.6rem;
 }
 
 .event-item {
-  padding: 0.6rem 0.9rem;
-  border-radius: 12px;
+  padding: 0.35rem 0.8rem; /* ↓ 세로 높이 축소 (기존 0.6rem → 0.35rem) */
+  border-radius: 10px;
   background: var(--card-bg, #ffffff);
   border-left: 4px solid var(--primary-color);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-main, #334155);
   box-shadow: var(--shadow-soft);
@@ -214,11 +251,11 @@ body.dark-mode .widget-meal-info strong {
   position: relative;
   overflow: hidden;
   word-break: keep-all;
-  overflow-wrap: break-word; /* Ensure text wrapping */
+  overflow-wrap: break-word;
   line-height: 1.4;
   display: flex;
   align-items: center;
-  gap: 8px; /* Gap between icon and text */
+  gap: 7px;
 }
 
 .event-item i {
@@ -236,30 +273,60 @@ body.dark-mode .widget-meal-info strong {
 .category-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
+  gap: 0.4rem; /* ↓ 항목 간격도 약간 축소 */
+  margin-top: 0.3rem;
+  margin-bottom: 0.3rem;
+  overflow: hidden;
+  /* Collapse animation */
+  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin 0.3s ease;
+  max-height: 1000px;
+  opacity: 1;
+}
+
+.category-group.collapsed {
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .category-title {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
   text-transform: uppercase;
   color: var(--text-muted, #64748b);
-  margin-bottom: 0.3rem;
-  padding-left: 0.4rem;
+  margin-bottom: 0.2rem;
+  padding: 0.25rem 0.4rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   letter-spacing: -0.3px;
+  cursor: pointer; /* 클릭 가능 표시 */
+  border-radius: 6px;
+  transition: background 0.2s ease;
+  user-select: none;
 }
 
+.category-title:hover {
+  background: var(--border-color, rgba(0,0,0,0.04));
+}
+
+/* 접기/펼치기 화살표 아이콘 */
+.category-title .cat-toggle-icon {
+  margin-left: auto;
+  font-size: 0.65rem;
+  opacity: 0.6;
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+.category-title.collapsed .cat-toggle-icon {
+  transform: rotate(-90deg);
+}
+
+/* category-title의 레이아웃은 cat-toggle-icon의 margin-left: auto로 처리 */
 .category-title::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border-color, rgba(0,0,0,0.05));
-  opacity: 0.5;
+  content: none;
 }
 
 /* Category Specific Styles with Dark Mode safe colors */
@@ -401,6 +468,7 @@ body.dark-mode .event-item.is-holiday {
   background: #f1f5f9;
   padding: 2px 8px;
   border-radius: 10px;
+  white-space: nowrap;
 }
 
 .notice-date {
@@ -525,9 +593,6 @@ body.dark-mode .event-item.is-holiday {
   overflow: hidden; /* Hide overflow */
 }
 
-.notice-author {
-  white-space: nowrap;
-}
 
 /* Tooltip Styles */
 .widget-floating-tooltip {

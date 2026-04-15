@@ -2895,6 +2895,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Data Store
     let allRawEvents = [];
     let isWidgetSyncSetup = false;
+    // 카테고리 접기/펼치기 상태 유지 (리렌더링 후에도 보존)
+    const widgetCatState = {};
 
     // 1. Render Function (Pure rendering based on current date & stored data)
     const renderTodayWidget = () => {
@@ -2986,17 +2988,27 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (cat.id === 'doc') {
                      // ================= Render Pending Bus Widget Data (Above "처리할 공문") =================
                      if (pendingBusData.length > 0) {
+                          const catKey = 'bus-pending';
+                          const isCollapsed = widgetCatState[catKey] || false;
+
                           const titleDiv = document.createElement('div');
-                          titleDiv.className = 'category-title';
-                          titleDiv.innerHTML = `<i class="fas fa-bus"></i> 접수대기 중`;
+                          titleDiv.className = `category-title${isCollapsed ? ' collapsed' : ''}`;
+                          titleDiv.innerHTML = `<i class="fas fa-bus"></i> 접수대기 중<i class="fas fa-chevron-down cat-toggle-icon"></i>`;
                           eventList.appendChild(titleDiv);
 
                           const groupDiv = document.createElement('div');
-                          groupDiv.className = 'category-group';
+                          groupDiv.className = `category-group${isCollapsed ? ' collapsed' : ''}`;
+
+                          // Toggle click handler
+                          titleDiv.onclick = () => {
+                              const nowCollapsed = groupDiv.classList.toggle('collapsed');
+                              titleDiv.classList.toggle('collapsed', nowCollapsed);
+                              widgetCatState[catKey] = nowCollapsed;
+                          };
                           
                           pendingBusData.forEach(req => {
                                const li = document.createElement('li');
-                               li.className = 'event-item type-bus'; // Same visual language
+                               li.className = 'event-item type-bus';
                                
                                const formattedDate = req.date ? req.date.substring(5).replace('-', '.') : '';
                                const destination = req.destination || '목적지 미상';
@@ -3032,13 +3044,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 const catEvents = otherEvents.filter(ev => cat.types.includes(ev.eventType));
                 
                 if (catEvents.length > 0) {
+                    const catKey = cat.id;
+                    const isCollapsed = widgetCatState[catKey] || false;
+
                     const titleDiv = document.createElement('div');
-                    titleDiv.className = 'category-title';
-                    titleDiv.innerHTML = `<i class="fas ${cat.icon}"></i> ${cat.label}`;
+                    titleDiv.className = `category-title${isCollapsed ? ' collapsed' : ''}`;
+                    titleDiv.innerHTML = `<i class="fas ${cat.icon}"></i> ${cat.label}<i class="fas fa-chevron-down cat-toggle-icon"></i>`;
                     eventList.appendChild(titleDiv);
 
                     const groupDiv = document.createElement('div');
-                    groupDiv.className = 'category-group';
+                    groupDiv.className = `category-group${isCollapsed ? ' collapsed' : ''}`;
+
+                    // Toggle click handler
+                    titleDiv.onclick = () => {
+                        const nowCollapsed = groupDiv.classList.toggle('collapsed');
+                        titleDiv.classList.toggle('collapsed', nowCollapsed);
+                        widgetCatState[catKey] = nowCollapsed;
+                    };
 
                     catEvents.forEach(ev => {
                         const li = document.createElement('li');
