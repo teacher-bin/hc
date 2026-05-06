@@ -117,11 +117,6 @@ body.dark-mode {
   to { filter: drop-shadow(0 0 6px rgba(192, 192, 192, 0.8)); }
 }
 
-.admin-badge.silver {
-  background: linear-gradient(135deg, #e2e8f0, #94a3b8);
-  box-shadow: 0 2px 5px rgba(148, 163, 184, 0.3);
-}
-
 .badge-role-admin { background: #fee2e2; color: #ef4444; border: 1px solid #fecaca; }
 .badge-role-sub-admin { background: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb; }
 .badge-role-user { background: #f0fdf4; color: #22c55e; border: 1px solid #bbf7d0; }
@@ -2413,10 +2408,6 @@ footer {
 .nav-arrow-btn.hidden {
   opacity: 0;
   pointer-events: none;
-}
-
-#calendar {
-  flex: 1;
 }
 
 /* Multi Month Layout Tuning */
@@ -5775,6 +5766,13 @@ body.dark-mode {
     overflow: visible !important;
     transform: none !important;
     z-index: auto !important;
+}
+
+/* 헤더(요일명 행)가 이벤트 셀보다 항상 위에 렌더링되도록 z-index 설정 */
+#curr-fullcalendar .fc-scrollgrid-section-header,
+#curr-fullcalendar .fc-scrollgrid-section-header > td {
+    position: relative !important;
+    z-index: 200 !important;
 }
 
 /* ?ㅻ뜑蹂대떎 ?꾨줈 ?щ씪?ㅺ린 ?꾪빐 諛붾뵒 ?뱀뀡???곗꽑?쒖쐞 ?곹뼢 */

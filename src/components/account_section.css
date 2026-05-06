@@ -1,0 +1,4545 @@
+
+/* Account Modal Grid Layout */
+
+.account-modal-grid {
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+}
+
+@media (max-width: 768px) {
+    .account-modal-grid {
+        flex-direction: column;
+    }
+    .modal-col.icon-col {
+        border-left: none;
+        padding-left: 0;
+        border-top: 1px solid var(--border-color);
+        padding-top: 20px;
+        max-width: 100%;
+    }
+}
+
+
+/* ================= School Account Section Styles (Revamped) ================= */
+
+#account-section {
+    max-width: 1400px;
+    margin-left: 370px; /* 왼쪽 위젯 공간 확보 */
+    margin-right: auto;
+    padding: 1rem 40px 2rem;
+    position: relative;
+}
+
+
+.account-group-title-area {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--primary-color);
+    display: flex; /* 가로 배치로 변경 */
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+
+.account-bulk-move-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+
+
+.account-move-select {
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    color: var(--text-main);
+    font-size: 0.85rem;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+
+.account-move-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+
+/* ================= School Account (Apple Design System) ================= */
+
+
+.account-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-height: 800px;
+    padding: 0.5rem 0;
+    align-items: stretch;
+    background: transparent;
+}
+
+.account-sidebar {
+    width: fit-content;
+    margin: 0 auto;
+    flex-shrink: 0;
+    position: sticky;
+    top: 1rem;
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(25px) saturate(180%);
+    -webkit-backdrop-filter: blur(25px) saturate(180%);
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    transition: var(--transition);
+}
+
+
+body.dark-mode .account-sidebar {
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+
+.account-sidebar-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+
+.account-sidebar-menu {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 2px;
+    justify-content: center;
+}
+
+
+.account-sidebar-menu::-webkit-scrollbar {
+    display: none;
+}
+
+
+.account-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    border-radius: 12px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    position: relative;
+}
+
+
+.account-nav-item i {
+    font-size: 1rem;
+    transition: transform 0.3s ease;
+}
+
+
+.account-nav-item:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--text-main);
+}
+
+
+body.dark-mode .account-nav-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+
+.account-nav-item.active {
+    background: white;
+    color: var(--primary-color);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+    transform: scale(1.02);
+}
+
+
+body.dark-mode .account-nav-item.active {
+    background: var(--primary-color);
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+
+.account-nav-item.active i {
+    transform: scale(1.1);
+}
+
+.account-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.25rem 2.5rem 1rem;
+}
+
+
+.account-main-header {
+    display: none;
+}
+
+
+.account-header-top-row {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+
+.account-title-wrap h2 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    color: var(--text-main);
+    margin-bottom: 0.5rem;
+}
+
+
+.account-category-description {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    opacity: 0.7;
+    max-width: 600px;
+    margin-bottom: 0;
+}
+
+
+#account-category-description-container {
+    border: none !important;
+    margin-top: 4px !important;
+    margin-bottom: 4px !important;
+}
+
+
+body.dark-mode #account-search-input:focus {
+    background: #1e293b;
+}
+
+.account-section-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2.5rem;
+}
+
+
+.account-section-controls .btn-primary.admin-feature {
+    min-width: 38px;
+    height: 34px; /* Reduced from 38px to match nav items height */
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 12px;
+    background: var(--primary-color);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: white;
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.2);
+    border: none;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+
+.account-sidebar .btn-primary.admin-feature:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.1);
+}
+
+
+/* Account Group Icon Picker Grid */
+
+
+.account-section-controls #account-edit-actions {
+    display: flex;
+    gap: 8px;
+}
+
+
+.account-section-controls #account-edit-actions button {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+}
+
+.account-header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+
+.account-bulk-move-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(74, 144, 226, 0.05);
+    padding: 6px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(74, 144, 226, 0.1);
+    animation: appleFadeIn 0.4s ease;
+}
+
+
+.account-move-select {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: white;
+    color: var(--text-main);
+    outline: none;
+    cursor: pointer;
+}
+
+.account-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+}
+
+
+.account-card {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 1rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    position: relative;
+}
+
+
+body.dark-mode .account-card {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+
+.account-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    background: white;
+}
+
+
+body.dark-mode .account-card:hover {
+    background: rgba(30, 41, 59, 0.9);
+}
+
+
+.account-card-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+
+.account-card-logo {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    object-fit: contain;
+    background: #f1f5f9;
+    padding: 6px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+
+body.dark-mode .account-card-logo {
+    background: #0f172a;
+}
+
+
+.account-card-logo-placeholder {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: var(--primary-color);
+}
+
+
+.account-card-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: -0.5px;
+}
+
+
+.account-card-link {
+    color: var(--primary-color);
+    font-size: 0.9rem;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+
+.account-card-link:hover {
+    opacity: 1;
+}
+
+
+.account-info-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    background: rgba(0, 0, 0, 0.03);
+    padding: 0.6rem;
+    border-radius: 16px;
+}
+
+
+body.dark-mode .account-info-group {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+
+.account-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+
+.account-info-row:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+
+body.dark-mode .account-info-row:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+
+/* 복사 버튼 기본 스타일 - 매우 연하게 표시 */
+.copy-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    color: #94a3b8;
+    opacity: 0.18;
+    font-size: 0.8rem;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 행 호버 시 복사 버튼 살짝 보이게 */
+.account-info-row:hover .copy-btn {
+    opacity: 0.45;
+    color: #94a3b8;
+}
+
+/* 복사 버튼 자체 호버 - 진한 색상 + 반응 효과 */
+.copy-btn:hover {
+    opacity: 1 !important;
+    color: #3b82f6;
+    background: rgba(59, 130, 246, 0.1);
+    transform: scale(1.18);
+}
+
+.copy-btn:active {
+    transform: scale(0.92);
+    color: #2563eb;
+    background: rgba(59, 130, 246, 0.18);
+}
+
+/* 다크모드 복사 버튼 */
+body.dark-mode .copy-btn {
+    color: #64748b;
+    opacity: 0.15;
+}
+
+body.dark-mode .account-info-row:hover .copy-btn {
+    opacity: 0.4;
+    color: #64748b;
+}
+
+body.dark-mode .copy-btn:hover {
+    opacity: 1 !important;
+    color: #60a5fa;
+    background: rgba(96, 165, 250, 0.12);
+}
+
+
+.account-card-footer {
+    margin-top: auto;
+    padding-top: 0.6rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+
+.account-card-note {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-style: italic;
+    flex: 1;
+}
+
+
+.account-card-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.account-card.edit-mode {
+    border: 2px dashed var(--primary-color);
+    animation: wiggle 0.3s infinite;
+}
+
+
+.account-card-select {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 24px;
+    height: 24px;
+    accent-color: var(--primary-color);
+    cursor: pointer;
+    z-index: 10;
+}
+
+#account-controls {
+    display: flex;
+    gap: 10px;
+}
+
+
+#account-edit-actions .btn-secondary,
+
+#account-edit-actions .btn-success,
+
+#account-edit-actions .btn-cancel {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    color: white;
+    font-size: 1.1rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+
+#account-edit-actions .btn-secondary:hover,
+
+#account-edit-actions .btn-success:hover,
+
+#account-edit-actions .btn-cancel:hover {
+    transform: scale(1.1) translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+
+#account-edit-actions .btn-secondary { background: #8e8e93; }
+
+#account-edit-actions .btn-success { background: #34c759; }
+
+#account-edit-actions .btn-cancel { background: #ff3b30 !important; }
+
+
+.account-card-link {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    transition: color 0.2s;
+}
+
+
+.account-card-link:hover {
+    color: var(--primary-color);
+}
+
+
+.account-info-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+
+.account-info-row {
+    background: var(--bg-color);
+    border-radius: 12px;
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s;
+}
+
+
+.account-info-row:hover {
+    background: var(--card-bg);
+    border-color: var(--primary-color);
+}
+
+
+.account-card-footer {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+
+.account-card-note {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+
+.account-card-actions {
+    display: flex;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+
+.account-card:hover .account-card-actions {
+    opacity: 1;
+}
+
+.account-card.edit-mode {
+    cursor: grab;
+}
+
+
+.account-card.edit-mode:active {
+    cursor: grabbing;
+}
+
+
+.account-card-select {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 22px;
+    height: 22px;
+    cursor: pointer;
+    z-index: 10;
+    accent-color: var(--primary-color);
+}
+
+
+.account-card.selected {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+    background: rgba(74, 144, 226, 0.03);
+}
+
+
+.account-nav-item.drag-over {
+    background: var(--primary-color) !important;
+    color: white !important;
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(74, 144, 226, 0.5);
+}
+
+#account-section .account-table-wrapper {
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--border-color);
+    margin-top: 0.5rem;
+    overflow: auto;
+}
+
+
+#account-section .account-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+
+#account-section .account-table th, 
+
+#account-section .account-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.9rem;
+}
+
+
+#account-section .account-table th {
+    background: var(--table-header);
+    font-weight: 700;
+    position: sticky;
+    top: 0;
+}
+
+body.dark-mode .account-card {
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(10px);
+}
+
+
+body.dark-mode .account-info-row {
+    background: rgba(15, 23, 42, 0.5);
+}
+
+
+body.dark-mode .account-card-logo {
+    background: #1e293b;
+}
+
+
+/* ?쒕퉬?ㅻ챸 留곹겕 ?ㅽ???*/
+#account-section .account-service-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 700;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 2px;
+    transition: all 0.2s;
+}
+
+#account-section .account-service-link:hover {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    filter: brightness(1.1);
+}
+
+/* 怨꾩젙 ?뺣낫 蹂듭궗 ?곸뿭 - 吏곴????④낵 */
+#account-section .copyable-field {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.4rem 0.8rem;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    width: 100%;
+    margin: 0;
+    color: var(--text-main);
+}
+
+#account-section .copyable-field:hover {
+    background: #eff6ff;
+    border-color: #3b82f6;
+    color: #2563eb;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+}
+
+#account-section .copyable-field::after {
+    content: '\f0c5';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 400;
+    font-size: 0.75rem;
+    opacity: 0.4;
+}
+
+#account-section .copyable-field:hover::after {
+    opacity: 1;
+    color: #3b82f6;
+}
+
+/* 鍮꾧퀬 移? ?쇰컲?곸씤 ?쒖쓽 紐⑥뒿 */
+#account-section .account-note {
+    font-size: 0.9rem;
+    color: #64748b;
+    white-space: normal;
+    word-break: break-all;
+    background: transparent;
+    padding: 0;
+    border: none;
+}
+
+/* ?쒕옒洹??몃뱾 */
+#account-section .drag-handle {
+    cursor: grab;
+    color: #cbd5e1;
+    font-size: 0.8rem;
+    margin-right: 6px;
+}
+
+/* ?ㅽ겕濡ㅻ컮 理쒖쟻??*/
+#account-section .account-table-wrapper::-webkit-scrollbar {
+    height: 6px;
+}
+#account-section .account-table-wrapper::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+/* 紐⑤뱶蹂?愿由?而щ읆 */
+#account-section .edit-col {
+    text-align: center;
+}
+
+#account-section .account-actions {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+}
+
+/* ================= Mobile Optimizations for Account Section ================= */
+@media (max-width: 768px) {
+    /* 1. Hide Edit Mode Button */
+    .account-section-controls, #account-edit-mode-btn { 
+        display: none !important; 
+    }
+    
+    /* 2. Fix Group Navigation Bar (Sidebar) & Hide Description */
+    .account-sidebar { 
+        width: 100% !important; 
+        border-radius: 12px !important; 
+        padding: 4px !important; 
+        box-sizing: border-box !important;
+        margin-bottom: 5px !important;
+    }
+    .account-sidebar-container { 
+        width: 100% !important; 
+        overflow-x: hidden !important; 
+    }
+    .account-sidebar-menu { 
+        width: 100% !important; 
+        justify-content: flex-start !important; 
+        padding-bottom: 4px !important; 
+        overflow-x: auto !important;
+    }
+    #account-category-description-container {
+        display: none !important;
+    }
+    
+    /* 3. Account Cards Size Optimization */
+    .account-card-grid { 
+        grid-template-columns: 1fr !important; 
+        gap: 0.6rem !important; 
+    }
+    .account-card { 
+        padding: 0.8rem !important; 
+        gap: 0.5rem !important; 
+        border-radius: 16px !important;
+    }
+    .account-card-header {
+        gap: 0.8rem !important;
+    }
+    .account-card-logo, .account-card-logo-placeholder { 
+        width: 38px !important; 
+        height: 38px !important; 
+        border-radius: 10px !important;
+        font-size: 1rem !important;
+    }
+    .account-card-title { 
+        font-size: 1.05rem !important; 
+    }
+    .account-info-group { 
+        padding: 0.5rem !important; 
+        gap: 0.4rem !important; 
+        border-radius: 12px !important;
+    }
+    .account-info-row { 
+        padding: 6px 10px !important; 
+        font-size: 0.85rem !important; 
+        border-radius: 8px !important;
+    }
+    .account-card-footer { 
+        margin-top: 8px !important; 
+        padding-top: 8px !important; 
+    }
+    .account-card-note {
+        font-size: 0.8rem !important;
+    }
+    .account-main { 
+        padding: 0 0 1rem 0 !important; 
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   iOS 26 Liquid Glass — Account Section
+   ══════════════════════════════════════════════════════════════ */
+
+#account-section {
+    background: linear-gradient(160deg, #dbeafe 0%, #ede9fe 50%, #e0f2fe 100%);
+    min-height: 100%;
+}
+
+/* ── Card glass ── */
+.account-card {
+    background: rgba(255, 255, 255, 0.55) !important;
+    backdrop-filter: blur(28px) saturate(180%) brightness(1.04) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(1.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.72) !important;
+    border-top-color: rgba(255, 255, 255, 0.92) !important;
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.9) inset,
+        0 8px 32px rgba(0, 0, 0, 0.07),
+        0 2px 6px rgba(0, 0, 0, 0.04) !important;
+    overflow: hidden;
+    position: relative;
+    animation: none !important; /* wiggle 제거 */
+}
+.account-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 40%;
+    background: linear-gradient(180deg, rgba(99,102,241,0.06) 0%, rgba(255,255,255,0.22) 35%, transparent 100%);
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 0;
+}
+.account-card > *:not(.account-card-select) { position: relative; z-index: 1; }
+
+.account-card:hover {
+    transform: translateY(-4px) scale(1.01) !important;
+    background: rgba(255, 255, 255, 0.78) !important;
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.9) inset,
+        0 16px 48px rgba(0, 0, 0, 0.11),
+        0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* ── Info group ── */
+.account-info-group {
+    background: rgba(255, 255, 255, 0.5) !important;
+    border: 1px solid rgba(255, 255, 255, 0.72) !important;
+    border-radius: 14px !important;
+    padding: 0.45rem !important;
+    gap: 0.35rem !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+/* ── Info row ── */
+.account-info-row {
+    background: rgba(255, 255, 255, 0.55) !important;
+    border: 1px solid rgba(255, 255, 255, 0.7) !important;
+    border-radius: 10px !important;
+    padding: 7px 12px !important;
+    transition: background 0.18s, transform 0.15s !important;
+}
+.account-info-row:hover {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border-color: rgba(255, 255, 255, 0.95) !important;
+    transform: translateX(2px) !important;
+}
+
+/* ── label / value layout ── */
+.info-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+    min-width: 28px;
+}
+.info-value {
+    font-size: 0.85rem;
+    color: #1e293b;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.info-value-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    justify-content: flex-end;
+    min-width: 0;
+    overflow: hidden;
+}
+
+/* ── Card footer ── */
+.account-card-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.55) !important;
+}
+
+/* ── Sidebar ── */
+.account-sidebar {
+    background: rgba(255, 255, 255, 0.72) !important;
+    backdrop-filter: blur(28px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.8) !important;
+    border-top-color: rgba(255, 255, 255, 0.95) !important;
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.9) inset,
+        0 8px 32px rgba(0, 0, 0, 0.07) !important;
+}
+.account-nav-item.active {
+    background: rgba(255, 255, 255, 0.95) !important;
+    color: #2563eb !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+    transform: scale(1.02) !important;
+}
+
+/* ── Edit mode: no wiggle ── */
+.account-card.edit-mode {
+    border: 2px dashed rgba(74, 144, 226, 0.55) !important;
+    animation: none !important;
+    cursor: grab !important;
+}
+
+/* ── Dark mode ── */
+body.dark-mode #account-section {
+    background: linear-gradient(160deg, #0f172a 0%, #1e1b4b 50%, #0c1a2e 100%);
+}
+body.dark-mode .account-card::before {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 50%);
+}
+body.dark-mode .account-card {
+    background: rgba(30, 41, 59, 0.62) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    border-top-color: rgba(255, 255, 255, 0.18) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25) !important;
+}
+body.dark-mode .account-card:hover {
+    background: rgba(30, 41, 59, 0.85) !important;
+}
+body.dark-mode .account-info-group {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+body.dark-mode .account-info-row {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-color: rgba(255, 255, 255, 0.07) !important;
+}
+body.dark-mode .account-info-row:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+}
+body.dark-mode .info-value { color: #e2e8f0; }
+body.dark-mode .account-sidebar {
+    background: rgba(30, 41, 59, 0.72) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+}
+body.dark-mode .account-nav-item.active {
+    background: rgba(74, 144, 226, 0.3) !important;
+    color: #93c5fd !important;
+}
+
+/* ── Checkbox position fix (overrides card > * position:relative) ── */
+.account-card .account-card-select {
+    position: absolute !important;
+    top: 14px;
+    right: 14px;
+    left: auto !important;
+    z-index: 3;
+    width: 18px;
+    height: 18px;
+}
+
+/* ── Field label colors ── */
+.id-lbl  { color: #2563eb !important; }
+.pw-lbl  { color: #059669 !important; }
+.key-lbl { color: #7c3aed !important; min-width: 32px; }
+
+/* ── Per-row subtle left accent ── */
+.account-info-row.id-row  { border-left: 2px solid rgba(37,99,235,0.25) !important; padding-left: 12px !important; }
+.account-info-row.pw-row  { border-left: 2px solid rgba(5,150,105,0.25) !important; padding-left: 12px !important; }
+.account-info-row.key-row { border-left: 2px solid rgba(124,58,237,0.25) !important; padding-left: 12px !important; }
+
+/* ── iOS-style field toggle switch ── */
+.field-label-with-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--text-main);
+    cursor: default;
+    margin-bottom: 6px;
+    user-select: none;
+}
+.acc-field-toggle {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+.acc-field-toggle input[type="checkbox"] { display: none; }
+.acc-toggle-track {
+    width: 36px;
+    height: 21px;
+    background: #cbd5e1;
+    border-radius: 11px;
+    position: relative;
+    transition: background 0.22s cubic-bezier(.4,0,.2,1);
+    display: block;
+}
+.acc-field-toggle input:checked + .acc-toggle-track { background: #3b82f6; }
+.acc-toggle-track::after {
+    content: '';
+    position: absolute;
+    width: 17px;
+    height: 17px;
+    background: white;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.22s cubic-bezier(.4,0,.2,1);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.22);
+}
+.acc-field-toggle input:checked + .acc-toggle-track::after { transform: translateX(15px); }
+
+/* ── Toggle hover glow ── */
+.acc-field-toggle:hover .acc-toggle-track { filter: brightness(1.08); }
+
+/* ================= Bus Request Section Styles ================= */
+#bus-section {
+    max-width: calc(100% - 370px - 90px); /* ?쇱そ ?꾩젽 怨듦컙 370px濡??뺣? (湲곗〈 320px) */
+    margin-left: 370px;
+    margin-right: 90px;
+    padding: 0 0 4rem;
+}
+
+#bus-section .bus-table-wrapper {
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--border-color);
+    margin-top: 0.5rem;
+    overflow-x: auto; /* 媛濡??ㅽ겕濡??덉슜 */
+}
+
+#bus-section .bus-table {
+    width: 100%;
+    min-width: auto; /* 怨좎젙 理쒖냼 ?덈퉬 ?쒓굅 */
+    border-collapse: separate;
+    border-spacing: 0;
+    text-align: left;
+}
+
+#bus-section .bus-table th {
+    position: sticky;
+    top: -1px;
+    z-index: 100;
+    background: var(--table-header);
+    padding: 0.6rem 0.4rem;
+    font-weight: 700;
+    color: var(--text-main);
+    font-size: 0.8rem;
+    border-bottom: 2px solid var(--border-color);
+    white-space: nowrap;
+    text-align: center;
+    transition: background 0.2s;
+}
+
+#bus-section .bus-table th[data-sort]:hover {
+    background: #f1f5f9;
+}
+
+#bus-section .bus-table th i.fa-sort,
+#bus-section .bus-table th i.fa-sort-up,
+#bus-section .bus-table th i.fa-sort-down {
+    margin-left: 4px;
+    font-size: 0.7rem;
+    color: #cbd5e1;
+}
+
+#bus-section .bus-table th.active-sort {
+    color: var(--primary-color);
+}
+
+#bus-section .bus-table th.active-sort i {
+    color: var(--primary-color);
+}
+
+#bus-section .bus-table td {
+    padding: 0.4rem 0.3rem; 
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.82rem;
+    color: var(--text-main);
+    vertical-align: middle;
+    text-align: center;
+    background: var(--card-bg);
+}
+
+#bus-section .bus-table tbody tr:hover {
+    background-color: #fbfcfe;
+}
+
+/* Status Badges */
+.badge-region {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.75rem;
+}
+.badge-region.관내 { background: #dcfce7; color: #15803d; }
+.badge-region.관외 { background: #dbeafe; color: #1e40af; }
+
+/* Bus Status Badges */
+.badge-bus-status {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 800;
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+.badge-bus-status.pending {
+    background: #fff7ed;
+    color: #c2410c;
+    border: 1px solid rgba(194, 65, 12, 0.1);
+}
+.badge-bus-status.completed {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid rgba(22, 163, 74, 0.1);
+}
+
+.badge-bus-type {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+/* 차형별 색상 (이미지 기반) */
+[data-bus-type*="소형"] { background: #ffedd5; color: #9a3412; }
+[data-bus-type*="중형"] { background: #f3e8ff; color: #6b21a8; }
+[data-bus-type*="대형"] { background: #fee2e2; color: #991b1b; }
+
+.badge-use-school {
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-weight: 800;
+    font-size: 0.7rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.badge-use-school.Y { background: #dbeafe; color: #1e40af; border: 1px solid rgba(30, 64, 175, 0.1); }
+.badge-use-school.N { background: #fee2e2; color: #991b1b; border: 1px solid rgba(153, 27, 27, 0.1); }
+
+#bus-section .bus-table-wrapper.spreadsheet-mode td {
+    padding: 2px 3px; /* ?낅젰 ?꾨뱶瑜??꾪빐 ?⑤뵫 理쒖냼??*/
+}
+
+#bus-section .bus-input, 
+#bus-section .bus-select {
+    width: 100%;
+    padding: 4px 6px; /* ?대? ?⑤뵫 異뺤냼 */
+    border: 1px solid transparent;
+    border-radius: 4px;
+    font-size: 0.8rem; /* ?낅젰 ?꾨뱶 湲瑗?異뺤냼 */
+    font-family: inherit;
+    background: transparent;
+    transition: all 0.2s;
+    text-align: center; /* ?낅젰 諛??좏깮 ?꾨뱶 媛?대뜲 ?뺣젹 */
+}
+
+#bus-section .bus-input:hover, 
+#bus-section .bus-select:hover {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+#bus-section .bus-input:focus, 
+#bus-section .bus-select:focus {
+    background: white;
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+#bus-section .bus-input[type="number"] {
+    text-align: center;
+}
+
+#bus-section .total-display {
+    display: block;
+    text-align: center;
+    font-weight: 800;
+    color: var(--primary-color);
+    font-size: 0.95rem;
+}
+
+/* 諭껋? ?ㅽ??쇱쓣 ?대???怨좎묠 */
+#bus-section .td-badge-wrap {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* ================= Bus Table Filter Bar ================= */
+.bus-filter-bar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.bus-filter-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 1rem;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.22s ease;
+    box-shadow: 0 2px 8px rgba(59,130,246,0.25);
+    letter-spacing: 0.01em;
+}
+
+.bus-filter-toggle-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(59,130,246,0.35);
+}
+
+/* ?댄뻾?꾨즺 踰꾪듉 - ?щ젅?댄듃 怨꾩뿴 */
+.bus-filter-toggle-btn.is-done-view {
+    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+    box-shadow: 0 2px 8px rgba(100,116,139,0.3);
+}
+.bus-filter-toggle-btn.is-done-view:hover {
+    box-shadow: 0 4px 14px rgba(100,116,139,0.4);
+}
+
+/* ?쒖꽦(?좏깮) ?곹깭 - 珥덈줉 怨꾩뿴 媛뺤“ + ?ㅼ???*/
+.bus-filter-toggle-btn.active {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 3px 12px rgba(16,185,129,0.4);
+    transform: translateY(-1px);
+}
+.bus-filter-toggle-btn.active:hover {
+    box-shadow: 0 5px 16px rgba(16,185,129,0.5);
+}
+
+/* ?댄뻾?꾨즺 諭껋? (???덉뿉???ъ슜) */
+.badge-bus-status.done {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid rgba(71, 85, 105, 0.15);
+}
+
+
+/* ================= Bus Dashboard (Month Tabs & Calendar) ================= */
+.bus-dashboard-wrapper {
+    margin-bottom: 2rem;
+}
+
+.bus-month-selector-wrapper {
+    margin-bottom: 2rem;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+}
+
+.bus-month-tabs {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--bg-glass);
+    backdrop-filter: var(--blur);
+    border: 1px solid var(--border-color);
+    border-radius: 9999px; /* Pill shape like image */
+    background-color: rgba(255, 255, 255, 0.7);
+    box-shadow: var(--shadow-sm);
+}
+
+.bus-month-tab {
+    padding: 0.6rem 1.25rem;
+    border-radius: 9999px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 1rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.bus-month-tab:hover {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--primary-color);
+}
+
+.bus-month-tab.active {
+    background: var(--primary-color);
+    color: white;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.bus-main-layout {
+    display: flex;
+    gap: 2rem;
+    align-items: stretch;
+}
+
+.bus-calendar-glass-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 1.5rem;
+    width: 340px;
+    min-height: 360px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-md);
+    flex-shrink: 0;
+}
+
+.bus-cal-top {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 0 0.5rem;
+}
+
+.bus-cal-month {
+    font-size: 1.5rem; font-weight: 800; color: var(--text-main);
+    font-family: 'Outfit', sans-serif;
+}
+
+.bus-cal-nav { 
+    background: #f1f5f9; 
+    border: none;
+    width: 32px; height: 32px; 
+    border-radius: 8px; 
+    color: var(--text-muted); 
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+}
+.bus-cal-nav:hover {
+    background: #e2e8f0;
+    color: var(--text-main);
+}
+
+.bus-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+.bus-cal-label { font-size: 0.75rem; font-weight: 700; color: #94a3b8; margin-bottom: 0.5rem; }
+.bus-cal-label.sun { color: #ef4444; }
+.bus-cal-label.sat { color: #3b82f6; }
+
+.bus-day-cell {
+    aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.95rem; font-weight: 500;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+    color: var(--text-main);
+}
+.bus-day-cell:hover:not(.empty) { background: #f1f5f9; }
+.bus-day-cell.sun { color: #ef4444; }
+.bus-day-cell.sat { color: #3b82f6; }
+.bus-day-cell.has-data::after {
+    content: ''; position: absolute; bottom: 4px; width: 4px; height: 4px; background: #f59e0b; border-radius: 50%;
+}
+.bus-day-cell.selected {
+    background: white;
+    border: 2px solid var(--primary-color) !important;
+    color: var(--primary-color) !important;
+    font-weight: 700;
+}
+
+.bus-day-cell.today {
+    color: var(--primary-color);
+    font-weight: 800;
+}
+
+.bus-schedule-glass-card {
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    flex: 1;
+    min-height: 360px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+}
+
+.bus-sch-header {
+    padding: 1.25rem 1.5rem;
+    background: var(--card-bg); /* 諛깆뾽 諛곌꼍??*/
+    border-bottom: 1px solid var(--border-color);
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.5s ease;
+}
+
+.bus-sch-header-content {
+    display: flex; align-items: center; gap: 1rem;
+    position: relative;
+    z-index: 2;
+}
+
+.bus-sch-badge {
+    background: #fef3c7;
+    color: #d97706;
+    padding: 0.4rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.95rem; font-weight: 800;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.bus-sch-title {
+    font-family: 'Gaegu', cursive;
+    font-size: 2.2rem; font-weight: 700; color: #1e293b;
+    margin: 0;
+    letter-spacing: 1px;
+}
+
+.bus-quick-add-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2);
+    margin-left: 0.5rem;
+}
+
+.bus-quick-add-btn:hover {
+    transform: scale(1.15) rotate(90deg);
+    box-shadow: 0 6px 12px rgba(59, 130, 246, 0.4);
+    background: #2563eb;
+}
+
+.bus-quick-add-btn i {
+    font-size: 1rem;
+}
+
+/* Seasonal Backgrounds with Dynamic Gradient Flow */
+.bus-sch-header {
+    background-size: 200% 200%;
+    animation: busGradientFlow 12s ease infinite;
+}
+
+@keyframes busGradientFlow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* 12 Months Unique Dynamic Backgrounds */
+.bus-sch-header.month-1 { background-image: linear-gradient(45deg, #ff9a9e 0%, #fecfef 50%, #667eea 100%); }
+.bus-sch-header.month-2 { background-image: linear-gradient(45deg, #1e3c72 0%, #2a5298 50%, #cfd9df 100%); }
+.bus-sch-header.month-3 { background-image: linear-gradient(45deg, #f6d365 0%, #fda085 50%, #f3904f 100%); }
+.bus-sch-header.month-4 { background-image: linear-gradient(45deg, #ffdde1 0%, #ee9ca7 50%, #ff9a9e 100%); }
+.bus-sch-header.month-5 { background-image: linear-gradient(45deg, #84fab0 0%, #8fd3f4 50%, #eef2f3 100%); }
+.bus-sch-header.month-6 { background-image: linear-gradient(45deg, #d4fc79 0%, #96e6a1 50%, #5d99c6 100%); }
+.bus-sch-header.month-7 { background-image: linear-gradient(45deg, #2193b0 0%, #6dd5ed 50%, #1c92d2 100%); }
+.bus-sch-header.month-8 { background-image: linear-gradient(45deg, #ff0844 0%, #ffb199 50%, #f093fb 100%); }
+.bus-sch-header.month-9 { background-image: linear-gradient(45deg, #e0c3fc 0%, #8ec5fc 50%, #f6d365 100%); }
+.bus-sch-header.month-10 { background-image: linear-gradient(45deg, #f6d365 0%, #fda085 50%, #ff4e50 100%); }
+.bus-sch-header.month-11 { background-image: linear-gradient(45deg, #70433c 0%, #b08d57 50%, #d4d3dd 100%); }
+.bus-sch-header.month-12 { background-image: linear-gradient(45deg, #00b09b 0%, #96c93d 50%, #cc2b5e 100%); }
+
+.bus-sch-header::before {
+    content:''; position:absolute; inset:0;
+    background: radial-gradient(circle at 70% 30%, rgba(255, 255, 255, 0.4), transparent 70%);
+    pointer-events:none;
+    mix-blend-mode: overlay;
+    animation: busGlow 8s ease-in-out infinite alternate;
+}
+
+@keyframes busGlow {
+    from { transform: scale(1) translate(0, 0); opacity: 0.3; }
+    to { transform: scale(1.2) translate(-10%, 10%); opacity: 0.6; }
+}
+
+.bus-sch-header::after {
+    content:''; position:absolute; inset:0;
+    background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+    opacity: 0.2;
+    pointer-events: none;
+}
+
+/* Bus Animation Area */
+.bus-animation-area {
+    position: absolute;
+    right: 0;
+    bottom: -15px; /* ?쎄컙 ?꾨옒濡?*/
+    width: 280px;
+    height: 100%;
+    overflow: hidden;
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* Animated Elements */
+.scenery-item {
+    position: absolute;
+    bottom: 25px;
+    right: 30px;
+    font-size: 3.5rem;
+    opacity: 1;
+    filter: drop-shadow(0 8px 15px rgba(0,0,0,0.2));
+    animation: premiumFloat 5s infinite ease-in-out;
+    transition: all 0.3s ease;
+    z-index: 5;
+}
+
+@keyframes premiumFloat {
+    0%, 100% { transform: translateY(0) rotate(-5deg) scale(1); filter: drop-shadow(0 8px 15px rgba(0,0,0,0.2)); }
+    50% { transform: translateY(-15px) rotate(8deg) scale(1.1); filter: drop-shadow(0 15px 25px rgba(0,0,0,0.3)); }
+}
+
+.bus-sch-header:hover .scenery-item {
+    transform: scale(1.2) rotate(15deg);
+    filter: drop-shadow(0 20px 30px rgba(255,255,255,0.4));
+}
+
+.bus-sch-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: 1fr 1fr;
+    grid-auto-rows: min-content;
+    align-content: start;
+}
+
+.bus-sch-item {
+    background: var(--card-bg);
+    padding: 1.25rem;
+    border-radius: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid var(--border-color);
+}
+
+.bus-sch-item:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.bus-sch-item.selected {
+    border-color: var(--primary-color);
+    background: #ecf8ff; /* ?고븳 ?뚯뒪???뚮옉 諛곌꼍 */
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    transform: scale(1.02);
+}
+
+body.dark-mode .bus-sch-item.selected {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.3);
+}
+
+.bus-sch-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.bus-sch-item-title {
+    font-weight: 700;
+    color: var(--text-main);
+    font-size: 1rem;
+}
+.bus-sch-item-meta {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.bus-sch-item i { color: #94a3b8; font-size: 1rem; }
+
+/* Dark mode overrides for Dashboard */
+body.dark-mode .bus-month-tabs {
+    background-color: rgba(30, 41, 59, 0.7);
+}
+body.dark-mode .bus-month-tab {
+    color: #94a3b8;
+}
+body.dark-mode .bus-month-tab:hover {
+    background: rgba(96, 165, 250, 0.1);
+    color: #60a5fa;
+}
+body.dark-mode .bus-month-tab.active {
+    background: var(--primary-color);
+    color: white;
+}
+body.dark-mode .bus-calendar-glass-card,
+body.dark-mode .bus-schedule-glass-card,
+body.dark-mode .bus-sch-item {
+    background: #1e293b;
+    border-color: #334155;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.5);
+}
+body.dark-mode .bus-sch-header {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+/* Dark mode overrides for Header monthly backgrounds */
+body.dark-mode .bus-sch-header.month-1 { background-image: linear-gradient(45deg, #2d3748, #2c5282, #1e3c72); }
+body.dark-mode .bus-sch-header.month-2 { background-image: linear-gradient(45deg, #1a202c, #2d3748, #4a5568); }
+body.dark-mode .bus-sch-header.month-3 { background-image: linear-gradient(45deg, #744210, #92400e, #451a03); }
+body.dark-mode .bus-sch-header.month-4 { background-image: linear-gradient(45deg, #4a1212, #7f1d1d, #450a0a); }
+body.dark-mode .bus-sch-header.month-5 { background-image: linear-gradient(45deg, #064e3b, #065f46, #022c22); }
+body.dark-mode .bus-sch-header.month-6 { background-image: linear-gradient(45deg, #14532d, #166534, #052e16); }
+body.dark-mode .bus-sch-header.month-7 { background-image: linear-gradient(45deg, #1e3a8a, #1e40af, #172554); }
+body.dark-mode .bus-sch-header.month-8 { background-image: linear-gradient(45deg, #7f1d1d, #991b1b, #450a0a); }
+body.dark-mode .bus-sch-header.month-9 { background-image: linear-gradient(45deg, #4c1d95, #5b21b6, #2e1065); }
+body.dark-mode .bus-sch-header.month-10 { background-image: linear-gradient(45deg, #92400e, #b45309, #78350f); }
+body.dark-mode .bus-sch-header.month-11 { background-image: linear-gradient(45deg, #451a03, #78350f, #1c1917); }
+body.dark-mode .bus-sch-header.month-12 { background-image: linear-gradient(45deg, #064e3b, #15803d, #450a0a); }
+body.dark-mode .bus-sch-title { color: #f7fafc; }
+body.dark-mode .bus-day-cell { color: #f1f5f9; }
+body.dark-mode .bus-day-cell:hover:not(.empty) { background: #334155; }
+body.dark-mode .bus-cal-nav { background: #334155; color: #94a3b8; }
+body.dark-mode .bus-cal-nav:hover { background: #475569; color: #f1f5f9; }
+
+@media (max-width: 900px) {
+    .bus-main-layout { flex-direction: column; }
+    .bus-calendar-glass-card { width: 100%; height: auto; min-height: unset; margin:0 auto; max-width: 400px; }
+    .bus-schedule-glass-card { width: 100%; height: auto; }
+    .bus-sch-scroll { grid-template-columns: 1fr; }
+}
+
+
+
+#bus-section .bus-table .btn-delete-sm {
+    padding: 4px 8px;
+    background: #fee2e2;
+    color: #ef4444;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* Staff Status Picker */
+.status-picker-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    background: #f8fafc;
+    padding: 0.6rem 0.8rem;
+    border-radius: 12px;
+}
+
+.status-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.status-chip {
+    padding: 5px 12px;
+    background: white;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.status-chip:hover {
+    background: #f1f5f9;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.status-chip.active {
+    background: #10b981;
+    color: white;
+    border-color: #059669;
+    box-shadow: 0 3px 8px rgba(16, 185, 129, 0.3);
+}
+
+#staff-status-manual-wrap {
+    margin-top: 0;
+    animation: slideRight 0.3s ease-out;
+}
+
+@keyframes slideRight {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+
+/* === Advanced Calendar HTML Tooltip === */
+.calendar-html-tooltip {
+    position: fixed;
+    z-index: 99999;
+    background: rgba(15, 23, 42, 0.98); /* Deeper dark for premium feel */
+    color: #f8fafc;
+    padding: 14px 18px;
+    border-radius: 12px;
+    box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+    display: none;
+    max-width: 320px;
+    line-height: 1.4; /* Narrower line spacing */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: 0.9rem;
+    font-family: 'Inter', sans-serif;
+    animation: tooltipFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes tooltipFadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.calendar-html-tooltip .tooltip-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 4px; /* Narrower item spacing */
+    word-break: keep-all;
+    overflow-wrap: break-word;
+}
+
+.calendar-html-tooltip .tooltip-item:last-child {
+    margin-bottom: 0;
+}
+
+.calendar-html-tooltip .tooltip-bullet {
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    background: #fbbf24; /* Amber */
+    border-radius: 50%;
+    margin-right: 8px;
+    margin-top: 8px; /* Fine-tuned for line-height 1.4 */
+}
+
+.calendar-html-tooltip .tooltip-label-box {
+    display: flex;
+    align-items: flex-start;
+    flex-shrink: 0;
+    width: 50px; /* Aligned and compact */
+}
+
+.calendar-html-tooltip .tooltip-label {
+    font-weight: 800;
+    color: #e2e8f0;
+    white-space: nowrap;
+}
+
+.calendar-html-tooltip .tooltip-value {
+    flex: 1;
+    font-weight: 500;
+    color: #cbd5e1;
+}
+
+/* ================= Mobile Responsive Styles ================= */
+/* ================= Common Form & Modal Styles ================= */
+.grid-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem; /* Reduced from 1.25rem */
+}
+
+.form-row {
+    display: flex;
+    gap: 0.8rem;
+    width: 100%;
+}
+
+.form-row > .form-group {
+    flex: 1;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.35rem; /* Reduced from 0.5rem */
+    font-size: 0.8rem; /* Slightly smaller */
+    font-weight: 700;
+    color: #475569;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    height: 40px; /* Added fixed height for consistency */
+    padding: 0 0.85rem; /* Adjusted padding for fixed height */
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.form-group textarea#bus-purpose {
+    resize: none; /* Disable manual resizing */
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.1);
+    outline: none;
+}
+
+.btn-icon {
+    width: 32px;
+    height: 32px;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-icon:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.btn-icon.btn-edit-sm:hover {
+    color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    background: #eff6ff !important;
+}
+
+.btn-icon.btn-delete-sm:hover,
+.btn-icon.btn-reject-sm:hover {
+    color: #ef4444 !important;
+    border-color: #ef4444 !important;
+    background: #fef2f2 !important;
+}
+
+.btn-icon.btn-approve-sm:hover,
+.btn-icon.btn-restore-sm:hover {
+    color: #10b981 !important;
+    border-color: #10b981 !important;
+    background: #ecfdf5 !important;
+}
+
+.bus-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+}
+
+.bus-purpose-cell {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Time Picker UI */
+.custom-time-picker-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: #f8fafc;
+    height: 40px; /* Fixed height to match other inputs */
+    padding: 0 0.6rem; /* Removed vertical padding */
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    width: 100%;
+    justify-content: space-between;
+}
+
+.time-select-group {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+
+.minimal-select {
+    border: none !important;
+    padding: 0.1rem 0.2rem !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    background: transparent !important;
+    cursor: pointer;
+    width: auto !important;
+}
+
+.minimal-select:focus {
+    box-shadow: none !important;
+    color: var(--primary-color);
+}
+
+.time-sep {
+    font-weight: 700;
+    color: #94a3b8;
+    font-size: 0.9rem;
+}
+
+@media screen and (max-width: 768px) {
+  html, body {
+
+  }
+
+  /* Major Page Sections Margin Reset */
+  #curriculum-section, 
+  #status-section, 
+  #account-section, 
+  #bus-section, 
+  #shortcut-section, 
+  #datayard-section, 
+  #helppage-section,
+  .links-grid {
+
+  }
+}
+
+/* ================= COMPREHENSIVE DARK MODE STYLES ================= */
+
+/* === 1. Base Dark Mode Containers === */
+body.dark-mode .category-content:not(#intro-section),
+body.dark-mode .status-section {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* === 2. Table Containers - Glass Morphism Effect === */
+body.dark-mode .content-wrapper,
+body.dark-mode .editable-table-wrapper,
+body.dark-mode .account-table-wrapper,
+body.dark-mode .bus-table-wrapper {
+  background: rgba(30, 41, 59, 0.4) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
+  border-radius: 16px !important;
+}
+
+body.dark-mode .curriculum-header-area {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0.5rem 0 !important;
+  margin-bottom: 1.5rem !important;
+}
+
+/* ?ㅻ뜑 ?대? ?쒕ぉ */
+body.dark-mode .curriculum-title-group h2 {
+  color: #f1f5f9 !important;
+}
+
+body.dark-mode .curriculum-title-group h2 i {
+  color: #60a5fa !important;
+}
+
+/* ?ㅻ퉬寃뚯씠??洹몃９ 諛곌꼍 */
+body.dark-mode .curriculum-nav-group {
+  background: rgba(51, 65, 85, 0.4) !important;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+}
+
+/* ?ㅻ퉬寃뚯씠??踰꾪듉??(?붿궡?? ?ㅻ뒛, ?숇뀈 ?좏깮 ?? */
+body.dark-mode .curriculum-nav-group .nav-arrow-btn,
+body.dark-mode .curriculum-nav-group .nav-today-btn {
+  background: rgba(71, 85, 105, 0.6) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode .curriculum-nav-group .nav-arrow-btn:hover,
+body.dark-mode .curriculum-nav-group .nav-today-btn:hover {
+  background: rgba(59, 130, 246, 0.4) !important;
+  border-color: #3b82f6 !important;
+  color: #93c5fd !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4) !important;
+}
+
+/* Period Display (湲곌컙 ?쒖떆) */
+body.dark-mode .period-display {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #e2e8f0 !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode .period-display:hover {
+  background: rgba(71, 85, 105, 0.8) !important;
+  border-color: #3b82f6 !important;
+  color: #60a5fa !important;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3) !important;
+}
+
+body.dark-mode .period-display::before,
+body.dark-mode .period-display::after {
+  color: #60a5fa !important;
+}
+
+/* View Switcher (蹂닿린 ?꾪솚) */
+body.dark-mode .view-switcher {
+  background: rgba(51, 65, 85, 0.4) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+}
+
+body.dark-mode .view-switcher .view-btn {
+  background: transparent !important;
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .view-switcher .view-btn:hover {
+  background: rgba(71, 85, 105, 0.5) !important;
+  color: #cbd5e1 !important;
+}
+
+body.dark-mode .view-switcher .view-btn.active {
+  background: rgba(59, 130, 246, 0.3) !important;
+  color: #60a5fa !important;
+  border: 1px solid rgba(59, 130, 246, 0.4) !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Export Buttons */
+body.dark-mode .export-btn {
+  background: rgba(71, 85, 105, 0.6) !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode .export-btn.excel {
+  color: #6ee7b7 !important;
+}
+
+body.dark-mode .export-btn.excel:hover {
+  background: rgba(16, 185, 129, 0.3) !important;
+  border-color: #10b981 !important;
+  color: #6ee7b7 !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4) !important;
+}
+
+body.dark-mode .export-btn.hwp {
+  color: #93c5fd !important;
+}
+
+body.dark-mode .export-btn.hwp:hover {
+  background: rgba(59, 130, 246, 0.3) !important;
+  border-color: #3b82f6 !important;
+  color: #93c5fd !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4) !important;
+}
+
+body.dark-mode .export-btn.google {
+  color: #60a5fa !important;
+}
+
+body.dark-mode .export-btn.google:hover {
+  background: rgba(66, 133, 244, 0.3) !important;
+  border-color: #4285f4 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(66, 133, 244, 0.4) !important;
+}
+
+/* 異붽? 踰꾪듉 (?쇱젙 異붽? ?? */
+body.dark-mode .btn-primary-gradient {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(59, 130, 246, 0.5) !important;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4) !important;
+}
+
+body.dark-mode .btn-primary-gradient:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6) !important;
+}
+
+/* === 3. Table Headers === */
+body.dark-mode .curr-table-header,
+body.dark-mode .status-table th,
+body.dark-mode .account-table th,
+body.dark-mode .bus-table th {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  font-weight: 800 !important;
+}
+
+body.dark-mode .th {
+  color: #e2e8f0 !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+/* === 4. Table Cells === */
+body.dark-mode .status-table td,
+body.dark-mode .account-table td,
+body.dark-mode .bus-table td {
+  background: transparent !important;
+  color: #cbd5e1 !important;
+  border-color: #1e293b !important;
+}
+
+body.dark-mode .curr-cell {
+  background: #0f172a !important; /* 遺덊닾紐낇븳 ?대몢??諛곌꼍 */
+  color: #cbd5e1 !important;
+  border-color: #1e293b !important;
+}
+
+body.dark-mode .curr-row {
+  border-color: #1e293b !important;
+}
+
+body.dark-mode .curr-row:hover .curr-cell,
+body.dark-mode .status-table tbody tr:hover td,
+body.dark-mode .account-table tbody tr:hover td,
+body.dark-mode .bus-table tbody tr:hover td {
+  background: #1e293b !important;
+}
+
+/* === 5. Date Cells & Special Days === */
+body.dark-mode .date-cell,
+body.dark-mode .day-cell {
+  color: #f1f5f9 !important;
+}
+
+body.dark-mode .day-sunday .curr-cell {
+  background: #450a0a !important; /* ?대몢??鍮④컙??諛곌꼍 */
+}
+
+body.dark-mode .day-sunday .date-cell,
+body.dark-mode .day-sunday .day-cell {
+  color: #fca5a5 !important;
+}
+
+body.dark-mode .day-saturday .curr-cell {
+  background: #172554 !important; /* ?대몢???뚮???諛곌꼍 */
+}
+
+body.dark-mode .day-saturday .date-cell,
+body.dark-mode .day-saturday .day-cell {
+  color: #93c5fd !important;
+}
+
+/* === 6. Event Chips & Badges === */
+body.dark-mode .curr-event-chip {
+  background: transparent !important;
+  border: none !important;
+  color: #e2e8f0 !important;
+  box-shadow: none !important;
+}
+
+body.dark-mode .curr-event-chip:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: none !important;
+}
+
+/* === 7. Buttons === */
+body.dark-mode .btn-primary,
+body.dark-mode .btn-primary-gradient,
+body.dark-mode #curr-add-btn,
+body.dark-mode #account-edit-mode-btn,
+body.dark-mode #bus-request-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(59, 130, 246, 0.5) !important;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4) !important;
+}
+
+body.dark-mode .btn-primary:hover,
+body.dark-mode .btn-primary-gradient:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6) !important;
+}
+
+body.dark-mode .btn-secondary,
+body.dark-mode .curr-btn-secondary {
+  background: rgba(71, 85, 105, 0.8) !important;
+  color: #e2e8f0 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .btn-secondary:hover {
+  background: rgba(100, 116, 139, 0.9) !important;
+  border-color: rgba(148, 163, 184, 0.5) !important;
+}
+
+body.dark-mode .btn-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(16, 185, 129, 0.5) !important;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4) !important;
+}
+
+body.dark-mode .btn-cancel {
+  background: rgba(71, 85, 105, 0.6) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .btn-icon {
+  background: rgba(30, 41, 59, 0.7) !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .btn-icon.btn-edit-sm:hover {
+  background: rgba(59, 130, 246, 0.2) !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  color: #60a5fa !important;
+}
+
+body.dark-mode .btn-icon.btn-delete-sm:hover,
+body.dark-mode .btn-icon.btn-reject-sm:hover {
+  background: rgba(239, 68, 68, 0.3) !important;
+  border-color: rgba(239, 68, 68, 0.5) !important;
+  color: #fecaca !important;
+}
+
+body.dark-mode .btn-icon.btn-approve-sm:hover,
+body.dark-mode .btn-icon.btn-restore-sm:hover {
+  background: rgba(16, 185, 129, 0.2) !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+  color: #34d399 !important;
+}
+
+/* === 8. Input Fields === */
+body.dark-mode .editable-input,
+body.dark-mode .bus-input,
+body.dark-mode .bus-select,
+body.dark-mode input[type="text"],
+body.dark-mode input[type="date"],
+body.dark-mode input[type="time"],
+body.dark-mode input[type="number"],
+body.dark-mode input[type="url"],
+body.dark-mode textarea,
+body.dark-mode select {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .editable-input:focus,
+body.dark-mode .bus-input:focus,
+body.dark-mode .bus-select:focus,
+body.dark-mode input:focus,
+body.dark-mode textarea:focus,
+body.dark-mode select:focus {
+  background: rgba(51, 65, 85, 0.8) !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
+  color: #f1f5f9 !important;
+}
+
+/* === 9. Status Tabs === */
+body.dark-mode .status-tab {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #94a3b8 !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .status-tab:hover {
+  background: rgba(71, 85, 105, 0.8) !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(148, 163, 184, 0.5) !important;
+}
+
+body.dark-mode .status-tab.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: #ffffff !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5) !important;
+}
+
+/* === 10. View Switcher === */
+body.dark-mode .view-switcher {
+  background: rgba(51, 65, 85, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .view-switcher .view-btn {
+  background: transparent !important;
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .view-switcher .view-btn.active {
+  background: rgba(59, 130, 246, 0.3) !important;
+  color: #60a5fa !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* === 11. Period Display === */
+body.dark-mode .period-display {
+  background: rgba(51, 65, 85, 0.8) !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .period-display:hover {
+  background: rgba(71, 85, 105, 0.9) !important;
+  border-color: #3b82f6 !important;
+  color: #60a5fa !important;
+}
+
+/* === 12. Badges & Status Pills === */
+body.dark-mode .badge-region.관내 {
+  background: rgba(16, 185, 129, 0.25) !important;
+  color: #6ee7b7 !important;
+  border: 1px solid rgba(16, 185, 129, 0.4) !important;
+}
+
+body.dark-mode .badge-region.관외 {
+  background: rgba(59, 130, 246, 0.25) !important;
+  color: #93c5fd !important;
+  border: 1px solid rgba(59, 130, 246, 0.4) !important;
+}
+
+body.dark-mode .badge-bus-status.pending {
+  background: rgba(251, 146, 60, 0.25) !important;
+  color: #fdba74 !important;
+  border: 1px solid rgba(251, 146, 60, 0.4) !important;
+}
+
+body.dark-mode .badge-bus-status.completed {
+  background: rgba(34, 197, 94, 0.25) !important;
+  color: #86efac !important;
+  border: 1px solid rgba(34, 197, 94, 0.4) !important;
+}
+
+body.dark-mode .badge-bus-status.done {
+  background: rgba(100, 116, 139, 0.3) !important;
+  color: #94a3b8 !important;
+  border: 1px solid rgba(100, 116, 139, 0.4) !important;
+}
+
+body.dark-mode .badge-use-school.Y {
+  background: rgba(59, 130, 246, 0.25) !important;
+  color: #93c5fd !important;
+  border: 1px solid rgba(59, 130, 246, 0.4) !important;
+}
+
+body.dark-mode .badge-use-school.N {
+  background: rgba(239, 68, 68, 0.25) !important;
+  color: #fca5a5 !important;
+  border: 1px solid rgba(239, 68, 68, 0.4) !important;
+}
+
+/* === 13. Copyable Fields === */
+body.dark-mode .copyable-field {
+  background: rgba(51, 65, 85, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+  color: #cbd5e1 !important;
+}
+
+body.dark-mode .copyable-field:hover {
+  background: rgba(59, 130, 246, 0.2) !important;
+  border-color: #3b82f6 !important;
+  color: #93c5fd !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+}
+
+body.dark-mode .copyable-field::after {
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .copyable-field:hover::after {
+  color: #60a5fa !important;
+}
+
+/* === 14. Account Service Links === */
+body.dark-mode .account-service-link {
+  color: #60a5fa !important;
+  border-bottom-color: rgba(96, 165, 250, 0.3) !important;
+}
+
+body.dark-mode .account-service-link:hover {
+  color: #93c5fd !important;
+  border-bottom-color: #60a5fa !important;
+}
+
+/* === 15. Help/Data Section Cards === */
+body.dark-mode .helppage-main-card,
+body.dark-mode .helppage-sub-card,
+body.dark-mode .helppage-item-card {
+  background: rgba(30, 41, 59, 0.4) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark-mode .search-wrapper,
+body.dark-mode .relative-search input {
+  background: rgba(51, 65, 85, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+  color: #e2e8f0 !important;
+}
+
+/* === 16. Time Picker === */
+body.dark-mode .custom-time-picker-wrapper {
+  background: rgba(51, 65, 85, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .time-select-group {
+  background: transparent !important;
+  border: none !important;
+}
+
+body.dark-mode .minimal-select {
+  color: #e2e8f0 !important;
+}
+
+body.dark-mode .time-sep {
+  color: #94a3b8 !important;
+}
+
+/* === 17. Status Chips === */
+body.dark-mode .status-chip {
+  background: rgba(51, 65, 85, 0.8) !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .status-chip:hover {
+  background: rgba(71, 85, 105, 0.9) !important;
+  border-color: rgba(148, 163, 184, 0.5) !important;
+}
+
+body.dark-mode .status-chip.active {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 3px 12px rgba(16, 185, 129, 0.5) !important;
+}
+
+/* === 18. Cell Add Button === */
+body.dark-mode .cell-add-btn {
+  background: rgba(51, 65, 85, 0.9) !important;
+  color: #60a5fa !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+}
+
+body.dark-mode .cell-add-btn:hover {
+  background: #3b82f6 !important;
+  color: #ffffff !important;
+  border-color: #2563eb !important;
+}
+
+/* === 19. Chip Controls === */
+body.dark-mode .chip-controls {
+  background: rgba(30, 41, 59, 0.95) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.dark-mode .chip-btn {
+  background: rgba(51, 65, 85, 0.9) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .chip-btn.edit {
+  color: #60a5fa !important;
+}
+
+body.dark-mode .chip-btn.delete {
+  color: #fca5a5 !important;
+}
+
+body.dark-mode .chip-btn:hover {
+  background: rgba(71, 85, 105, 1) !important;
+  border-color: rgba(148, 163, 184, 0.5) !important;
+}
+
+/* === 20. Table Controls & Layout Selector === */
+body.dark-mode .table-controls {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+}
+
+body.dark-mode .layout-selector {
+  background: rgba(51, 65, 85, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+/* === 21. Export Buttons === */
+body.dark-mode .export-btn {
+  background: rgba(51, 65, 85, 0.8) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .export-btn:hover {
+  background: rgba(71, 85, 105, 0.9) !important;
+  border-color: rgba(148, 163, 184, 0.5) !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark-mode .export-btn.excel:hover {
+  background: rgba(16, 185, 129, 0.3) !important;
+  border-color: #10b981 !important;
+  color: #6ee7b7 !important;
+}
+
+body.dark-mode .export-btn.hwp:hover {
+  background: rgba(59, 130, 246, 0.3) !important;
+  border-color: #3b82f6 !important;
+  color: #93c5fd !important;
+}
+
+/* === 22. Navigation Arrows === */
+body.dark-mode .nav-arrow-btn,
+body.dark-mode .nav-today-btn {
+  background: rgba(51, 65, 85, 0.8) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .nav-arrow-btn:hover,
+body.dark-mode .nav-today-btn:hover {
+  background: rgba(71, 85, 105, 0.9) !important;
+  border-color: rgba(148, 163, 184, 0.5) !important;
+  color: #e2e8f0 !important;
+}
+
+/* === 23. Type Cards (Modal) === */
+body.dark-mode .type-card {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .type-card span {
+  color: #cbd5e1 !important;
+}
+
+body.dark-mode .type-card[data-type="edu"]:hover {
+  background: rgba(59, 130, 246, 0.2) !important;
+  border-color: #3b82f6 !important;
+}
+
+body.dark-mode .type-card[data-type="staff"]:hover {
+  background: rgba(16, 185, 129, 0.2) !important;
+  border-color: #10b981 !important;
+}
+
+body.dark-mode .type-card[data-type="doc"]:hover {
+  background: rgba(139, 92, 246, 0.2) !important;
+  border-color: #8b5cf6 !important;
+}
+
+body.dark-mode .type-card[data-type="life"]:hover {
+  background: rgba(245, 158, 11, 0.2) !important;
+  border-color: #f59e0b !important;
+}
+
+/* === 24. Form Labels === */
+body.dark-mode .form-group label,
+body.dark-mode label {
+  color: #cbd5e1 !important;
+}
+
+/* === 25. Tooltips === */
+body.dark-mode .calendar-html-tooltip {
+  background: rgba(15, 23, 42, 0.98) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+/* === 26. Account Note === */
+body.dark-mode .account-note {
+  color: #94a3b8 !important;
+}
+
+/* === 27. Total Display === */
+body.dark-mode .total-display {
+  color: #60a5fa !important;
+}
+
+/* === 28. Milky Way Star Effect === */
+body.dark-mode::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(1px 1px at 20px 30px, #fff, rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 100px 100px, #fff, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 150px 50px, #fff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 250px 200px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+    radial-gradient(1.2px 1.2px at 350px 150px, #fff, rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 450px 300px, #fff, rgba(0,0,0,0));
+  background-repeat: repeat;
+  background-size: 500px 500px;
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: -1;
+  animation: starsTwinkle 8s infinite ease-in-out;
+}
+
+@keyframes starsTwinkle {
+  0%, 100% { opacity: 0.08; transform: scale(1); }
+  50% { opacity: 0.2; transform: scale(1.03); }
+}
+
+/* === 29. Section Controls === */
+body.dark-mode .section-controls button,
+body.dark-mode .status-controls button,
+body.dark-mode .shortcut-controls button,
+body.dark-mode .datayard-controls button {
+  background: rgba(51, 65, 85, 0.8) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .section-controls button:hover,
+body.dark-mode .status-controls button:hover {
+  background: rgba(71, 85, 105, 0.9) !important;
+  border-color: rgba(148, 163, 184, 0.5) !important;
+}
+
+/* === 30. FullCalendar Dark Mode === */
+body.dark-mode #curr-fullcalendar .fc-daygrid-event {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  border-left-color: transparent !important;
+  box-shadow: none !important;
+}
+
+body.dark-mode #curr-fullcalendar .fc-daygrid-event:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+body.dark-mode #curr-fullcalendar .fc-event-title {
+  color: #e0f2fe !important;
+}
+
+body.dark-mode .fc-day-today {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+body.dark-mode .fc-day-sun .fc-daygrid-day-number {
+  color: #fca5a5 !important;
+}
+
+body.dark-mode .fc-day-sat .fc-daygrid-day-number {
+  color: #93c5fd !important;
+}
+
+body.dark-mode .fc-special-day-item {
+  color: #60a5fa !important;
+}
+
+/* ?붿씪 ?ㅻ뜑 ?ㅽ겕紐⑤뱶 - 二쇰? 諛곌꼍怨?議고솕 (理쒓퀬 ?곗꽑?쒖쐞 - 踰붿쐞 ?뺤옣) */
+body.dark-mode #curr-fullcalendar .fc-col-header,
+body.dark-mode #curr-fullcalendar .fc-col-header-cell,
+body.dark-mode #curr-fullcalendar .fc-scrollgrid-section-header,
+body.dark-mode #curr-fullcalendar .fc-scrollgrid-section-header > div,
+body.dark-mode #curr-fullcalendar .fc-scrollgrid-section-header table,
+body.dark-mode #curr-fullcalendar th {
+  background: transparent !important;
+  background-color: transparent !important;
+  border-color: rgba(148, 163, 184, 0.15) !important;
+}
+
+body.dark-mode #curr-fullcalendar .fc-col-header-cell {
+  border-bottom: 2px solid rgba(148, 163, 184, 0.25) !important;
+  padding: 1rem 0 !important;
+}
+
+body.dark-mode #curr-fullcalendar .fc-col-header-cell-cushion {
+  color: #e2e8f0 !important;
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+  letter-spacing: 0.5px !important;
+  text-transform: uppercase !important;
+}
+
+body.dark-mode #curr-fullcalendar .fc-col-header-cell.fc-day-sun {
+  background: rgba(239, 68, 68, 0.08) !important;
+}
+
+body.dark-mode #curr-fullcalendar .fc-col-header-cell.fc-day-sun .fc-col-header-cell-cushion {
+  color: #fca5a5 !important;
+  font-weight: 800 !important;
+  text-shadow: 0 0 10px rgba(252, 165, 165, 0.3) !important;
+}
+
+body.dark-mode #curr-fullcalendar .fc-col-header-cell.fc-day-sat {
+  background: rgba(59, 130, 246, 0.08) !important;
+}
+
+body.dark-mode #curr-fullcalendar .fc-col-header-cell.fc-day-sat .fc-col-header-cell-cushion {
+  color: #93c5fd !important;
+  font-weight: 800 !important;
+  text-shadow: 0 0 10px rgba(147, 197, 253, 0.3) !important;
+}
+
+/* ?뚮몢由??됱긽 - ?????섍쾶 */
+body.dark-mode #curr-fullcalendar .fc-theme-standard td,
+body.dark-mode #curr-fullcalendar .fc-theme-standard th {
+  border-color: rgba(148, 163, 184, 0.12) !important;
+}
+
+body.dark-mode #curr-fullcalendar .fc-scrollgrid {
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  background: transparent !important;
+}
+
+/* ?щ젰 諛곌꼍 - ?꾩쟾 ?щ챸 */
+body.dark-mode #curr-fullcalendar .fc-daygrid-day-frame {
+  background: transparent !important;
+}
+
+body.dark-mode #curr-fullcalendar .fc-daygrid-day {
+  background: transparent !important;
+}
+
+/* ?쇱슂??怨듯쑕??諛곌꼍 - ??誘몃쵖?섍쾶 */
+body.dark-mode #curr-fullcalendar .fc-day-sun,
+body.dark-mode #curr-fullcalendar .fc-day-has-holiday {
+  background-color: rgba(239, 68, 68, 0.05) !important;
+}
+
+/* ?좎슂??諛곌꼍 異붽? */
+body.dark-mode #curr-fullcalendar .fc-day-sat {
+  background-color: rgba(59, 130, 246, 0.04) !important;
+}
+
+/* ?ㅻ뒛 ?좎쭨 媛뺤“ */
+body.dark-mode #curr-fullcalendar .fc-day-today {
+  background-color: rgba(59, 130, 246, 0.12) !important;
+  position: relative;
+}
+
+body.dark-mode #curr-fullcalendar .fc-day-today::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+  opacity: 0.6;
+}
+
+/* === 31. Modals & Popups (Enhanced Dark Mode) === */
+body.dark-mode .modal-content {
+  background: rgba(15, 23, 42, 0.98) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7) !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark-mode .modal-header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15) !important;
+}
+
+body.dark-mode .modal-header h2 {
+  color: #f1f5f9 !important;
+}
+
+body.dark-mode .close-modal {
+  color: #94a3b8 !important;
+  transition: color 0.2s;
+}
+
+body.dark-mode .close-modal:hover {
+  color: #f1f5f9 !important;
+}
+
+body.dark-mode .modal-footer {
+  background: transparent !important;
+  border-top: 1px solid rgba(148, 163, 184, 0.15) !important;
+}
+
+/* === 32. Form Elements in Modals & Autofill Fix === */
+body.dark-mode .curr-input,
+body.dark-mode .form-control,
+body.dark-mode input[type="text"],
+body.dark-mode input[type="number"],
+body.dark-mode input[type="date"],
+body.dark-mode textarea,
+body.dark-mode select {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  color: #e2e8f0 !important;
+  color-scheme: dark; /* ?щ젰 ?꾩씠肄???釉뚮씪?곗? UI ?ㅽ겕紐⑤뱶 */
+}
+
+/* Autofill 諛곌꼍???쒓굅 ?몃┃ */
+body.dark-mode input:-webkit-autofill,
+body.dark-mode input:-webkit-autofill:hover, 
+body.dark-mode input:-webkit-autofill:focus, 
+body.dark-mode input:-webkit-autofill:active{
+  -webkit-box-shadow: 0 0 0 30px #1e293b inset !important;
+  -webkit-text-fill-color: #e2e8f0 !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* ?ㅽ겕紐⑤뱶 ?곹깭蹂?Select ?됱긽 (援먯쭅???뺤씤 ?? */
+body.dark-mode .confirm-select.status-unconfirmed,
+body.dark-mode select.status-unconfirmed {
+  background-color: rgba(127, 29, 29, 0.3) !important; /* ?대몢??鍮④컯 諛곌꼍 */
+  color: #fca5a5 !important; /* 諛앹? 鍮④컯 ?띿뒪??*/
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+body.dark-mode .confirm-select.status-confirmed,
+body.dark-mode select.status-confirmed {
+  background-color: rgba(20, 83, 45, 0.3) !important; /* ?대몢??珥덈줉 諛곌꼍 */
+  color: #86efac !important; /* 諛앹? 珥덈줉 ?띿뒪??*/
+  border: 1px solid rgba(34, 197, 94, 0.3) !important;
+}
+
+body.dark-mode .curr-input:focus,
+body.dark-mode .form-control:focus,
+body.dark-mode input:focus,
+body.dark-mode textarea:focus,
+body.dark-mode select:focus {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+  color: white !important;
+}
+
+body.dark-mode input::placeholder,
+body.dark-mode textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* === 33. Status Picker & Doc Bulk (Dark Mode Fix) === */
+
+/* 洹쇰Т?곹솴 ?좏깮 而⑦뀒?대꼫 諛곌꼍 ?쒓굅/?щ챸??*/
+body.dark-mode .status-picker-container,
+body.dark-mode .status-chips {
+  background: transparent !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 洹쇰Т?곹솴 踰꾪듉 ?ㅽ???*/
+body.dark-mode .status-chip {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+}
+
+body.dark-mode .status-chip:hover {
+  background: rgba(71, 85, 105, 0.8) !important;
+  color: white !important;
+  border-color: rgba(148, 163, 184, 0.4) !important;
+}
+
+body.dark-mode .status-chip.active {
+  background: rgba(59, 130, 246, 0.2) !important;
+  color: #93c5fd !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* 怨듬Ц 紐⑸줉 而⑦뀒?대꼫 */
+body.dark-mode .doc-bulk-container {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  color: #e2e8f0 !important;
+}
+
+/* 怨듬Ц ?낅젰 ??*/
+body.dark-mode .curr-doc-bulk-row {
+  background: rgba(51, 65, 85, 0.4) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+}
+
+/* 臾몄꽌 異붽? 踰꾪듉 */
+body.dark-mode .add-doc-row-btn {
+  background: rgba(51, 65, 85, 0.2) !important;
+  border: 2px dashed rgba(148, 163, 184, 0.3) !important;
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .add-doc-row-btn:hover {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-color: #3b82f6 !important;
+  color: #60a5fa !important;
+}
+
+/* 臾몄꽌 ??젣 踰꾪듉 */
+body.dark-mode .doc-row-remove-btn {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #fca5a5 !important;
+}
+
+body.dark-mode .doc-row-remove-btn:hover {
+  background: rgba(239, 68, 68, 0.3) !important;
+  color: #fca5a5 !important;
+}
+
+/* Type Selector Tabs in Modal */
+body.dark-mode .curr-type-tabs {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+}
+
+body.dark-mode .curr-type-tab {
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .curr-type-tab:hover {
+  color: #cbd5e1 !important;
+  background: rgba(148, 163, 184, 0.1) !important;
+}
+
+body.dark-mode .curr-type-tab.active {
+  background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+  color: white !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Time Selector Container */
+body.dark-mode .time-selector-container {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+}
+
+body.dark-mode .time-mode-tabs {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15) !important;
+}
+
+body.dark-mode .time-mode-tab {
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .time-mode-tab:hover {
+  background: rgba(148, 163, 184, 0.1) !important;
+  color: #cbd5e1 !important;
+}
+
+body.dark-mode .time-mode-tab.active {
+  background: rgba(59, 130, 246, 0.15) !important;
+  color: #60a5fa !important;
+  box-shadow: none !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Input Group Text / Separator */
+body.dark-mode .time-separator {
+  color: #94a3b8 !important;
+}
+
+/* Checkbox Wrappers */
+body.dark-mode .holiday-check-wrapper {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+}
+
+body.dark-mode .holiday-check-wrapper span {
+  color: #cbd5e1 !important;
+}
+
+/* Modal Buttons */
+body.dark-mode .curr-btn-secondary {
+  background: rgba(71, 85, 105, 0.6) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+}
+
+body.dark-mode .curr-btn-secondary:hover {
+  background: rgba(100, 116, 139, 0.7) !important;
+  color: white !important;
+}
+
+/* Labels */
+body.dark-mode .curr-label {
+  color: #cbd5e1 !important;
+}
+
+body.dark-mode .badge {
+  background: rgba(59, 130, 246, 0.2) !important;
+  color: #93c5fd !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+}
+
+/* === 33. Icon Selectors === */
+body.dark-mode .icon-selector {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  border-radius: 12px !important;
+  padding: 1rem !important;
+}
+
+body.dark-mode .icon-option {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .icon-option:hover {
+  background: rgba(71, 85, 105, 0.8) !important;
+  border-color: rgba(148, 163, 184, 0.5) !important;
+}
+
+body.dark-mode .icon-option.selected {
+  background: rgba(59, 130, 246, 0.3) !important;
+  border-color: #3b82f6 !important;
+  color: #93c5fd !important;
+}
+
+/* === 34. Color Pickers === */
+body.dark-mode .color-picker-container,
+body.dark-mode .color-trigger {
+  background: rgba(51, 65, 85, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .color-popover,
+body.dark-mode .color-options-popover {
+  background: rgba(15, 23, 42, 0.98) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* === 35. File Upload Areas === */
+body.dark-mode .file-drop-zone,
+body.dark-mode .file-upload-area {
+  background: rgba(51, 65, 85, 0.4) !important;
+  border: 2px dashed rgba(148, 163, 184, 0.4) !important;
+  color: #94a3b8 !important;
+}
+
+body.dark-mode .file-drop-zone:hover,
+body.dark-mode .file-upload-area:hover {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-color: #3b82f6 !important;
+  color: #60a5fa !important;
+}
+
+body.dark-mode .file-preview-area {
+  background: rgba(51, 65, 85, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+  color: #cbd5e1 !important;
+}
+
+/* === 36. Author Chips & Status Pills === */
+body.dark-mode .author-chips {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border-radius: 12px !important;
+  padding: 0.8rem !important;
+}
+
+body.dark-mode .status-pill-group {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border-radius: 12px !important;
+  padding: 0.8rem !important;
+}
+
+body.dark-mode .status-label {
+  background: rgba(51, 65, 85, 0.8) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .status-check-tag:checked + .status-label {
+  background: rgba(59, 130, 246, 0.4) !important;
+  border-color: #3b82f6 !important;
+  color: #93c5fd !important;
+}
+
+body.dark-mode .status-label.important:checked {
+  background: rgba(245, 158, 11, 0.4) !important;
+  border-color: #f59e0b !important;
+  color: #fbbf24 !important;
+}
+
+body.dark-mode .status-label.urgent:checked {
+  background: rgba(239, 68, 68, 0.4) !important;
+  border-color: #ef4444 !important;
+  color: #fca5a5 !important;
+}
+
+/* === 37. Checkbox & Radio Inputs === */
+body.dark-mode .checkbox-container {
+  color: #cbd5e1 !important;
+}
+
+body.dark-mode .checkmark {
+  background: rgba(51, 65, 85, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .checkbox-container input:checked ~ .checkmark {
+  background: #3b82f6 !important;
+  border-color: #2563eb !important;
+}
+
+/* === 38. Tab Content Sections === */
+body.dark-mode #datayard-section,
+body.dark-mode #helppage-section {
+  color: #e2e8f0 !important;
+}
+
+body.dark-mode .helppage-header h2 {
+  color: #f1f5f9 !important;
+}
+
+body.dark-mode .helppage-header p {
+  color: #94a3b8 !important;
+}
+
+/* === 39. Drag Handles === */
+body.dark-mode .drag-handle {
+  color: #64748b !important;
+}
+
+body.dark-mode .drag-handle:hover {
+  color: #94a3b8 !important;
+}
+
+/* === 40. Progress Bars === */
+body.dark-mode .progress-bar {
+  background: rgba(51, 65, 85, 0.6) !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .progress-fill {
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%) !important;
+}
+
+body.dark-mode .progress-text {
+  color: #cbd5e1 !important;
+}
+
+/* === 41. Member Confirmation Bar === */
+body.dark-mode .curr-member-confirm-bar {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  backdrop-filter: blur(15px) !important;
+  -webkit-backdrop-filter: blur(15px) !important;
+}
+
+/* === 42. Scrollbars === */
+body.dark-mode ::-webkit-scrollbar {
+  background: rgba(30, 41, 59, 0.4) !important;
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.6) !important;
+  border: 2px solid rgba(30, 41, 59, 0.4) !important;
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.8) !important;
+}
+
+/* === 43. Hover States for Bus Table === */
+body.dark-mode #bus-section .bus-table th[data-sort]:hover {
+  background: rgba(71, 85, 105, 0.6) !important;
+}
+
+/* === 44. Icon Tabs === */
+body.dark-mode .icon-type-tabs button,
+body.dark-mode .file-type-tabs button,
+body.dark-mode .item-tab {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #94a3b8 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .icon-type-tabs button.active,
+body.dark-mode .file-type-tabs button.active,
+body.dark-mode .item-tab.active {
+  background: rgba(59, 130, 246, 0.3) !important;
+  color: #93c5fd !important;
+  border-color: #3b82f6 !important;
+}
+
+/* === 45. Helper Text === */
+body.dark-mode .helper-text,
+body.dark-mode .modal-desc {
+  color: #94a3b8 !important;
+}
+
+/* === 46. Image Preview === */
+body.dark-mode .image-preview {
+  background: rgba(51, 65, 85, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+/* === 48. Form Select === */
+body.dark-mode .form-select {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode .form-select:focus {
+  background: rgba(51, 65, 85, 0.8) !important;
+  border-color: #3b82f6 !important;
+}
+
+/* === 49. Add Tab Button === */
+body.dark-mode .add-tab-btn {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #94a3b8 !important;
+  border-color: rgba(148, 163, 184, 0.4) !important;
+}
+
+body.dark-mode .add-tab-btn:hover {
+  background: rgba(71, 85, 105, 0.8) !important;
+  border-color: rgba(148, 163, 184, 0.6) !important;
+  color: #cbd5e1 !important;
+}
+
+/* === 50. Delete Tab Button === */
+body.dark-mode .delete-tab-btn {
+  background: rgba(239, 68, 68, 0.8) !important;
+  color: #ffffff !important;
+}
+
+body.dark-mode .delete-tab-btn:hover {
+  background: rgba(220, 38, 38, 1) !important;
+}
+
+/* === 51. Holiday Rows (怨듯쑕???? === */
+body.dark-mode .is-holiday-row {
+  background-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+body.dark-mode .is-holiday-row .curr-cell {
+  color: #fca5a5 !important;
+}
+
+body.dark-mode .is-holiday-row .date-cell,
+body.dark-mode .is-holiday-row .day-cell {
+  color: #fca5a5 !important;
+  font-weight: 800 !important;
+}
+
+body.dark-mode .is-holiday-row:hover {
+  background-color: rgba(239, 68, 68, 0.25) !important;
+}
+
+/* === 52. Datayard & Helppage Sections === */
+/* 移대뱶 而⑦뀒?대꼫 */
+body.dark-mode #datayard-section .card,
+body.dark-mode #helppage-section .card,
+body.dark-mode #datayard-section .group-card,
+body.dark-mode #helppage-section .group-card,
+body.dark-mode #datayard-section .resource-card,
+body.dark-mode #helppage-section .resource-card {
+  background: rgba(30, 41, 59, 0.4) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  color: #e2e8f0 !important;
+}
+
+/* ?쇱퀜吏??섏쐞 硫붾돱 (?곗깋 諛곌꼍 臾몄젣 ?닿껐) */
+body.dark-mode #datayard-section .card-body,
+body.dark-mode #helppage-section .card-body,
+body.dark-mode #datayard-section .menu-list,
+body.dark-mode #helppage-section .menu-list,
+body.dark-mode #datayard-section .sub-menu,
+body.dark-mode #helppage-section .sub-menu,
+body.dark-mode #datayard-section .resource-list,
+body.dark-mode #helppage-section .resource-list,
+body.dark-mode #datayard-section ul,
+body.dark-mode #helppage-section ul,
+body.dark-mode #datayard-section .items-list,
+body.dark-mode #helppage-section .items-list {
+  background: rgba(15, 23, 42, 0.6) !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+/* 由ъ뒪???꾩씠??*/
+body.dark-mode #datayard-section li,
+body.dark-mode #helppage-section li,
+body.dark-mode #datayard-section .list-item,
+body.dark-mode #helppage-section .list-item,
+body.dark-mode #datayard-section .resource-item,
+body.dark-mode #helppage-section .resource-item {
+  background: transparent !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(148, 163, 184, 0.15) !important;
+}
+
+body.dark-mode #datayard-section li:hover,
+body.dark-mode #helppage-section li:hover,
+body.dark-mode #datayard-section .list-item:hover,
+body.dark-mode #helppage-section .list-item:hover {
+  background: rgba(51, 65, 85, 0.4) !important;
+}
+
+/* 留곹겕 */
+body.dark-mode #datayard-section a,
+body.dark-mode #helppage-section a {
+  color: #93c5fd !important;
+}
+
+body.dark-mode #datayard-section a:hover,
+body.dark-mode #helppage-section a:hover {
+  color: #bfdbfe !important;
+}
+
+/* 移대뱶 ?ㅻ뜑 */
+body.dark-mode #datayard-section .card-header,
+body.dark-mode #helppage-section .card-header,
+body.dark-mode #datayard-section .group-header,
+body.dark-mode #helppage-section .group-header {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #f1f5f9 !important;
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+/* ?꾩씠肄??됱긽 */
+body.dark-mode #datayard-section i,
+body.dark-mode #helppage-section i,
+body.dark-mode #datayard-section .fa,
+body.dark-mode #helppage-section .fa,
+body.dark-mode #datayard-section .fas,
+body.dark-mode #helppage-section .fas {
+  color: #94a3b8 !important;
+}
+
+body.dark-mode #datayard-section .card-header i,
+body.dark-mode #helppage-section .card-header i {
+  color: #cbd5e1 !important;
+}
+
+/* ?뚯씪 ?꾩씠肄?*/
+body.dark-mode #datayard-section .file-icon,
+body.dark-mode #helppage-section .file-icon {
+  color: #60a5fa !important;
+}
+
+/* ?몃? 留곹겕 ?꾩씠肄?*/
+body.dark-mode #datayard-section .external-link-icon,
+body.dark-mode #helppage-section .external-link-icon,
+body.dark-mode #datayard-section .fa-external-link-alt,
+body.dark-mode #helppage-section .fa-external-link-alt {
+  color: #94a3b8 !important;
+}
+
+/* ?쒕ぉ */
+body.dark-mode #datayard-section h3,
+body.dark-mode #helppage-section h3,
+body.dark-mode #datayard-section h4,
+body.dark-mode #helppage-section h4 {
+  color: #f1f5f9 !important;
+}
+
+/* ?ㅻ챸 ?띿뒪??*/
+body.dark-mode #datayard-section p,
+body.dark-mode #helppage-section p,
+body.dark-mode #datayard-section .description,
+body.dark-mode #helppage-section .description {
+  color: #94a3b8 !important;
+}
+
+/* 援щ텇??*/
+body.dark-mode #datayard-section hr,
+body.dark-mode #helppage-section hr {
+  border-color: rgba(148, 163, 184, 0.2) !important;
+}
+
+/* ?좉? 踰꾪듉 (?꾩퐫?붿뼵) */
+body.dark-mode #datayard-section .toggle-btn,
+body.dark-mode #helppage-section .toggle-btn,
+body.dark-mode #datayard-section .accordion-toggle,
+body.dark-mode #helppage-section .accordion-toggle {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+body.dark-mode #datayard-section .toggle-btn:hover,
+body.dark-mode #helppage-section .toggle-btn:hover {
+  background: rgba(71, 85, 105, 0.8) !important;
+}
+
+/* 寃?됱갹 */
+body.dark-mode #datayard-section input[type="search"],
+body.dark-mode #helppage-section input[type="search"],
+body.dark-mode #datayard-section .search-input,
+body.dark-mode #helppage-section .search-input {
+  background: rgba(51, 65, 85, 0.6) !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+/* 諛곗? */
+body.dark-mode #datayard-section .badge,
+body.dark-mode #helppage-section .badge,
+body.dark-mode #datayard-section .tag,
+body.dark-mode #helppage-section .tag {
+  background: rgba(59, 130, 246, 0.3) !important;
+  color: #93c5fd !important;
+  border: 1px solid rgba(59, 130, 246, 0.4) !important;
+}
+
+/* === 53. Curriculum Incharge Text (?대떦???띿뒪?? === */
+/* ?쇱씠?몃え?? 湲곕낯 ?뚮????좎? */
+.chip-incharge {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+/* ?ㅽ겕紐⑤뱶: 諛앹? ?섎뒛?됱쑝濡?蹂寃?*/
+body.dark-mode .chip-incharge {
+  color: #7dd3fc !important;
+  font-weight: 600;
+}
+
+/* === 54. ?먮즺留덈떦 & ?⑦븰援?e吏??- ?섏쐞 ?좉? 硫붾돱 ?ㅽ겕紐⑤뱶 理쒖쟻??=== */
+
+/* 硫붿씤 移대뱶 ?좉? 踰꾪듉 */
+body.dark-mode .helppage-main-toggle {
+  background: rgba(30, 41, 59, 0.5) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  color: #e2e8f0 !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.dark-mode .helppage-main-toggle:hover {
+  background: rgba(51, 65, 85, 0.7) !important;
+  border-color: rgba(148, 163, 184, 0.35) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* ?꾩씠肄?諛뺤뒪 */
+body.dark-mode .icon-box {
+  background: rgba(51, 65, 85, 0.6) !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* ?쒕ぉ 洹몃９ */
+body.dark-mode .title-group h3 {
+  color: #f1f5f9 !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .title-group p {
+  color: #94a3b8 !important;
+}
+
+/* ?쇱퀜吏?而⑦뀗痢??곸뿭 */
+body.dark-mode .hidden-content {
+  background: rgba(15, 23, 42, 0.7) !important;
+  backdrop-filter: blur(25px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  border-radius: 16px !important;
+  box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 寃???섑띁 */
+body.dark-mode .search-wrapper {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border-radius: 12px !important;
+  padding: 1rem !important;
+  margin-bottom: 1rem !important;
+}
+
+body.dark-mode .relative-search {
+  position: relative;
+}
+
+body.dark-mode .category-search-input {
+  background: rgba(51, 65, 85, 0.7) !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+  color: #e2e8f0 !important;
+  padding: 0.75rem 1rem 0.75rem 2.5rem !important;
+  border-radius: 10px !important;
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .category-search-input:focus {
+  background: rgba(51, 65, 85, 0.9) !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25) !important;
+  outline: none;
+}
+
+body.dark-mode .category-search-input::placeholder {
+  color: #64748b !important;
+}
+
+body.dark-mode .search-icon {
+  color: #94a3b8 !important;
+}
+
+/* ?섏쐞 ?뱀뀡 而⑦뀒?대꼫 */
+body.dark-mode .sub-sections-container {
+  background: transparent !important;
+}
+
+/* ?섏쐞 ?뱀뀡 ?꾩씠??*/
+body.dark-mode .sub-section-item {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  border-radius: 12px !important;
+  margin-bottom: 0.75rem !important;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.dark-mode .sub-section-item:hover {
+  background: rgba(51, 65, 85, 0.5) !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+  transform: translateX(4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* ?섏쐞 ?뱀뀡 ?좉? 踰꾪듉 */
+body.dark-mode .sub-section-toggle {
+  background: rgba(51, 65, 85, 0.5) !important;
+  border: none !important;
+  color: #f1f5f9 !important;
+  padding: 1rem 1.25rem !important;
+  transition: all 0.3s ease;
+  font-weight: 600 !important;
+}
+
+body.dark-mode .sub-section-toggle:hover {
+  background: rgba(71, 85, 105, 0.6) !important;
+  color: #ffffff !important;
+}
+
+/* ?섏쐞 ?ㅻ뜑 ?쇱そ */
+body.dark-mode .sub-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+body.dark-mode .sub-header-left span {
+  color: #f1f5f9 !important;
+  font-weight: 600 !important;
+}
+
+/* ?섏쐞 ?꾩씠肄?諛뺤뒪 */
+body.dark-mode .sub-icon-box {
+  background: rgba(71, 85, 105, 0.5) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  padding: 0.5rem !important;
+  border-radius: 8px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+}
+
+/* ?됱긽蹂??꾩씠肄?諛뺤뒪 - ?ㅽ겕紐⑤뱶 理쒖쟻??*/
+body.dark-mode .sub-icon-box.blue-100-bg { background: rgba(59, 130, 246, 0.2) !important; }
+body.dark-mode .sub-icon-box.green-100-bg { background: rgba(16, 185, 129, 0.2) !important; }
+body.dark-mode .sub-icon-box.purple-100-bg { background: rgba(139, 92, 246, 0.2) !important; }
+body.dark-mode .sub-icon-box.red-100-bg { background: rgba(239, 68, 68, 0.2) !important; }
+body.dark-mode .sub-icon-box.yellow-100-bg { background: rgba(245, 158, 11, 0.2) !important; }
+body.dark-mode .sub-icon-box.emerald-100-bg { background: rgba(16, 185, 129, 0.2) !important; }
+body.dark-mode .sub-icon-box.pink-100-bg { background: rgba(236, 72, 153, 0.2) !important; }
+body.dark-mode .sub-icon-box.amber-100-bg { background: rgba(245, 158, 11, 0.2) !important; }
+body.dark-mode .sub-icon-box.violet-100-bg { background: rgba(139, 92, 246, 0.2) !important; }
+body.dark-mode .sub-icon-box.cyan-100-bg { background: rgba(6, 182, 212, 0.2) !important; }
+body.dark-mode .sub-icon-box.lime-100-bg { background: rgba(132, 204, 22, 0.2) !important; }
+body.dark-mode .sub-icon-box.teal-100-bg { background: rgba(20, 184, 166, 0.2) !important; }
+body.dark-mode .sub-icon-box.indigo-100-bg { background: rgba(99, 102, 241, 0.2) !important; }
+body.dark-mode .sub-icon-box.fuchsia-100-bg { background: rgba(217, 70, 239, 0.2) !important; }
+body.dark-mode .sub-icon-box.rose-100-bg { background: rgba(244, 63, 94, 0.2) !important; }
+body.dark-mode .sub-icon-box.orange-100-bg { background: rgba(249, 115, 22, 0.2) !important; }
+body.dark-mode .sub-icon-box.sky-100-bg { background: rgba(14, 165, 233, 0.2) !important; }
+
+/* ?됱긽蹂??꾩씠肄??띿뒪??- ?ㅽ겕紐⑤뱶 理쒖쟻??*/
+body.dark-mode .blue-600-text { color: #60a5fa !important; }
+body.dark-mode .green-600-text { color: #34d399 !important; }
+body.dark-mode .purple-600-text { color: #a78bfa !important; }
+body.dark-mode .red-600-text { color: #f87171 !important; }
+body.dark-mode .yellow-600-text { color: #fbbf24 !important; }
+body.dark-mode .emerald-600-text { color: #34d399 !important; }
+body.dark-mode .pink-600-text { color: #f472b6 !important; }
+body.dark-mode .amber-600-text { color: #fbbf24 !important; }
+body.dark-mode .violet-600-text { color: #a78bfa !important; }
+body.dark-mode .cyan-600-text { color: #22d3ee !important; }
+body.dark-mode .lime-600-text { color: #a3e635 !important; }
+body.dark-mode .teal-600-text { color: #2dd4bf !important; }
+body.dark-mode .indigo-600-text { color: #818cf8 !important; }
+body.dark-mode .fuchsia-600-text { color: #e879f9 !important; }
+body.dark-mode .rose-600-text { color: #fb7185 !important; }
+body.dark-mode .orange-600-text { color: #fb923c !important; }
+body.dark-mode .sky-600-text { color: #38bdf8 !important; }
+
+/* ?섏쐞 ?먮툕濡??꾩씠肄?*/
+body.dark-mode .sub-chevron {
+  color: #94a3b8 !important;
+  transition: all 0.3s ease;
+}
+
+/* ?섏쐞 ?꾩씠??由ъ뒪??*/
+body.dark-mode .sub-items-list {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border-top: 1px solid rgba(148, 163, 184, 0.15) !important;
+  padding: 0.75rem !important;
+}
+
+/* ?뚯씪 ?꾩씠??*/
+body.dark-mode .file-item {
+  background: rgba(51, 65, 85, 0.4) !important;
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  color: #cbd5e1 !important;
+  padding: 0.75rem 1rem !important;
+  border-radius: 8px !important;
+  margin-bottom: 0.5rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  text-decoration: none !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.dark-mode .file-item:hover {
+  background: rgba(59, 130, 246, 0.25) !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  color: #93c5fd !important;
+  transform: translateX(6px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+}
+
+body.dark-mode .file-item:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* ?뚯씪 ?꾩씠???꾩씠肄?*/
+body.dark-mode .file-item .fa-file-alt {
+  color: #60a5fa !important;
+  font-size: 1rem;
+}
+
+body.dark-mode .file-item:hover .fa-file-alt {
+  color: #93c5fd !important;
+}
+
+/* ?몃? 留곹겕 ?꾩씠肄?*/
+body.dark-mode .file-item .link-icon,
+body.dark-mode .file-item .fa-external-link-alt {
+  color: #64748b !important;
+  font-size: 0.85rem;
+  margin-left: auto;
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .file-item:hover .link-icon,
+body.dark-mode .file-item:hover .fa-external-link-alt {
+  color: #60a5fa !important;
+  transform: translateX(3px) translateY(-3px);
+}
+
+/* 硫붿씤 ?먮툕濡?*/
+body.dark-mode .main-chevron {
+  color: #94a3b8 !important;
+  transition: transform 0.3s ease;
+}
+
+/* ?명꽣 */
+body.dark-mode .helppage-footer {
+  background: rgba(30, 41, 59, 0.4) !important;
+  border-top: 1px solid rgba(148, 163, 184, 0.15) !important;
+  color: #94a3b8 !important;
+  padding: 1.5rem !important;
+  margin-top: 2rem !important;
+  border-radius: 12px !important;
+}
+
+body.dark-mode .helppage-footer a {
+  color: #60a5fa !important;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(96, 165, 250, 0.3);
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .helppage-footer a:hover {
+  color: #93c5fd !important;
+  border-bottom-color: #60a5fa;
+}
+
+/* 洹몃━???덉씠?꾩썐 */
+body.dark-mode .helppage-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+/* 移대뱶 而⑦뀒?대꼫 */
+body.dark-mode .helppage-card-container {
+  background: transparent !important;
+}
+
+/* ?ㅽ겕濡ㅻ컮 而ㅼ뒪?곕쭏?댁쭠 (?섏쐞 硫붾돱?? */
+body.dark-mode .sub-items-list::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+body.dark-mode .sub-items-list::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 4px;
+}
+
+body.dark-mode .sub-items-list::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.6);
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+body.dark-mode .sub-items-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.8);
+}
+
+
+
+/* === 34. Intro Section Dark Mode Fixes (Naver Search & Greeting) === */
+
+/* ?ㅼ씠踰?寃?됱갹 ?ㅽ겕紐⑤뱶 理쒖쟻??(?댁쭏?곸씤 諛곌꼍???쒓굅 & ?щ챸??媛쒖꽑) */
+body.dark-mode .intro-naver-search {
+  background: rgba(30, 41, 59, 0.3) !important; /* ???щ챸?섍쾶 */
+  border: 1px solid rgba(148, 163, 184, 0.2) !important; /* ?뚮몢由щ뒗 ?뉕쾶 ?좎??섎릺 ???섍쾶 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2) !important;
+}
+
+body.dark-mode .intro-naver-search input {
+  background-color: transparent !important; /* ?낅젰李?諛곌꼍 ?꾩쟾 ?щ챸 */
+  border: none !important; /* ?낅젰李??뚮몢由??쒓굅 (?붿껌?ы빆) */
+  color: #f1f5f9 !important;
+  box-shadow: none !important;
+}
+
+/* Autofill ??諛곌꼍???쒓굅 ?몃┃ for ?ㅼ씠踰?寃?됱갹 */
+body.dark-mode .intro-naver-search input:-webkit-autofill,
+body.dark-mode .intro-naver-search input:-webkit-autofill:hover, 
+body.dark-mode .intro-naver-search input:-webkit-autofill:focus, 
+body.dark-mode .intro-naver-search input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px rgba(30, 41, 59, 0.0) inset !important; /* ?щ챸 ?몃┃???덈㉨?????덉뼱 ?대몢???됱쑝濡?*/
+  -webkit-text-fill-color: #f1f5f9 !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+body.dark-mode .intro-naver-search input::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* 寃??踰꾪듉 */
+body.dark-mode .intro-search-btn {
+  background-color: transparent !important;
+  color: #cbd5e1 !important;
+}
+body.dark-mode .intro-search-btn:hover {
+  color: #60a5fa !important;
+}
+
+/* ?몄궗留?紐낅룄 ?곹뼢 (媛?낆꽦 媛쒖꽑) */
+body.dark-mode .intro-cheer-message .line-1 {
+  color: #f1f5f9 !important; /* 湲곗〈蹂대떎 ??諛앷쾶 */
+}
+
+body.dark-mode .intro-cheer-message .line-2 {
+  color: #e2e8f0 !important;
+}
+
+
+/* === 35. Unified Action Buttons (All Tabs) === */
+/* 
+   ?곸슜 ???
+   - ?? 諛붾줈媛湲??몄쭛 (#edit-mode-btn)
+   - ?숆탳?꾪솴: ?꾪솴 ?몄쭛 (#status-section .btn-primary)
+   - ?숆탳怨꾩젙: ?숆탳怨꾩젙 ?몄쭛 (#account-edit-mode-btn)
+   - 諛곗감?좎껌: 諛곗감 ?좎껌 (#bus-request-btn)
+   - ?먮즺留덈떦: ?먮즺留덈떦 ?몄쭛 (#datayard-edit-mode-btn)
+   - ?숈궗?쇱젙: ?쇱젙 異붽? (#curr-add-btn)
+*/
+
+#edit-mode-btn,
+#account-edit-mode-btn,
+#status-section .btn-primary,
+#bus-request-btn,
+#datayard-edit-mode-btn,
+#curr-add-btn {
+  background: linear-gradient(135deg, #4f46e5, #8b5cf6) !important; /* Indigo to Violet Gradient */
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 50px !important; /* Pill Shape */
+  padding: 0.65rem 1.5rem !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  letter-spacing: 0.3px !important;
+}
+
+/* Hover State */
+#edit-mode-btn:hover,
+#account-edit-mode-btn:hover,
+#status-section .btn-primary:hover,
+#bus-request-btn:hover,
+#datayard-edit-mode-btn:hover,
+#curr-add-btn:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5) !important;
+  filter: brightness(1.1);
+  background: linear-gradient(135deg, #4338ca, #7c3aed) !important;
+}
+
+/* Active/Processing State */
+#edit-mode-btn:active,
+#account-edit-mode-btn:active,
+#status-section .btn-primary:active,
+#bus-request-btn:active,
+#datayard-edit-mode-btn:active,
+#curr-add-btn:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3) !important;
+}
+
+/* FontAwesome Icon Style Adjustment */
+#edit-mode-btn i,
+#account-edit-mode-btn i,
+#status-section .btn-primary i,
+#bus-request-btn i,
+#datayard-edit-mode-btn i,
+#curr-add-btn i {
+  font-size: 1rem !important;
+  margin: 0 !important; /* gap?쇰줈 媛꾧꺽 議곗젙?섎?濡?留덉쭊 ?쒓굅 */
+}
+
+/* Fix: ?숆탳 怨꾩젙 ?몄쭛 踰꾪듉 媛뺤젣 ?곸슜 (CSS ?곗꽑?쒖쐞 ?뺣낫) */
+#account-section #account-edit-mode-btn {
+  background: linear-gradient(135deg, #4f46e5, #8b5cf6) !important; /* Indigo to Violet Gradient */
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 50px !important;
+  padding: 0.65rem 1.5rem !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+#account-section #account-edit-mode-btn:hover {
+  background: linear-gradient(135deg, #4338ca, #7c3aed) !important;
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5) !important;
+  filter: brightness(1.1) !important;
+}
+
+
+/* === 36. Notice Widget Dark Mode (Clean & Unified) === */
+body.dark-mode .notice-item {
+  background: rgba(30, 41, 59, 0.5) !important; /* ?대몢??諛섑닾紐?諛곌꼍 */
+  border: 1px solid rgba(148, 163, 184, 0.1) !important;
+  /* 湲곗〈 ?쇱そ 蹂대뜑 ?됱긽? ?좎???(CSS ?곗꽑?쒖쐞 二쇱쓽) */
+  border-left-width: 4px !important; 
+  color: #e2e8f0 !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.3s ease !important;
+}
+
+body.dark-mode .notice-item:hover {
+  background: rgba(51, 65, 85, 0.6) !important;
+  transform: translateX(4px) translateY(-2px) !important;
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-mode .notice-content-preview {
+  color: #cbd5e1 !important; /* 諛앹? ?뚯깋 ?띿뒪??*/
+}
+
+body.dark-mode .notice-author {
+  background: rgba(148, 163, 184, 0.2) !important;
+  color: #f1f5f9 !important;
+  font-weight: 600 !important;
+}
+
+body.dark-mode .notice-date {
+  color: #94a3b8 !important;
+}
+
+/* Notice Status Pills (Important/Urgent) Override */
+body.dark-mode .notice-item.status-important {
+  border-left-color: #f59e0b !important;
+  background: rgba(245, 158, 11, 0.1) !important; /* ?????곕쾭 諛곌꼍 */
+}
+
+body.dark-mode .notice-item.status-urgent {
+  border-left-color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.1) !important; /* ?????덈뱶 諛곌꼍 */
+}
+
+body.dark-mode .pill-important {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+
+body.dark-mode .pill-urgent {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+
+/* === 37. Shortcut Groups Glassmorphism (Dark Mode) === */
+body.dark-mode .shortcut-group-card {
+  background: rgba(255, 255, 255, 0.05) !important; /* ?꾩＜ ?щ????곗깋 ?꾪꽣 */
+  backdrop-filter: blur(20px) saturate(180%) !important; /* 媛뺣젰??釉붾윭 ?④낵 */
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important; /* ?뉕퀬 ?щ챸???좊━ ?뚮몢由?*/
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important; /* 源딆? 洹몃┝??*/
+  border-radius: 20px !important;
+  transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1) !important;
+}
+
+body.dark-mode .shortcut-group-title {
+  color: #f8fafc !important; /* 嫄곗쓽 ?곗깋 ??댄? */
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important; /* ?띿뒪??媛?낆꽦 */
+}
+
+body.dark-mode .shortcut-group-card:hover {
+  background: rgba(255, 255, 255, 0.1) !important; /* ?몃쾭 ??議곌툑 ??諛앷쾶 */
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  transform: translateY(-8px) !important;
+  box-shadow: 0 15px 45px 0 rgba(0, 0, 0, 0.45) !important;
+}
+
+/* ?대? ?꾩씠?쒕뱾 */
+body.dark-mode .shortcut-item-wrapper {
+  transition: all 0.2s ease !important;
+  border-radius: 12px;
+}
+
+body.dark-mode .shortcut-item-wrapper:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(5px);
+}
+
+body.dark-mode .shortcut-title {
+  color: #e2e8f0 !important;
+  font-weight: 500 !important;
+}
+
+
+/* === 38. Board Post Modal Dark Mode Fix === */
+body.dark-mode #boardPostModal .modal-content {
+  background: #1e293b !important; /* Deep Dark Blue Background */
+  color: #f1f5f9 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.dark-mode #boardPostModal .modal-header {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1) !important;
+  background: transparent !important;
+}
+
+body.dark-mode #boardPostModal .modal-header h2 {
+  color: #f1f5f9 !important;
+}
+
+body.dark-mode #boardPostModal .close-modal {
+  color: #94a3b8 !important;
+}
+body.dark-mode #boardPostModal .close-modal:hover {
+  color: #f1f5f9 !important;
+}
+
+body.dark-mode #boardPostModal .modal-body {
+  background: transparent !important;
+}
+
+body.dark-mode #boardPostModal .modal-footer {
+  background: rgba(15, 23, 42, 0.3) !important; /* Slightly darker for footer */
+  border-top: 1px solid rgba(148, 163, 184, 0.1) !important;
+}
+
+/* ?낅젰李??섏젙 */
+body.dark-mode #post-content-editor {
+  background: rgba(15, 23, 42, 0.6) !important; /* Very dark input bg */
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  color: #e2e8f0 !important;
+}
+
+/* ?쇰꺼 ?됱긽 */
+body.dark-mode #boardPostModal label {
+  color: #94a3b8 !important;
+}
+
+
+/* === 38-1. Extended Dark Mode Styles (Components) === */
+/* ?묒꽦??移?*/
+body.dark-mode .author-chip {
+  background: rgba(51, 65, 85, 0.4) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.1) !important;
+}
+body.dark-mode .author-chip:hover {
+  background: rgba(71, 85, 105, 0.6) !important;
+  color: #ffffff !important;
+}
+body.dark-mode .author-chip.selected {
+  background: linear-gradient(135deg, #4f46e5, #8b5cf6) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4) !important;
+}
+
+/* ?뚯씪 泥⑤? ?곸뿭 */
+body.dark-mode #file-drop-zone {
+  border-color: rgba(148, 163, 184, 0.2) !important;
+  background: rgba(15, 23, 42, 0.3) !important;
+}
+body.dark-mode #file-drop-zone p { color: #94a3b8 !important; }
+body.dark-mode #file-drop-zone i { color: #64748b !important; }
+
+/* ?곹깭 ?좏깮 ?쇰꺼 */
+body.dark-mode .status-label {
+  background: rgba(51, 65, 85, 0.4) !important;
+  color: #94a3b8 !important;
+}
+
+/* 泥댄겕???곹깭???쇰꺼 */
+body.dark-mode .status-check-tag:checked + .status-label.normal {
+  background: #334155 !important;
+  color: #e2e8f0 !important;
+}
+body.dark-mode .status-check-tag:checked + .status-label.important {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+body.dark-mode .status-check-tag:checked + .status-label.urgent {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+/* 紐⑤떖 ?섎떒 踰꾪듉 */
+body.dark-mode .btn-memo-cancel {
+  background: rgba(51, 65, 85, 0.4) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+}
+body.dark-mode .btn-memo-cancel:hover {
+  background: rgba(71, 85, 105, 0.8) !important;
+  color: #fff !important;
+}
+
+/* 吏곸젒 ?낅젰 ?명뭼 */
+body.dark-mode #post-author-custom {
+  background: rgba(15, 23, 42, 0.6) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  color: #e2e8f0 !important;
+}
+
+
+/* === 39. Table Header Styling Fix (Final) === */
+
+/* [?ㅽ겕紐⑤뱶] ?ㅻ뜑 ?댁쨷 諛곌꼍 諛?寃뱀묠 臾몄젣 ?닿껐 */
+/* thead 而⑦뀒?대꼫???щ챸?섍쾶 泥섎━ (?꾩닔) */
+body.dark-mode .curr-table-header,
+body.dark-mode .account-table thead,
+body.dark-mode .bus-table thead,
+body.dark-mode .status-table thead {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* ?ㅼ젣 ?(th)?먮쭔 諛곌꼍 ?곸슜?섏뿬 源붾걫?섍쾶 泥섎━ */
+body.dark-mode .account-table th,
+body.dark-mode .bus-table th,
+body.dark-mode .status-table th,
+body.dark-mode .curr-table-header > div,
+body.dark-mode .curr-row.header {
+  background: #1e293b !important; /* ?щ챸???녿뒗 遺덊닾紐??됱긽 ?ъ슜?쇰줈 鍮꾩묠 諛⑹? */
+  backdrop-filter: none !important; 
+  -webkit-backdrop-filter: none !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2) !important;
+  color: #e2e8f0 !important;
+  box-shadow: none !important;
+  border-right: none !important;
+  border-left: none !important;
+}
+
+/* ?숈궗?쇱젙 ?붾퀎 ?щ젰 (FullCalendar) ?ㅽ겕紐⑤뱶 諛곌꼍 */
+body.dark-mode .fc-daygrid-day {
+  background-color: #0f172a !important;
+}
+body.dark-mode .fc-day-sun,
+body.dark-mode .fc-day-sun .fc-daygrid-day-top,
+body.dark-mode .fc-day-sun .fc-daygrid-day-number {
+  background-color: #450a0a !important;
+}
+body.dark-mode .fc-day-sat,
+body.dark-mode .fc-day-sat .fc-daygrid-day-top,
+body.dark-mode .fc-day-sat .fc-daygrid-day-number {
+  background-color: #172554 !important;
+}
+
+/* [怨듯넻] ?뚯씠釉??ㅻ뜑 ?믪씠 ?듭씪 諛??ㅽ???*/
+.bus-table thead th {
+  height: 50px !important;
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
+  vertical-align: middle !important;
+  position: relative !important;
+  background-clip: padding-box;
+}
+/* === 40 & 41. Bus Request Badge Fix (Final V2) === */
+
+/* 諭껋? ?ㅽ???- ?꾩튂 ?곹뼢 議곗젙 */
+.driver-badge {
+  position: absolute;
+  top: -28px; /* ?띿뒪?몄? 5px ?댁긽 媛꾧꺽 ?뺣낫瑜??꾪빐 ???꾨줈 ?щ┝ */
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.5);
+  z-index: 9999 !important;
+  animation: bounceBadge 2s infinite ease-in-out;
+  pointer-events: none;
+}
+
+.driver-badge::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  margin-left: -4px;
+  border-width: 4px 4px 0;
+  border-style: solid;
+  border-color: #ff8e53 transparent transparent transparent;
+}
+
+@keyframes bounceBadge {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-3px); }
+}
+
+/* 泥?踰덉㎏ ?("?뺤씤") ?ㅻ쾭?뚮줈???꾩쟾 ?댁젣 */
+/* 諛곌꼍???쒓굅 (?쇱씠?몃え???곹뼢 諛⑹?) */
+.bus-table thead th:first-child {
+  overflow: visible !important;
+  z-index: 9999 !important;
+}
+
+/* [?ㅽ겕紐⑤뱶] ?κ렐 紐⑥꽌由?源⑥쭚 諛⑹? (Overflow visible 遺?묒슜 ?닿껐) */
+/* 醫뚯긽??*/
+body.dark-mode .bus-table thead th:first-child {
+  background: #1e293b !important;
+  border-top-left-radius: 12px !important;
+}
+/* ?곗긽??(紐낆떆??吏?? */
+body.dark-mode .bus-table thead th:last-child {
+  border-top-right-radius: 12px !important;
+}
+
+/* ?뚯씠釉??섑띁 ?ㅻ쾭?뚮줈???댁젣 */
+.bus-table-wrapper {
+  overflow: visible !important;
+  margin-top: 35px !important;
+  position: relative;
+  z-index: 5 !important;
+  background: transparent !important; /* ?댁쨷 諛곌꼍 ?쒓굅 */
+}
+
+/* ?뚯씠釉??먯껜 ?κ렐 紐⑥꽌由?泥섎━ (?댁슜 ??대굹??諛⑹?) */
+.bus-table {
+  border-collapse: separate !important; /* Radius ?곸슜???꾪빐 ?꾩닔 */
+  border-spacing: 0;
+  border-radius: 12px;
+}
+
+/* ?섎떒 ?κ렐 紐⑥꽌由?泥섎━ */
+.bus-table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 12px !important;
+}
+.bus-table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 12px !important;
+}
+
+
+/* --- Mobile Screen Transition Animation --- */
+@keyframes slideInRight {
+  from { 
+
+    }
+}
+
+/* --- Admin Table Wrapper (Card Style) --- */
+.admin-table-wrapper {
+    background: var(--card-bg); /* Add card background */
+    border-radius: 16px;       /* Rounded corners */
+    box-shadow: var(--shadow-sm); /* Subtle shadow */
+    border: 1px solid var(--border-color);
+    padding: 1.5rem;           /* Inner spacing */
+    overflow: hidden;          /* Contain child borders */
+    margin-bottom: 2rem;
+}
+
+.account-main {
+    padding-top: 30px; /* 카테고리 바 아래 충분한 공간 확보 */
+}
+
+.account-main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* --- Admin Table Styles (Refined) --- */
+.admin-table {
+    width: 100%;
+    border-collapse: separate; 
+    border-spacing: 0;
+}
+
+.admin-table th {
+    background: #f8fafc; /* Light gray-blue header */
+    color: #475569;
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 16px;
+    text-align: center; /* Generally center headers */
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.admin-table th:first-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+.admin-table th:last-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+
+.admin-table td {
+    padding: 16px;
+    border-bottom: 1px solid #f1f5f9;
+    color: var(--text-main);
+    font-size: 0.9rem;
+    vertical-align: middle;
+    text-align: center; /* Center content by default */
+    white-space: nowrap; /* Prevent wrapping */
+}
+
+/* Specific column alignments */
+.admin-table th[data-sort="name"], .admin-table td:nth-child(4) { font-weight: 700; color: var(--text-main); }
+.admin-table th[data-sort="email"], .admin-table td:nth-child(6) { color: #64748b; font-size: 0.85rem; }
+
+.admin-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+/* Badges (New Style) */
+.badge-role-admin { background: #fee2e2; color: #ef4444; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+.badge-role-sub { background: #e2e8f0; color: #475569; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+.badge-role-user { background: #dcfce7; color: #16a34a; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+
+.badge-status-approved { background: #dcfce7; color: #16a34a; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; }
+.badge-status-pending { background: #ffedd5; color: #f97316; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; }
+
+.badge-position {
+    background: #e0e7ff; color: #4f46e5;
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 0.8rem; font-weight: 600;
+    display: inline-block;
+}
+
+.info-text-bold { color: #3b82f6; font-weight: 700; font-size: 0.85rem; }
+.info-text-muted { color: #94a3b8; font-size: 0.85rem; }
+
+
+/* Action Buttons */
+.action-btn-group { display: flex; gap: 8px; justify-content: center; align-items: center; }
+
+/* Segmented Control Filter Style */
+.admin-segmented-control {
+    display: flex;
+    background: #f1f5f9;  /* Light gray background for the track */
+    padding: 4px;
+    border-radius: 8px;   /* Rounded corners */
+    height: 42px;         /* Match search input height */
+    box-sizing: border-box;
+    border: 1px solid var(--border-color);
+}
+
+.segment-btn {
+    border: none;
+    background: transparent;
+    padding: 0 16px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #64748b;       /* Muted text */
+    border-radius: 6px;   /* Slightly smaller radius for inner buttons */
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    display: flex;        
+    align-items: center;
+    justify-content: center; /* Center text info */
+    user-select: none;    
+    flex: 1;              /* Fill available width equally */
+    height: 100%;         /* Fill available height */
+}
+
+/* Hover Effect */
+.segment-btn:not(.active):hover {
+    background-color: rgba(255, 255, 255, 0.5); /* Subtle white overlay */
+    color: #334155;
+}
+
+/* Click/Press Effect */
+.segment-btn:active {
+    transform: scale(0.96); /* Button press feel */
+}
+
+/* Selected State */
+/* Selected State */
+.segment-btn.active {
+    background: #ffffff !important;  /* Force white background */
+    color: #3b82f6 !important;       /* Force primary color text */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06) !important; /* Force shadow */
+    font-weight: 700 !important;
+    transform: scale(1);
+    opacity: 1 !important;
+}
+
+/* Admin Search & Filter Styling Update */
+.view-actions {
+    background: transparent; /* Remove container bg */
+    padding: 0;
+    box-shadow: none;
+    border: none;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: flex-end; /* Align to right */
+    gap: 12px;
+}
+
+/* ... Stat Card Clickable ... */
+.stat-card.clickable {
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.stat-card.clickable:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+}
+
+/* --- Dashboard Widgets --- */
+.dashboard-widgets {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); 
+    gap: 1.5rem;
+}
+
+@media (max-width: 1100px) {
+    .dashboard-widgets {
+
+    }
+
+    /* 4. Section & Margin Reset */
+    #curriculum-section, 
+    #status-section, 
+    #account-section, 
+    #bus-section,
+    #datayard-section,
+    #helppage-section,
+    .admin-container {
+
+    }
+
+    /* Table Horizontal Scroll */
+    .account-table-wrapper, .bus-table-wrapper, .editable-table-wrapper {
+        overflow-x: auto;
+    }

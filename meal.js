@@ -40,18 +40,41 @@
     }
 
     /**
-     * Format menu string: remove brackets, numbers and split by br
+     * Parse menu string into an array of clean item strings
+     */
+    function getMenuItems(menuStr) {
+        if (!menuStr) return [];
+        return menuStr
+            .replace(/\([^)]*\)/g, '')
+            .split('<br/>')
+            .map(item => item.trim().replace(/\.{2,}/g, '.').replace(/\s+/g, ' '))
+            .filter(i => i);
+    }
+
+    /**
+     * Format menu string as plain text (used by sidebar widget)
      */
     function formatMenu(menuStr) {
-        if (!menuStr) return '급식 정보가 없습니다.';
-        return menuStr
-            .replace(/\([^)]*\)/g, '')   // Remove allergy info
-            .split('<br/>')              // Split by br
-            .map(item => item.trim())    // Trim
-            .filter(i => i)              // Filter empty
-            .join(', ')                  // Join by comma
-            .replace(/\.{2,}/g, '.')     // Remove multi dots
-            .replace(/\s+/g, ' ');       // Remove multi space
+        const items = getMenuItems(menuStr);
+        return items.length ? items.join(', ') : '급식 정보가 없습니다.';
+    }
+
+    /**
+     * Format menu string as HTML pill spans (used by weekly/monthly views)
+     */
+    function formatMenuHtml(menuStr) {
+        const items = getMenuItems(menuStr);
+        if (!items.length) return '<span class="no-meal">급식 정보가 없습니다.</span>';
+        return items.map(item => `<span class="menu-pill">${item}</span>`).join('');
+    }
+
+    /**
+     * Format menu string as compact monthly pill spans
+     */
+    function formatMonthlyMenuHtml(menuStr) {
+        const items = getMenuItems(menuStr);
+        if (!items.length) return '';
+        return items.map(item => `<span class="monthly-menu-pill">${item}</span>`).join('');
     }
 
     /**
@@ -150,30 +173,24 @@
             currentDay.setDate(monday.getDate() + i);
             const currentYmd = currentDay.getFullYear() + String(currentDay.getMonth() + 1).padStart(2, '0') + String(currentDay.getDate()).padStart(2, '0');
             const meal = meals.find(m => m.MLSV_YMD === currentYmd && m.MMEAL_SC_CODE === '2') || meals.find(m => m.MLSV_YMD === currentYmd);
-            const menu = meal ? formatMenu(meal.DDISH_NM) : '급식 정보가 없습니다.';
-            
+            const menuHtml = formatMenuHtml(meal ? meal.DDISH_NM : null);
+
             // Check if it's today
             const today = new Date();
-            const isToday = currentDay.getDate() === today.getDate() && 
-                            currentDay.getMonth() === today.getMonth() && 
+            const isToday = currentDay.getDate() === today.getDate() &&
+                            currentDay.getMonth() === today.getMonth() &&
                             currentDay.getFullYear() === today.getFullYear();
-            
-            const todayBadge = isToday ? '<span class="today-badge">오늘</span>' : '';
-            const todayCircleClass = isToday ? 'today-circle' : '';
 
             html += `
                 <div class="meal-card-horizontal ${isToday ? 'is-today' : ''}">
                     <div class="meal-date-info">
-                        ${isToday ? `
-                            <div class="today-badge-wrapper">
-                                <span class="today-badge">오늘</span>
-                            </div>
-                        ` : ''}
-                        <div class="day ${todayCircleClass}">${currentDay.getDate()}</div>
+                        <div class="day ${isToday ? 'today-circle' : ''}">${currentDay.getDate()}</div>
                         <div class="day-name">${dayNames[i]}</div>
+                        ${isToday ? '<div class="today-label">오늘</div>' : ''}
                     </div>
+                    <div class="meal-divider"></div>
                     <div class="meal-menu-content">
-                        ${menu}
+                        ${menuHtml}
                     </div>
                 </div>
             `;
@@ -244,28 +261,20 @@
                 if (isCurrentMonth) {
                     const currentYmd = d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
                     const meal = meals.find(m => m.MLSV_YMD === currentYmd && m.MMEAL_SC_CODE === '2') || meals.find(m => m.MLSV_YMD === currentYmd);
-                    const menu = meal ? formatMenu(meal.DDISH_NM) : '';
-                    
+                    const menuHtml = formatMonthlyMenuHtml(meal ? meal.DDISH_NM : null);
+
                     // Check if it's today
                     const now = new Date();
-                    const isToday = d.getDate() === now.getDate() && 
-                                    d.getMonth() === now.getMonth() && 
+                    const isToday = d.getDate() === now.getDate() &&
+                                    d.getMonth() === now.getMonth() &&
                                     d.getFullYear() === now.getFullYear();
-                    
-                    const todayBadge = isToday ? '<span class="today-badge">오늘</span>' : '';
-                    const todayCircleClass = isToday ? 'today-circle' : '';
 
                     weekHtml += `
                         <div class="calendar-day-cell ${isToday ? 'is-today' : ''}">
                             <div class="day-num-wrapper">
-                                ${isToday ? `
-                                    <div class="today-badge-wrapper">
-                                        <span class="today-badge">오늘</span>
-                                    </div>
-                                ` : ''}
-                                <span class="day-num ${todayCircleClass}">${d.getDate()}</span>
+                                <span class="day-num ${isToday ? 'today-circle' : ''}">${d.getDate()}</span>
                             </div>
-                            <div class="meal-items">${menu}</div>
+                            <div class="meal-items">${menuHtml}</div>
                         </div>
                     `;
                 } else {

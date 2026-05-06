@@ -1,0 +1,493 @@
+/* School Status Section Extracted Styles */
+.status-section {
+  width: 100%;
+  min-width: 900px;
+  max-width: 1250px;
+  margin-top: 2rem;
+  margin-bottom: 4rem;
+  margin-left: 370px;
+  margin-right: auto;
+  padding: 3rem;
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.status-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.status-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.status-tab {
+  padding: 0.5rem 1.25rem;
+  border-radius: 10px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--text-muted);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+.status-tab:hover {
+  background: var(--bg-color);
+  color: var(--text-main);
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-hover);
+}
+
+.status-tab.active {
+  background: var(--primary-color);
+  color: #fff;
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 10px -1px rgba(74, 144, 226, 0.3);
+}
+
+.status-panel {
+  display: none;
+}
+
+.status-panel.active {
+  display: block;
+}
+
+/* Wrapper for Shadow & Radius */
+.editable-table-wrapper {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--shadow-soft);
+  overflow: hidden; 
+  margin-bottom: 2rem;
+  border: 1px solid var(--border-color);
+}
+
+.status-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  background: var(--card-bg) !important;
+  table-layout: fixed;
+  margin-bottom: 0;
+}
+
+.status-table th,
+.status-table td {
+  border: 1px solid var(--border-color);
+  padding: 0.85rem;
+  text-align: center;
+  color: var(--text-main);
+  background: var(--card-bg);
+}
+
+.status-table th {
+  background: var(--table-header, #f8fafc);
+  font-weight: 700;
+  color: var(--text-main);
+  position: relative;
+}
+
+body.dark-mode .status-table th {
+  background: var(--table-header, #334155);
+}
+
+.status-table tr:hover {
+  background: var(--bg-color);
+}
+
+/* Status Controls & Edit Mode */
+.status-controls {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.status-tabs.edit-mode {
+  border: 2px dashed var(--border-color);
+  padding: 10px;
+  background: var(--bg-color);
+}
+
+.status-tabs.edit-mode .status-tab {
+  padding-right: 2.22rem;
+  position: relative;
+}
+
+.delete-tab-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.add-tab-btn {
+  padding: 0.4rem 1rem;
+  border: 2px dashed var(--border-color);
+  background: var(--card-bg);
+  border-radius: 50px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.editable-input {
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  text-align: center;
+  padding: 8px;
+  border-radius: 4px;
+  color: inherit;
+}
+
+.editable-input:focus {
+  background: var(--card-bg);
+  border-color: var(--primary-color);
+  outline: none;
+}
+
+.table-controls {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 0.85rem;
+  background: var(--bg-color);
+  border-radius: 12px;
+}
+
+.layout-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--card-bg);
+  padding: 0 0.8rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  height: 32px;
+}
+
+.table-grid-wrapper {
+  display: grid;
+  gap: 2rem;
+  width: 100%;
+}
+.table-grid-1 { grid-template-columns: 1fr; }
+.table-grid-2 { grid-template-columns: 1fr 1fr; }
+.table-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+/* Float controls for edit mode */
+.col-edit-floating {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 2px 4px;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.row-edit-floating {
+  position: absolute;
+  left: -24px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 4px 2px;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.col-drag-handle, .row-drag-handle {
+  cursor: grab;
+  color: #888;
+}
+
+.col-drag-handle:active, .row-drag-handle:active {
+  cursor: grabbing;
+}
+
+.tbl-del-btn {
+  background: #ff4d4f;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.btn-primary, .btn-secondary, .btn-success, .btn-cancel, .btn-mini {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.2s;
+}
+
+.btn-primary { background: var(--primary-color); color: white; }
+.btn-secondary { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+.btn-success { background: #10b981; color: white; }
+.btn-cancel { background: #ef4444; color: white; }
+#status-section .status-controls .btn-cancel,
+.status-controls #cancel-status-btn {
+  background: #ef4444 !important;
+  color: white !important;
+  border-color: #dc2626 !important;
+}
+#status-section .status-controls .btn-cancel:hover,
+.status-controls #cancel-status-btn:hover {
+  background: #dc2626 !important;
+  transform: translateY(-1px);
+}
+.btn-mini { padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #e2e8f0; color: #334155; }
+.btn-mini.danger { background: #fee2e2; color: #ef4444; }
+
+.status-undo-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: #333;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 9999;
+}
+
+.status-undo-toast.visible {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.status-undo-toast.warn { background: #f59e0b; }
+.status-undo-toast.info { background: #3b82f6; }
+
+/* Column Resizer */
+.status-col-resizer {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  background: transparent;
+  z-index: 10;
+  transition: background 0.2s;
+}
+
+.status-col-resizer:hover,
+.status-col-resizer:active {
+  background: var(--primary-color);
+  opacity: 0.6;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   iOS 26 Liquid Glass — Status Section
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Section: transparent — blends with page background ── */
+.status-section {
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0.8rem 2rem 2.5rem !important;
+    margin-top: 0 !important;
+    min-height: 100%;
+}
+
+/* ── Header spacing ── */
+.status-header {
+    margin-bottom: 1rem !important;
+    padding-top: 0.2rem;
+}
+
+/* ── Tab bar: frosted glass pill ── */
+.status-tabs:not(.edit-mode) {
+    background: rgba(255, 255, 255, 0.72) !important;
+    backdrop-filter: blur(28px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.8) !important;
+    border-top-color: rgba(255, 255, 255, 0.95) !important;
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.9) inset,
+        0 4px 20px rgba(0, 0, 0, 0.06) !important;
+    border-radius: 18px !important;
+    padding: 5px 8px !important;
+}
+
+/* ── Tab buttons ── */
+.status-tab {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #64748b !important;
+    border-radius: 12px !important;
+    font-weight: 600;
+}
+.status-tab:hover {
+    background: rgba(255, 255, 255, 0.62) !important;
+    color: #1e293b !important;
+    transform: none !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06) !important;
+}
+.status-tab.active {
+    background: rgba(255, 255, 255, 0.95) !important;
+    color: #2563eb !important;
+    border-color: transparent !important;
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.09),
+        0 1px 0 rgba(255, 255, 255, 0.9) inset !important;
+    transform: none !important;
+}
+
+/* ── Excel / controls area ── */
+#status-section .status-controls {
+    gap: 0.6rem;
+}
+
+/* ── Table wrapper: glass card ── */
+#status-section .editable-table-wrapper {
+    background: rgba(255, 255, 255, 0.58) !important;
+    backdrop-filter: blur(24px) saturate(180%) brightness(1.02) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(1.02) !important;
+    border: 1px solid rgba(255, 255, 255, 0.72) !important;
+    border-top-color: rgba(255, 255, 255, 0.92) !important;
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.9) inset,
+        0 8px 32px rgba(0, 0, 0, 0.07),
+        0 2px 6px rgba(0, 0, 0, 0.04) !important;
+    border-radius: 18px !important;
+    overflow: hidden !important;       /* 모서리 클립 강제 */
+    transform: translateZ(0);          /* GPU 레이어 — table 셀 클립 완벽 처리 */
+    isolation: isolate;
+    position: relative;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+#status-section .editable-table-wrapper:hover {
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.9) inset,
+        0 14px 42px rgba(0, 0, 0, 0.1),
+        0 4px 10px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* ── Table: transparent on glass background ── */
+#status-section .status-table {
+    background: transparent !important;
+}
+#status-section .status-table th,
+#status-section .status-table td {
+    background: transparent !important;
+    border-color: rgba(186, 200, 224, 0.4) !important;
+}
+#status-section .status-table th {
+    background: rgba(255, 255, 255, 0.42) !important;
+    color: #1e3a5f !important;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+}
+#status-section .status-table tr:hover td {
+    background: rgba(255, 255, 255, 0.38) !important;
+}
+
+/* ── Edit-mode controls bar ── */
+#status-section .table-controls {
+    background: rgba(255, 255, 255, 0.45) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-radius: 14px !important;
+}
+
+/* ── Undo toast glass ── */
+.status-undo-toast {
+    background: rgba(30, 41, 59, 0.88) !important;
+    backdrop-filter: blur(12px) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* ── Dark mode ── */
+body.dark-mode .status-section {
+    background: transparent !important;
+}
+body.dark-mode .status-tabs:not(.edit-mode) {
+    background: rgba(30, 41, 59, 0.72) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+}
+body.dark-mode .status-tab { color: #94a3b8 !important; }
+body.dark-mode .status-tab:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #e2e8f0 !important;
+}
+body.dark-mode .status-tab.active {
+    background: rgba(74, 144, 226, 0.28) !important;
+    color: #93c5fd !important;
+}
+body.dark-mode #status-section .editable-table-wrapper {
+    background: rgba(30, 41, 59, 0.62) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    border-top-color: rgba(255, 255, 255, 0.18) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28) !important;
+}
+body.dark-mode #status-section .status-table th {
+    background: rgba(255, 255, 255, 0.07) !important;
+    color: #e2e8f0 !important;
+}
+body.dark-mode #status-section .status-table th,
+body.dark-mode #status-section .status-table td {
+    border-color: rgba(255, 255, 255, 0.07) !important;
+}
+body.dark-mode #status-section .status-table tr:hover td {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+body.dark-mode #status-section .table-controls {
+    background: rgba(30, 41, 59, 0.5) !important;
+}

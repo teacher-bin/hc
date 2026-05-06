@@ -138,6 +138,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let localDatayardData = [];
   let datayardFileToUpload = null;
   let datayardActiveTab = 'upload';
+  let datayardDriveFolderId = '';
+  let datayardRenderSnapshot = null;
 
   // 초기화 및 Firebase 데이터 로드
   async function initShortcuts() {
@@ -739,37 +741,70 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ================= Status Section Editing Logic =================
   let isStatusEditMode = false;
-  window.statusData = {}; 
-  let statusData = window.statusData; // 내부에서도 사용 가능케 유지
+  // ★★★ 데이터 보호: statusData는 항상 window.statusData를 통해 접근 ★★★
+  // 이전 코드에서 let statusData = window.statusData 로 참조를 잡았다가
+  // loadStatusData()에서 statusData = newObj 로 재할당하면 참조가 끊기는 문제가 있었음.
+  // 이를 방지하기 위해 getter를 사용하여 항상 window.statusData를 참조하도록 함.
+  if (!window.statusData || Object.keys(window.statusData).length === 0) {
+      window.statusData = {};
+  }
+  // statusData 접근은 항상 window.statusData를 사용
+  // 기존 코드 호환성을 위해 statusData 변수를 유지하되,
+  // 재할당 시 반드시 window.statusData도 동기화
+  let statusData = window.statusData;
   let activeTabId = null;
   let originalStatusData = null; // 취소용 원본 백업
+  let _statusDataLoaded = false; // ★ 데이터 로드 완료 플래그
+  let _statusInitInProgress = false; // ★ 초기화 중복 실행 방지
+  // 실행 취소/다시 실행 히스토리 스택
+  const tableEditHistory = { undo: [], redo: [] };
+  const MAX_HISTORY = 30;
 
   async function initStatusEditing() {
       const statusSection = document.getElementById('status-section');
       if (!statusSection) return;
 
-      // 1. Firebase 데이터 로드 (이미 로드된 데이터가 있다면 스킵 가능하지만, 최신화 위해 매번 로드 권장)
-      await loadStatusData();
-      
-      // 2. 초기 탭 설정
-      if (!activeTabId && Object.keys(statusData).length > 0) {
-          const sorted = Object.entries(statusData).sort((a,b) => (a[1].order||0) - (b[1].order||0));
-          activeTabId = sorted[0][0];
+      // ★ 중복 초기화 방지: 이미 진행 중이면 리턴
+      if (_statusInitInProgress) {
+          console.log('[Status] initStatusEditing 이미 진행 중 - 스킵');
+          return;
       }
-      
-      renderStatusTabs();
-      renderStatusContent();
+      _statusInitInProgress = true;
 
-      // 3. 컨트롤 바 생성
-      if (!document.getElementById('status-controls-area')) {
-          const controlsDiv = document.createElement('div');
-          controlsDiv.className = 'status-controls';
-          controlsDiv.id = 'status-controls-area';
-          // Append TO status-header (next to tabs)
-          const header = document.getElementById('status-header');
-          if (header) header.appendChild(controlsDiv);
+      try {
+          await loadStatusData();
+
+          if (!activeTabId && Object.keys(statusData).length > 0) {
+              const sorted = Object.entries(statusData).sort((a,b) => (a[1].order||0) - (b[1].order||0));
+              activeTabId = sorted[0][0];
+          }
+
+          renderStatusTabs();
+          renderStatusContent();
+
+          if (!document.getElementById('status-controls-area')) {
+              const controlsDiv = document.createElement('div');
+              controlsDiv.className = 'status-controls';
+              controlsDiv.id = 'status-controls-area';
+              const header = document.getElementById('status-header');
+              if (header) header.appendChild(controlsDiv);
+          }
+          renderStatusControls();
+
+          // Ctrl+Z / Ctrl+Shift+Z 실행취소·다시실행 (편집 모드일 때만)
+          if (!window._statusKeyListenerAdded) {
+              window._statusKeyListenerAdded = true;
+              document.addEventListener('keydown', (e) => {
+                  if (!isStatusEditMode) return;
+                  if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                      if (e.shiftKey) { e.preventDefault(); redoTableEdit(); }
+                      else           { e.preventDefault(); undoTableEdit(); }
+                  }
+              });
+          }
+      } finally {
+          _statusInitInProgress = false;
       }
-      renderStatusControls();
   }
 
   function renderStatusControls() {
@@ -829,7 +864,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener('user-role-updated', async () => {
       renderStatusControls();
       await loadShortcutsFromFirebase();
-      initAccountEditing();
+      if(window.initAccountEditing) initAccountEditing();
   });
 
   window.updateStatusLayout = (val) => {
@@ -848,7 +883,6 @@ document.addEventListener("DOMContentLoaded", () => {
           let loadedData = {};
           querySnapshot.forEach(doc => {
               const data = doc.data();
-              // JSON 문자열로 저장된 경우 파싱, 아니면 그대로 사용 (하위 호환)
               if (data.jsonContent) {
                   try {
                       loadedData[doc.id] = JSON.parse(data.jsonContent);
@@ -861,7 +895,9 @@ document.addEventListener("DOMContentLoaded", () => {
           });
 
           if (Object.keys(loadedData).length === 0) {
-              statusData = {
+              // ★ 데이터가 없는 경우에만 기본 템플릿 사용
+              // 주의: 이 경우는 최초 사용 시에만 해당됨
+              const defaultData = {
                   "staff": { 
                       title: "교직원 현황", order: 0, columns: 2, 
                       tables: [
@@ -889,14 +925,24 @@ document.addEventListener("DOMContentLoaded", () => {
                       ] 
                   }
               };
+              // ★★★ 참조 끊김 방지: 기존 객체를 비우고 새 데이터를 복사 ★★★
+              Object.keys(statusData).forEach(k => delete statusData[k]);
+              Object.assign(statusData, defaultData);
               window.statusData = statusData;
-              await saveStatusDataToFirebase(true); // 초기 데이터 생성 시에는 무음으로 저장 시도
+              console.log('[Status] 기본 템플릿 데이터 로드됨 (Firebase에 데이터 없음)');
           } else {
-              statusData = loadedData;
+              // ★★★ 참조 끊김 방지: 기존 객체를 비우고 로드된 데이터를 복사 ★★★
+              Object.keys(statusData).forEach(k => delete statusData[k]);
+              Object.assign(statusData, loadedData);
               window.statusData = statusData;
+              console.log('[Status] Firebase에서 데이터 로드 성공:', Object.keys(loadedData).length, '개 탭');
           }
+          _statusDataLoaded = true; // ★ 로드 완료 표시
       } catch (e) {
           console.error("Status load error", e);
+          // ★ 에러 시에도 기존 statusData를 절대 덮어쓰지 않음
+          // 기존 데이터가 있으면 그대로 유지
+          console.warn('[Status] 로드 에러 - 기존 데이터 유지');
       }
   }
 
@@ -905,14 +951,34 @@ document.addEventListener("DOMContentLoaded", () => {
       const { db, firestoreUtils } = window;
       
       try {
-          // 0. 저장 전 최신 DOM 데이터 동기화
+          // ★★★ 안전장치 1: 데이터가 로드되지 않은 상태에서는 절대 저장하지 않음 ★★★
+          if (!_statusDataLoaded) {
+              console.error('[Status] 데이터 보호: 데이터가 아직 로드되지 않아 저장을 거부합니다.');
+              if (!silent) alert('데이터가 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.');
+              return;
+          }
+
+          // ★★★ 안전장치 2: statusData가 비어있으면 저장 거부 ★★★
+          if (!statusData || Object.keys(statusData).length === 0) {
+              console.error('[Status] 데이터 보호: statusData가 비어있어 저장을 거부합니다.');
+              if (!silent) alert('데이터 보호를 위해 모든 현황 탭이 비어있는 상태로는 저장할 수 없습니다.');
+              return;
+          }
+
+          // ★★★ 안전장치 3: 각 탭에 유효한 데이터가 있는지 검증 ★★★
+          const validEntries = Object.entries(statusData).filter(([id, data]) => {
+              return data && typeof data === 'object' && data.title && data.tables;
+          });
+          if (validEntries.length === 0) {
+              console.error('[Status] 데이터 보호: 유효한 탭 데이터가 없어 저장을 거부합니다.');
+              if (!silent) alert('유효한 현황 데이터가 없습니다. 저장을 중단합니다.');
+              return;
+          }
+
           syncStatusDataFromDOM();
 
-          // 1. 현재 존재하는 탭들을 저장
           for (const [id, data] of Object.entries(statusData)) {
               if (!data || typeof data !== 'object') continue;
-              
-              // Firestore는 중첩 배열(Array of Arrays)을 지원하지 않으므로 JSON 문자열로 변환하여 저장
               const jsonContent = JSON.stringify(data);
               await firestoreUtils.setDoc(firestoreUtils.doc(db, "statusTabs", id), {
                   jsonContent: jsonContent,
@@ -920,19 +986,29 @@ document.addEventListener("DOMContentLoaded", () => {
               });
           }
           
-          // 2. 삭제된 탭 처리
-          const q = firestoreUtils.query(firestoreUtils.collection(db, "statusTabs"));
-          const querySnapshot = await firestoreUtils.getDocs(q);
-          const deletePromises = [];
-          querySnapshot.forEach(docSnap => {
-              if (!statusData[docSnap.id]) {
-                  deletePromises.push(firestoreUtils.deleteDoc(firestoreUtils.doc(db, "statusTabs", docSnap.id)));
+          // ★★★ 안전장치 4: 삭제 로직 - 편집 모드에서 명시적으로 탭을 삭제한 경우만 처리 ★★★
+          // 이전 코드는 statusData에 없는 모든 Firebase 문서를 자동 삭제했는데,
+          // 이는 statusData가 비정상적으로 비어있을 때 전체 데이터를 날리는 원인이었음.
+          // 이제는 편집 모드(isStatusEditMode)에서만 삭제를 허용하고,
+          // 추가적으로 삭제 전에 데이터 검증을 수행함.
+          if (isStatusEditMode) {
+              const q = firestoreUtils.query(firestoreUtils.collection(db, "statusTabs"));
+              const querySnapshot = await firestoreUtils.getDocs(q);
+              const deletePromises = [];
+              const deleteTargets = [];
+              querySnapshot.forEach(docSnap => {
+                  if (!statusData[docSnap.id]) {
+                      deleteTargets.push(docSnap.id);
+                      deletePromises.push(firestoreUtils.deleteDoc(firestoreUtils.doc(db, "statusTabs", docSnap.id)));
+                  }
+              });
+              if (deletePromises.length > 0) {
+                  console.log('[Status] 편집 모드에서 삭제된 탭:', deleteTargets);
+                  await Promise.all(deletePromises);
               }
-          });
-          if (deletePromises.length > 0) {
-              await Promise.all(deletePromises);
           }
           if (window.logUserAction) window.logUserAction('status', '저장', '학교 현황 데이터를 저장했습니다.');
+          console.log('[Status] 저장 완료:', Object.keys(statusData).length, '개 탭');
           
       } catch (e) {
           console.error("Status save error details:", e);
@@ -959,7 +1035,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const headerInputs = table.querySelectorAll('thead .editable-input');
           if (headerInputs.length > 0) {
               headerInputs.forEach((input, hIdx) => {
-                  tabTableData.headers[hIdx] = input.value || "";
+                  tabTableData.headers[hIdx] = input.value !== undefined ? input.value : (input.innerText || "");
               });
           }
           
@@ -971,21 +1047,9 @@ document.addEventListener("DOMContentLoaded", () => {
                   tabTableData.rows[rIdx] = Array(tabTableData.headers.length).fill("");
               }
               inputs.forEach((input, cIdx) => {
-                  tabTableData.rows[rIdx][cIdx] = input.value || "";
+                  tabTableData.rows[rIdx][cIdx] = input.value !== undefined ? input.value : (input.innerText || "");
               });
           });
-
-          // Column widths sync (New) - 주석 처리: 창 크기나 overflow로 인해 찌그러진 offsetWidth가 사용자 설정값을 덮어쓰는 버그 방지
-          /*
-          const ths = table.querySelectorAll('thead th');
-          if (ths.length > 0) {
-              const newWidths = [];
-              ths.forEach(th => {
-                  newWidths.push(th.offsetWidth);
-              });
-              tabTableData.widths = newWidths;
-          }
-          */
       });
   }
 
@@ -1040,20 +1104,17 @@ document.addEventListener("DOMContentLoaded", () => {
           container.appendChild(btn);
       });
 
-      if (isStatusEditMode) {
+      if (isStatusEditMode && window.Sortable) {
           new Sortable(container, {
               animation: 150,
               filter: '.delete-tab-btn',
               onEnd: () => {
                   const items = container.querySelectorAll('.status-tab');
                   items.forEach((item, index) => {
-                      // 탭 텍스트 기반으로 ID 찾기 (실제로는 더 안정적인 방법 필요)
-                      // 여기서는 dataset 활용
                       const tabName = item.textContent.trim();
                       const entry = Object.entries(statusData).find(e => e[1].title === tabName);
                       if (entry) statusData[entry[0]].order = index;
                   });
-                  if (window.logUserAction) window.logUserAction('status', '순서변경', '탭 순서를 변경했습니다.');
               }
           });
       }
@@ -1063,7 +1124,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const container = document.getElementById('status-panels-container');
       if (!container) return;
       container.innerHTML = '';
-
       if (!activeTabId || !statusData[activeTabId]) return;
 
       const tabData = statusData[activeTabId];
@@ -1072,129 +1132,306 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const gridCols = tabData.columns || 1;
       let html = `<div class="table-container"><div class="table-grid-wrapper table-grid-${gridCols}">`;
-      
+
       tabData.tables.forEach((table, tIdx) => {
           const tableWidthCSS = table.customSized ? 'max-content' : '100%';
-          html += `<div class="editable-table-wrapper" style="margin-bottom:2rem; width:100%;">
-                    <table class="status-table ${isStatusEditMode ? 'editable-table' : ''}" data-tid="${tIdx}" style="width:${tableWidthCSS};">
-                      <thead><tr>`;
+          html += `<div class="editable-table-wrapper" style="margin-bottom:2rem; width:100%; overflow:visible; ${isStatusEditMode ? 'margin-top:2.5rem;' : ''}">
+            <table class="status-table ${isStatusEditMode ? 'editable-table' : ''}" data-tid="${tIdx}" style="width:${tableWidthCSS};">
+              <thead><tr>`;
+
+          // 열 헤더: float controls for delete and drag
           table.headers.forEach((h, hIndex) => {
               const w = table.widths && table.widths[hIndex] ? table.widths[hIndex] + 'px' : 'auto';
-              html += `<th data-col="${hIndex}" style="width: ${w}"><div class="header-inner">${isStatusEditMode ? `<textarea class="editable-input" rows="1" style="resize:vertical; overflow:hidden;" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'" onchange="statusData['${activeTabId}'].tables[${tIdx}].headers[${hIndex}]=this.value">${h}</textarea>` : h}</div></th>`;
+              if (isStatusEditMode) {
+                  html += `<th data-col="${hIndex}" style="width:${w}; position:relative;"><div class="col-edit-floating"><span class="col-drag-handle" title="드래그하여 열 이동"><i class="fas fa-grip-horizontal"></i></span><button class="tbl-del-btn" onclick="statusDeleteCol('${activeTabId}',${tIdx},${hIndex})" title="이 열 삭제"><i class="fas fa-minus"></i></button></div><div class="header-inner"><div class="editable-input" contenteditable="true" onblur="statusData['${activeTabId}'].tables[${tIdx}].headers[${hIndex}]=this.innerText">${h}</div></div><div class="status-col-resizer" onmousedown="initStatusColResize(event, '${activeTabId}', ${tIdx}, ${hIndex})"></div></th>`;
+              } else {
+                  html += `<th data-col="${hIndex}" style="width:${w}"><div class="header-inner">${h}</div></th>`;
+              }
           });
+
           html += `</tr></thead><tbody>`;
+
           table.rows.forEach((row, rIdx) => {
-              html += `<tr>`;
+              html += `<tr data-row="${rIdx}">`;
               row.forEach((cell, cIndex) => {
-                  html += `<td>${isStatusEditMode ? `<textarea class="editable-input" rows="1" style="resize:vertical; overflow:hidden;" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'" onchange="statusData['${activeTabId}'].tables[${tIdx}].rows[${rIdx}][${cIndex}]=this.value">${cell}</textarea>` : cell}</td>`;
+                  html += `<td style="position:relative;">`;
+                  if (isStatusEditMode && cIndex === 0) {
+                      html += `<div class="row-edit-floating"><span class="row-drag-handle" title="드래그하여 행 이동"><i class="fas fa-grip-vertical"></i></span><button class="tbl-del-btn" onclick="statusDeleteRow('${activeTabId}',${tIdx},${rIdx})" title="이 행 삭제"><i class="fas fa-minus"></i></button></div>`;
+                  }
+                  html += isStatusEditMode
+                      ? `<div class="editable-input" contenteditable="true" onblur="statusData['${activeTabId}'].tables[${tIdx}].rows[${rIdx}][${cIndex}]=this.innerText">${cell}</div>`
+                      : cell;
+                  html += `</td>`;
               });
               html += `</tr>`;
           });
+
           html += `</tbody></table>`;
-          
+
           if (isStatusEditMode) {
               html += `<div class="table-controls">
-                <button class="btn-mini" onclick="statusRowAction('${activeTabId}', ${tIdx}, 'add')"><i class="fas fa-plus"></i> 행 추가</button>
-                <button class="btn-mini danger" onclick="statusRowAction('${activeTabId}', ${tIdx}, 'remove')"><i class="fas fa-minus"></i> 행 삭제</button>
-                <button class="btn-mini" onclick="statusColAction('${activeTabId}', ${tIdx}, 'add')"><i class="fas fa-plus"></i> 열 추가</button>
-                <button class="btn-mini danger" onclick="statusColAction('${activeTabId}', ${tIdx}, 'remove')"><i class="fas fa-minus"></i> 열 삭제</button>
-                <button class="btn-mini" onclick="statusEqualizeWidth('${activeTabId}', ${tIdx})"><i class="fas fa-arrows-alt-h"></i> 너비 같게</button>
-                <button class="btn-mini danger" onclick="removeTableFromTab('${activeTabId}', ${tIdx})">표 삭제</button>
+                <button class="btn-mini" onclick="statusRowAction('${activeTabId}',${tIdx},'add')"><i class="fas fa-plus"></i> 행 추가</button>
+                <button class="btn-mini" onclick="statusColAction('${activeTabId}',${tIdx},'add')"><i class="fas fa-plus"></i> 열 추가</button>
+                <button class="btn-mini" onclick="statusEqualizeWidth('${activeTabId}',${tIdx})"><i class="fas fa-arrows-alt-h"></i> 너비 같게</button>
+                <button class="btn-mini danger" onclick="removeTableFromTab('${activeTabId}',${tIdx})">표 삭제</button>
               </div>`;
           }
           html += `</div>`;
       });
       html += `</div></div>`;
-      
+
       if (isStatusEditMode) {
-          html += `<div class="add-table-container"><button class="add-tab-btn" onclick="addTableToTab('${activeTabId}')"><i class="fas fa-table"></i> 표 추가하기</button></div>`;
+          html += `<div class="add-table-container"><button class="add-tab-btn" style="margin-top:20px;" onclick="addTableToTab('${activeTabId}')"><i class="fas fa-table"></i> 표 추가하기</button></div>`;
       }
 
       panel.innerHTML = html;
       container.appendChild(panel);
-      if (isStatusEditMode && window.initTableResizing) {
-          window.initTableResizing((table, colIdx, newWidth) => {
-              const tIdx = table.dataset.tid;
-              if (activeTabId && statusData[activeTabId] && statusData[activeTabId].tables[tIdx]) {
-                  const tableData = statusData[activeTabId].tables[tIdx];
-                  if (!tableData.widths) {
-                      const ths = table.querySelectorAll('thead th');
-                      tableData.widths = Array.from(ths).map(th => th.offsetWidth);
+
+      if (isStatusEditMode && window.Sortable) {
+          // ① 행 드래그앤드롭 (Sortable on tbody)
+          panel.querySelectorAll('.status-table tbody').forEach(tbody => {
+              const tIdx = parseInt(tbody.closest('.status-table').dataset.tid);
+              new Sortable(tbody, {
+                  handle: '.row-drag-handle',
+                  animation: 150,
+                  ghostClass: 'status-row-ghost',
+                  onStart: () => { syncStatusDataFromDOM(); pushTableHistory(activeTabId, tIdx); },
+                  onEnd: (evt) => {
+                      if (evt.oldIndex === evt.newIndex) return;
+                      const tbl = statusData[activeTabId].tables[tIdx];
+                      const moved = tbl.rows.splice(evt.oldIndex, 1)[0];
+                      tbl.rows.splice(evt.newIndex, 0, moved);
+                      renderStatusContent();
                   }
-                  tableData.widths[colIdx] = newWidth;
-                  tableData.customSized = true;
-              }
+              });
+          });
+
+          // ② 열 드래그앤드롭 (Sortable on thead tr)
+          panel.querySelectorAll('.status-table thead tr').forEach(theadTr => {
+              const tIdx = parseInt(theadTr.closest('.status-table').dataset.tid);
+              new Sortable(theadTr, {
+                  handle: '.col-drag-handle',
+                  filter: '[data-fixed]',
+                  preventOnFilter: true,
+                  animation: 150,
+                  ghostClass: 'status-col-ghost',
+                  onStart: () => { syncStatusDataFromDOM(); pushTableHistory(activeTabId, tIdx); },
+                  onEnd: () => {
+                      const fixedTh = theadTr.querySelector('th[data-fixed]');
+                      if (fixedTh && fixedTh !== theadTr.firstElementChild) {
+                          theadTr.insertBefore(fixedTh, theadTr.firstElementChild);
+                      }
+                      const ths = [...theadTr.querySelectorAll('th[data-col]')];
+                      const newOrder = ths.map(th => parseInt(th.dataset.col));
+                      const tbl = statusData[activeTabId].tables[tIdx];
+                      const oldH = [...tbl.headers];
+                      const oldW = tbl.widths ? [...tbl.widths] : null;
+                      const oldRows = tbl.rows.map(r => [...r]);
+                      tbl.headers = newOrder.map(i => oldH[i]);
+                      if (oldW) tbl.widths = newOrder.map(i => oldW[i] || 100);
+                      tbl.rows = oldRows.map(row => newOrder.map(i => row[i] || ''));
+                      renderStatusContent();
+                  }
+              });
           });
       }
   }
 
   // Actions
   window.removeTab = (id) => {
-      const title = statusData[id]?.title || id;
       if (confirm('이 탭을 삭제하시겠습니까?')) {
           delete statusData[id];
           if (activeTabId === id) activeTabId = Object.keys(statusData)[0] || null;
-          if (window.logUserAction) window.logUserAction('status', '탭삭제', `탭: ${title}`);
           renderStatusTabs();
           renderStatusContent();
       }
   };
 
-  function addNewTab() {
+  window.addNewTab = () => {
       const title = prompt('새 탭 이름:');
       if (title) {
           const id = 'tab_' + Date.now();
           statusData[id] = { title, order: Object.keys(statusData).length, columns: 1, tables: [{ headers: ['제목1'], widths:[100], rows: [['']] }] };
           activeTabId = id;
-          if (window.logUserAction) window.logUserAction('status', '탭생성', `새 탭: ${title}`);
           renderStatusTabs();
           renderStatusContent();
           renderStatusControls();
       }
-  }
+  };
 
   window.addTableToTab = (tabId) => {
       statusData[tabId].tables.push({ headers: ['제목1'], widths: [100], rows: [['']] });
-      if (window.logUserAction) window.logUserAction('status', '표추가', `탭: ${statusData[tabId].title}`);
       renderStatusContent();
   };
 
   window.removeTableFromTab = (tabId, tIdx) => {
       if (confirm('이 표를 삭제하시겠습니까?')) {
           statusData[tabId].tables.splice(tIdx, 1);
-          if (window.logUserAction) window.logUserAction('status', '표삭제', `탭: ${statusData[tabId].title}, 표: ${tIdx + 1}번`);
           renderStatusContent();
       }
   };
 
   window.statusRowAction = (tabId, tIdx, type) => {
+      syncStatusDataFromDOM();
       const table = statusData[tabId].tables[tIdx];
-      if (type === 'add') table.rows.push(Array(table.headers.length).fill(''));
-      else if (table.rows.length > 0) table.rows.pop();
-      if (window.logUserAction) window.logUserAction('status', type === 'add' ? '행추가' : '행삭제', `탭: ${statusData[tabId].title}, 표: ${tIdx + 1}번`);
-      renderStatusContent();
+      if (type === 'add') {
+          pushTableHistory(tabId, tIdx);
+          table.rows.push(Array(table.headers.length).fill(''));
+          renderStatusContent();
+      }
   };
 
   window.statusColAction = (tabId, tIdx, type) => {
+      syncStatusDataFromDOM();
       const table = statusData[tabId].tables[tIdx];
       if (type === 'add') {
+          pushTableHistory(tabId, tIdx);
           table.headers.push('새 열');
           if (!table.widths) table.widths = Array(table.headers.length - 1).fill(100);
           table.widths.push(100);
           table.rows.forEach(r => r.push(''));
-      } else if (table.headers.length > 0) {
-          table.headers.pop();
-          if (table.widths) table.widths.pop();
-          table.rows.forEach(r => r.pop());
+          renderStatusContent();
       }
-      if (window.logUserAction) window.logUserAction('status', type === 'add' ? '열추가' : '열삭제', `탭: ${statusData[tabId].title}, 표: ${tIdx + 1}번`);
+  };
+
+  window.statusDeleteRow = (tabId, tIdx, rowIdx) => {
+      syncStatusDataFromDOM();
+      const table = statusData[tabId].tables[tIdx];
+      if (table.rows.length <= 0) return;
+      pushTableHistory(tabId, tIdx);
+      table.rows.splice(rowIdx, 1);
       renderStatusContent();
   };
+
+  window.statusDeleteCol = (tabId, tIdx, colIdx) => {
+      syncStatusDataFromDOM();
+      const table = statusData[tabId].tables[tIdx];
+      if (table.headers.length <= 0) return;
+      pushTableHistory(tabId, tIdx);
+      table.headers.splice(colIdx, 1);
+      if (table.widths) table.widths.splice(colIdx, 1);
+      table.rows.forEach(r => r.splice(colIdx, 1));
+      renderStatusContent();
+  };
+
+  window.initStatusColResize = (e, tabId, tIdx, colIdx) => {
+      e.stopPropagation();
+      e.preventDefault();
+      
+      const th = e.target.closest('th');
+      const startX = e.pageX;
+      const startWidth = th.offsetWidth;
+      
+      const tableEl = th.closest('table');
+      let startTableWidth = 0;
+      
+      if (tableEl) {
+          // 크기가 튀는 것을 방지하기 위해 드래그 시작 시 모든 열의 너비를 명시적 픽셀로 고정
+          const allThs = Array.from(tableEl.querySelectorAll('th'));
+          allThs.forEach(t => {
+              t.style.width = t.offsetWidth + 'px';
+          });
+          startTableWidth = tableEl.offsetWidth;
+          tableEl.style.width = startTableWidth + 'px';
+          // tableLayout은 기본 설정인 fixed를 그대로 유지하여 다른 열들이 자동 조절되어 끊기는 현상 방지
+      }
+      
+      const onMouseMove = (moveEvent) => {
+          const delta = moveEvent.pageX - startX;
+          const newWidth = Math.max(30, startWidth + delta);
+          
+          th.style.width = newWidth + 'px';
+          if (tableEl) {
+              // 조절하는 열의 너비 변화량만큼 표 전체 너비도 동기화하여 미세하고 부드러운 조절 구현
+              tableEl.style.width = Math.max(100, startTableWidth + (newWidth - startWidth)) + 'px';
+          }
+      };
+      
+      const onMouseUp = (upEvent) => {
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+          
+          if (statusData[tabId] && statusData[tabId].tables[tIdx]) {
+              const table = statusData[tabId].tables[tIdx];
+              if (!table.widths) table.widths = Array(table.headers.length).fill(100);
+              
+              // 드래그가 끝난 후 최종적으로 계산된 모든 열의 실제 너비를 저장
+              if (tableEl) {
+                  const allThs = Array.from(tableEl.querySelectorAll('th'));
+                  allThs.forEach((t, i) => {
+                      if (table.widths[i] !== undefined) {
+                          table.widths[i] = t.offsetWidth;
+                      }
+                  });
+              }
+              table.customSized = true;
+          }
+      };
+      
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+  };
+
+  // Undo / Redo
+  function pushTableHistory(tabId, tIdx) {
+      const snapshot = {
+          tabId, tIdx,
+          data: JSON.parse(JSON.stringify(statusData[tabId].tables[tIdx]))
+      };
+      tableEditHistory.undo.push(snapshot);
+      if (tableEditHistory.undo.length > MAX_HISTORY) tableEditHistory.undo.shift();
+      tableEditHistory.redo = [];
+      showUndoToast();
+  }
+
+  function undoTableEdit() {
+      if (tableEditHistory.undo.length === 0) { showUndoToast('더 이상 되돌릴 작업이 없습니다.', true); return; }
+      syncStatusDataFromDOM();
+      const snapshot = tableEditHistory.undo.pop();
+      tableEditHistory.redo.push({
+          tabId: snapshot.tabId, tIdx: snapshot.tIdx,
+          data: JSON.parse(JSON.stringify(statusData[snapshot.tabId].tables[snapshot.tIdx]))
+      });
+      statusData[snapshot.tabId].tables[snapshot.tIdx] = snapshot.data;
+      activeTabId = snapshot.tabId;
+      renderStatusTabs();
+      renderStatusContent();
+      showUndoToast('실행 취소됨 (Ctrl+Shift+Z로 다시 실행)');
+  }
+
+  function redoTableEdit() {
+      if (tableEditHistory.redo.length === 0) { showUndoToast('다시 실행할 작업이 없습니다.', true); return; }
+      syncStatusDataFromDOM();
+      const snapshot = tableEditHistory.redo.pop();
+      tableEditHistory.undo.push({
+          tabId: snapshot.tabId, tIdx: snapshot.tIdx,
+          data: JSON.parse(JSON.stringify(statusData[snapshot.tabId].tables[snapshot.tIdx]))
+      });
+      statusData[snapshot.tabId].tables[snapshot.tIdx] = snapshot.data;
+      activeTabId = snapshot.tabId;
+      renderStatusTabs();
+      renderStatusContent();
+      showUndoToast('다시 실행됨');
+  }
+
+  function showUndoToast(msg = '', isWarn = false) {
+      let toast = document.getElementById('status-undo-toast');
+      if (!toast) {
+          toast = document.createElement('div');
+          toast.id = 'status-undo-toast';
+          document.body.appendChild(toast);
+      }
+      if (!msg) return;
+      toast.textContent = msg;
+      toast.className = 'status-undo-toast ' + (isWarn ? 'warn' : 'info');
+      toast.classList.add('visible');
+      clearTimeout(toast._hideTimer);
+      toast._hideTimer = setTimeout(() => toast.classList.remove('visible'), 2200);
+  }
 
   window.statusEqualizeWidth = (tabId, tIdx) => {
       const table = statusData[tabId].tables[tIdx];
       if (table && table.headers.length > 0) {
-          // 작성 중이던 텍스트 데이터가 날아가지 않도록 DOM 입력값 먼저 동기화
           if (isStatusEditMode) syncStatusDataFromDOM();
 
           if (!table.widths) table.widths = Array(table.headers.length).fill(100);
@@ -1205,9 +1442,13 @@ document.addEventListener("DOMContentLoaded", () => {
           table.widths = Array(table.headers.length).fill(equalWidth);
           table.customSized = true;
           
-          if (window.logUserAction) window.logUserAction('status', '너비동기화', `탭: ${statusData[tabId].title}, 표: ${tIdx + 1}번 너비 같게 지정`);
           renderStatusContent();
       }
+  };
+
+  window.exportStatusToExcel = () => {
+    // 엑셀 다운로드 임시 함수
+    alert("엑셀 다운로드 기능은 시트라이브러리(SheetJS 등)가 필요합니다.");
   };
 
   window.addEventListener('firebase-ready', initStatusEditing);
@@ -1292,6 +1533,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const container = document.getElementById("datayard-container");
     if(!container) return;
 
+    datayardRenderSnapshot = JSON.parse(JSON.stringify(localDatayardData));
     container.innerHTML = "";
     
     // Header (제목)는 datayardSection의 첫 부분에 이미 HTML로 들어가 있음.
@@ -1304,39 +1546,51 @@ document.addEventListener("DOMContentLoaded", () => {
 
       card.innerHTML = `
         <div class="helppage-main-card">
-          <div class="helppage-main-toggle" style="cursor: ${datayardEditMode ? 'default' : 'pointer'}">
+          ${datayardEditMode ? `
+          <!-- ── 편집모드: 2행 레이아웃 ── -->
+          <div class="helppage-main-toggle" style="cursor:default;flex-direction:column;align-items:stretch;gap:0;padding:0.7rem 1rem 0;position:relative;z-index:1;">
+            <!-- 행 1: 드래그 핸들 + 축소 아이콘 + 그룹명/설명 + 접기화살표 -->
+            <div style="display:flex;align-items:center;gap:9px;">
+              <i class="fas fa-grip-vertical datayard-sortable-handle group-handle" style="color:#94a3b8;flex-shrink:0;font-size:1rem;"></i>
+              <div class="icon-box ${group.color || 'blue'}-bg" style="width:34px;height:34px;min-width:34px;border-radius:9px;font-size:0.88rem;flex-shrink:0;">
+                <i class="fas ${group.icon || 'fa-folder'} ${group.color || 'blue'}-text"></i>
+              </div>
+              <div class="title-group" style="flex:1;min-width:0;">
+                <h3 style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${group.category}</h3>
+                <p style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${group.description || group.category + ' 관련 자료 목록'}</p>
+              </div>
+              <i class="fas fa-chevron-down main-chevron" style="cursor:pointer;flex-shrink:0;color:#94a3b8;"></i>
+            </div>
+            <!-- 행 2: 액션 버튼 우측 정렬 -->
+            <div style="display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:0.45rem 0 0.55rem;">
+              <button class="my-magic-edit-btn" title="그룹 수정" style="width:30px;height:30px;min-width:30px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#64748b;box-shadow:0 1px 3px rgba(0,0,0,0.06);flex-shrink:0;"><i class="fas fa-pen" style="font-size:0.8rem;"></i></button>
+              <button class="my-magic-delete-btn" title="그룹 삭제" style="width:30px;height:30px;min-width:30px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#ef4444;box-shadow:0 1px 3px rgba(0,0,0,0.06);flex-shrink:0;"><i class="fas fa-trash" style="font-size:0.8rem;"></i></button>
+              <button class="add-file-btn" title="자료 추가" style="width:30px;height:30px;min-width:30px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#10b981;box-shadow:0 1px 3px rgba(0,0,0,0.06);flex-shrink:0;"><i class="fas fa-plus" style="font-size:0.88rem;"></i></button>
+            </div>
+          </div>
+          ` : `
+          <!-- ── 일반모드: 단일행 레이아웃 ── -->
+          <div class="helppage-main-toggle" style="cursor:pointer;">
             <div class="header-info">
-              ${datayardEditMode ? '<i class="fas fa-grip-vertical datayard-sortable-handle group-handle"></i>' : ''}
               <div class="icon-box ${group.color || 'blue'}-bg">
                 <i class="fas ${group.icon || 'fa-folder'} ${group.color || 'blue'}-text"></i>
               </div>
               <div class="title-group">
                 <h3>${group.category}</h3>
-                <p>${group.category} 관련 자료 목록</p>
+                <p>${group.description || group.category + ' 관련 자료 목록'}</p>
               </div>
-
             </div>
-            <!-- Right Side Controls (Premium Unified UI) -->
-            <div style="display: flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0;">
-               ${datayardEditMode ? `
-                   <!-- Edit Group -->
-                   <button class="my-magic-edit-btn" title="그룹 수정" style="width: 32px; height: 32px; min-width: 32px; background: #ffffff !important; border: 1px solid #e2e8f0 !important; border-radius: 8px; cursor: pointer; display: inline-flex !important; position: static !important; align-items: center; justify-content: center; color: #64748b !important; margin: 0 !important; flex-shrink: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s ease;"><i class="fas fa-pen" style="font-size: 0.9rem;"></i></button>
-                   
-                   <!-- Delete Group -->
-                   <button class="my-magic-delete-btn" title="그룹 삭제" style="width: 32px; height: 32px; min-width: 32px; background: #ffffff !important; border: 1px solid #e2e8f0 !important; border-radius: 8px; cursor: pointer; display: inline-flex !important; position: static !important; align-items: center; justify-content: center; color: #ef4444 !important; margin: 0 !important; flex-shrink: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s ease;"><i class="fas fa-trash" style="font-size: 0.9rem;"></i></button>
-                   
-                   <!-- Add Item (Simplified to Icon) -->
-                   <button class="add-item-btn add-file-btn" title="자료 추가" style="width: 32px; height: 32px; min-width: 32px; background: #ffffff !important; border: 1px solid #e2e8f0 !important; border-radius: 8px; cursor: pointer; display: inline-flex !important; position: static !important; align-items: center; justify-content: center; color: #10b981 !important; margin: 0 !important; flex-shrink: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s ease;"><i class="fas fa-plus" style="font-size: 1rem;"></i></button>
-               ` : ''}
-               <i class="fas fa-chevron-down main-chevron" style="margin-left: 10px; cursor: pointer; flex-shrink: 0; color: #94a3b8;"></i>
+            <div style="margin-left:auto;padding-left:10px;flex-shrink:0;">
+              <i class="fas fa-chevron-down main-chevron" style="cursor:pointer;color:#94a3b8;"></i>
             </div>
           </div>
+          `}
           
           <div id="${group.id}-content" class="hidden-content ${datayardEditMode ? '' : 'hidden'}">
             <div class="sub-sections-container">
               <div class="sub-items-list datayard-items-container" style="padding-left: 0;" data-group-id="${group.id}">
                 ${group.items.map((item, itemIndex) => `
-                  <div class="file-item-wrapper" data-index="${itemIndex}">
+                  <div class="file-item-wrapper" data-index="${itemIndex}" data-item-key="${group.id}:${itemIndex}">
                     <a href="${item.url}" class="file-item" onclick="window.forceDownload(event, '${item.url}', '${item.title}')">
                       ${datayardEditMode ? '<i class="fas fa-grip-vertical datayard-sortable-handle item-handle"></i>' : ''}
                       <i class="fas fa-file-alt"></i>
@@ -1414,8 +1668,9 @@ document.addEventListener("DOMContentLoaded", () => {
           });
         });
 
-        // Item Sortable
+        // Item Sortable (group enables cross-group drag)
         new Sortable(card.querySelector(".datayard-items-container"), {
+          group: { name: 'datayard-items', pull: true, put: true },
           handle: '.item-handle',
           animation: 150,
           ghostClass: 'sortable-ghost',
@@ -1482,27 +1737,33 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   function updateDatayardOrderFromDOM() {
+    if (!datayardRenderSnapshot) return;
     const container = document.getElementById("datayard-container");
     const newGroups = [];
-    
+
     container.querySelectorAll(".datayard-group-card").forEach((groupEl, gIndex) => {
       const groupId = groupEl.dataset.id;
       const originalGroup = localDatayardData.find(g => g.id === groupId);
-      if(!originalGroup) return;
+      if (!originalGroup) return;
 
       const newItems = [];
       groupEl.querySelectorAll(".file-item-wrapper").forEach((itemEl) => {
-        const itemIdx = itemEl.dataset.index;
-        newItems.push(originalGroup.items[itemIdx]);
+        const itemKey = itemEl.dataset.itemKey;
+        if (itemKey) {
+          // Parse "sourceGroupId:sourceItemIndex" — works for cross-group drag
+          const colonIdx = itemKey.lastIndexOf(':');
+          const srcGroupId = itemKey.substring(0, colonIdx);
+          const srcIdx = parseInt(itemKey.substring(colonIdx + 1), 10);
+          const srcGroup = datayardRenderSnapshot.find(g => g.id === srcGroupId);
+          if (srcGroup && srcGroup.items[srcIdx] !== undefined) {
+            newItems.push(srcGroup.items[srcIdx]);
+          }
+        }
       });
 
-      newGroups.push({
-        ...originalGroup,
-        order: gIndex,
-        items: newItems
-      });
+      newGroups.push({ ...originalGroup, order: gIndex, items: newItems });
     });
-    
+
     localDatayardData = newGroups;
   }
 
@@ -1523,10 +1784,11 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('datayardGroupModalTitle').textContent = "그룹 수정";
       document.getElementById('datayard-group-id').value = group.id;
       document.getElementById('datayard-group-title').value = group.category;
+      document.getElementById('datayard-group-desc').value = group.description || '';
       const currentIcon = group.icon || 'fa-folder';
       iconInput.value = currentIcon;
       document.getElementById('datayard-group-color').value = group.color || 'blue';
-      
+
       // 아이콘 선택 상태 반영
       iconOptions.forEach(opt => {
         opt.classList.toggle('selected', opt.dataset.icon === currentIcon);
@@ -1534,6 +1796,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       document.getElementById('datayardGroupModalTitle').textContent = "그룹 추가";
       document.getElementById('datayard-group-id').value = "";
+      document.getElementById('datayard-group-desc').value = '';
       iconInput.value = 'fa-folder';
       iconOptions.forEach(opt => {
         opt.classList.toggle('selected', opt.dataset.icon === 'fa-folder');
@@ -1568,9 +1831,9 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('datayard-item-url').value = item.url;
       document.getElementById('datayard-item-url-input').value = item.url;
       
-      // 파일인지 URL인지 대략적으로 판단하여 탭 활성화 (Firebase Storage URL 체크)
-      const isFirebaseUrl = item.url.includes('firebasestorage') || item.url.includes('mybox'); // Assuming logic
-      if(isFirebaseUrl) {
+      // 파일인지 URL인지 대략적으로 판단하여 탭 활성화
+      const isUploadedFile = item.url.includes('firebasestorage') || item.url.includes('drive.google.com') || item.url.includes('mybox');
+      if(isUploadedFile) {
          switchDyItemTab('upload');
          // 기존 파일이 있다는 표시
          document.getElementById('datayard-file-name-display').textContent = "기존 파일 유지 (변경하려면 파일 선택)";
@@ -1672,17 +1935,19 @@ document.addEventListener("DOMContentLoaded", () => {
   // 그룹 저장
   dyGroupForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const id = document.getElementById('datayard-group-id').value;
+    const id    = document.getElementById('datayard-group-id').value;
     const title = document.getElementById('datayard-group-title').value;
-    const icon = document.getElementById('datayard-group-icon').value;
+    const desc  = document.getElementById('datayard-group-desc').value.trim();
+    const icon  = document.getElementById('datayard-group-icon').value;
     const color = document.getElementById('datayard-group-color').value;
 
     if(id) {
       // 수정
       const group = localDatayardData.find(g => g.id === id);
-      group.category = title;
-      group.icon = icon;
-      group.color = color;
+      group.category    = title;
+      group.description = desc;
+      group.icon        = icon;
+      group.color       = color;
       if(window.logUserAction) window.logUserAction('datayard', '수정', `그룹 정보 수정: ${title}`);
     } else {
       // 추가
@@ -1690,6 +1955,7 @@ document.addEventListener("DOMContentLoaded", () => {
       localDatayardData.push({
         id: newId,
         category: title,
+        description: desc,
         icon: icon,
         color: color,
         items: [],
@@ -1711,35 +1977,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const group = localDatayardData.find(g => g.id === groupId);
 
-    // 파일 업로드 모드인 경우
+    // 파일 업로드 모드인 경우 (Google Drive)
     if (datayardActiveTab === 'upload' && datayardFileToUpload) {
-      const { storage, storageUtils } = window;
-      if(!storage) {
-        alert("Firebase Storage가 준비되지 않았습니다.");
+      if (!window.driveUpload) {
+        alert("Google Drive 업로드 모듈이 준비되지 않았습니다. 페이지를 새로고침해 주세요.");
         return;
       }
-      
+      if (!datayardDriveFolderId) {
+        alert("Google Drive 폴더 ID를 먼저 설정해 주세요.\n편집 모드에서 'Drive 폴더 ID' 항목을 채워주세요.");
+        return;
+      }
+
       const progressArea = document.getElementById('datayard-upload-progress');
       const progressFill = progressArea.querySelector('.progress-fill');
       const progressText = progressArea.querySelector('.progress-text');
-      
+
       progressArea.classList.remove('hidden');
-      
+      progressText.textContent = "Google 인증 중...";
+
       try {
-        const fileRef = storageUtils.ref(storage, `datayard/${Date.now()}_${datayardFileToUpload.name}`);
-        // uploadBytes doesn't provide progress easily without uploadBytesResumable, 
-        // but let's keep it simple or use a placeholder progress
-        progressFill.style.width = "50%";
-        progressText.textContent = "업로드 중... (50%)";
-        
-        const snapshot = await storageUtils.uploadBytes(fileRef, datayardFileToUpload);
-        url = await storageUtils.getDownloadURL(snapshot.ref);
-        
-        progressFill.style.width = "100%";
-        progressText.textContent = "업로드 완료! (100%)";
+        url = await window.driveUpload.uploadFile(
+          datayardFileToUpload,
+          datayardDriveFolderId,
+          (pct) => {
+            progressFill.style.width = pct + '%';
+            progressText.textContent = '업로드 중... (' + pct + '%)';
+          }
+        );
+        progressFill.style.width = '100%';
+        progressText.textContent = '업로드 완료! (100%)';
       } catch (err) {
-        console.error("Upload error:", err);
-        alert("파일 업로드 중 오류가 발생했습니다.");
+        console.error("Drive upload error:", err);
+        alert("파일 업로드 중 오류가 발생했습니다:\n" + err.message);
         return;
       }
     } else if (datayardActiveTab === 'upload' && itemId !== "") {
@@ -1771,11 +2040,23 @@ document.addEventListener("DOMContentLoaded", () => {
   let datayardBackup = null;
 
   if (dyEditBtn) {
-    dyEditBtn.addEventListener('click', () => {
+    dyEditBtn.addEventListener('click', async () => {
       datayardEditMode = true;
-      datayardBackup = JSON.parse(JSON.stringify(localDatayardData)); // Backup data
+      datayardBackup = JSON.parse(JSON.stringify(localDatayardData));
       dyEditBtn.classList.add('hidden');
       dyEditActions.classList.remove('hidden');
+
+      // Load Drive folder ID from Firestore
+      if (window.db) {
+        try {
+          const { db, firestoreUtils } = window;
+          const configDoc = await firestoreUtils.getDoc(firestoreUtils.doc(db, 'settings', 'datayardDriveConfig'));
+          if (configDoc.exists()) datayardDriveFolderId = configDoc.data().folderId || '';
+        } catch (e) { /* ignore */ }
+      }
+      const folderInput = document.getElementById('datayard-drive-folder-id');
+      if (folderInput) folderInput.value = datayardDriveFolderId;
+
       renderDatayard();
     });
   }
@@ -1783,6 +2064,21 @@ document.addEventListener("DOMContentLoaded", () => {
   dyAddGroupBtn.addEventListener('click', () => openDatayardGroupModal());
 
   dySaveOrderBtn.addEventListener('click', async () => {
+    // Save Drive folder ID
+    const folderInput = document.getElementById('datayard-drive-folder-id');
+    if (folderInput) {
+      const newId = folderInput.value.trim();
+      if (newId !== datayardDriveFolderId && window.db) {
+        try {
+          const { db, firestoreUtils } = window;
+          await firestoreUtils.setDoc(firestoreUtils.doc(db, 'settings', 'datayardDriveConfig'), { folderId: newId });
+          datayardDriveFolderId = newId;
+        } catch (e) { console.warn('Drive config save failed:', e); }
+      } else {
+        datayardDriveFolderId = newId;
+      }
+    }
+
     datayardEditMode = false;
     dyEditActions.classList.add('hidden');
     if (dyEditBtn) dyEditBtn.classList.remove('hidden');
@@ -2244,23 +2540,155 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
 
-  /* ================= 학교계정 (School Account) Logic ================= */
+    /* ================= 학교계정 (School Account) Logic ================= */
   let localAccountData = [];
   let accountEditMode = false;
+  let currentAccountCategory = "기관 계정";
+  let accountSortable = null;
+  let accountGroupSortable = null;
 
-  async function initAccount() {
+  // 기본 카테고리 설정 (초기 로딩용)
+  let accountCategories = [
+    { id: "cat1", name: "기관 계정", desc: "학교 및 교육청 관련 주요 기관 계정 목록입니다.", icon: "fa-university", order: 0 },
+    { id: "cat2", name: "쇼핑몰", desc: "업무 물품 구매를 위한 쇼핑몰 계정 목록입니다.", icon: "fa-shopping-cart", order: 1 },
+    { id: "cat3", name: "메일 및 문자", desc: "공용 메일 및 문자 발송 서비스 계정 목록입니다.", icon: "fa-envelope", order: 2 },
+    { id: "cat4", name: "교수학습", desc: "수업 및 학습 지원 도구 관련 계정 목록입니다.", icon: "fa-chalkboard-teacher", order: 3 },
+    { id: "cat5", name: "기기 및 보안", desc: "학교 기기 관리 및 보안 관련 계정 목록입니다.", icon: "fa-shield-alt", order: 4 },
+    { id: "cat6", name: "업무용 SW", desc: "행정 및 교육 업무용 소프트웨어 계정 목록입니다.", icon: "fa-laptop-code", order: 5 },
+    { id: "cat7", name: "안전, 복지 업무", desc: "학생 안전 및 교직원 복지 관련 계정 목록입니다.", icon: "fa-heartbeat", order: 6 }
+  ];
+
+  window.initAccount = async function() {
+    await loadAccountCategories();
     if (localAccountData.length === 0) {
       await loadAccountsFromFirebase();
     } else {
-      renderAccountTable();
+      renderAccountCards();
     }
+    renderAccountSidebar();
     initAccountEditing();
   }
+
+  async function loadAccountCategories() {
+    const { db, firestoreUtils } = window;
+    if (!db) return;
+    try {
+        const q = firestoreUtils.query(firestoreUtils.collection(db, "accountCategories"), firestoreUtils.orderBy("order"));
+        const snapshot = await firestoreUtils.getDocs(q);
+        if (!snapshot.empty) {
+            accountCategories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+    } catch (err) {
+        console.error("Error loading categories:", err);
+    }
+  }
+
+  function renderAccountSidebar() {
+    const menu = document.getElementById("account-category-menu");
+    if (!menu) return;
+    menu.innerHTML = "";
+    
+    accountCategories.forEach(cat => {
+        const btn = document.createElement("button");
+        btn.className = `account-nav-item ${currentAccountCategory === cat.name ? 'active' : ''}`;
+        btn.dataset.id = cat.id;
+        
+        btn.innerHTML = `
+            <i class="fas ${cat.icon}"></i>
+            <span class="nav-label">${cat.name}</span>
+            ${accountEditMode ? `
+                <div class="category-edit-btns">
+                    <span class="cat-edit-btn" onclick="event.stopPropagation(); window.openAccountGroupModal('${cat.id}')"><i class="fas fa-cog"></i></span>
+                </div>
+            ` : ""}
+        `;
+        
+        btn.onclick = () => {
+            currentAccountCategory = cat.name;
+            renderAccountSidebar();
+            window.accountSearchQuery = "";
+            renderAccountCards();
+        };
+
+        // 드롭 타겟 설정 (계정 이동용)
+        btn.ondragover = (e) => {
+            if (!accountEditMode || accountGroupSortable) return;
+            e.preventDefault();
+            btn.classList.add("drag-over");
+        };
+        btn.ondragleave = () => btn.classList.remove("drag-over");
+        btn.ondrop = async (e) => {
+            if (!accountEditMode || accountGroupSortable) return;
+            e.preventDefault();
+            btn.classList.remove("drag-over");
+            const accountId = e.dataTransfer.getData("text/plain");
+            if (accountId) {
+                await moveAccountsToCategory([accountId], cat.name);
+            }
+        };
+        menu.appendChild(btn);
+    });
+
+    if (accountEditMode && window.Sortable) {
+        if (accountGroupSortable) accountGroupSortable.destroy();
+        accountGroupSortable = new Sortable(menu, {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            onEnd: async () => {
+                const newOrder = Array.from(menu.children).map((child, idx) => ({
+                    id: child.dataset.id,
+                    order: idx
+                }));
+                const { db, firestoreUtils } = window;
+                for (const item of newOrder) {
+                    const cat = accountCategories.find(c => c.id === item.id);
+                    if (cat) cat.order = item.order;
+                    await firestoreUtils.updateDoc(firestoreUtils.doc(db, "accountCategories", item.id), { order: item.order });
+                }
+                accountCategories.sort((a, b) => a.order - b.order);
+            }
+        });
+    } else {
+        if (accountGroupSortable) {
+            accountGroupSortable.destroy();
+            accountGroupSortable = null;
+        }
+    }
+  }
+
+  // 키워드 검색 핸들러
+  window.handleAccountSearch = (query) => {
+    window.accountSearchQuery = (query || "").toLowerCase().trim();
+    renderAccountCards();
+  };
+
+  function moveAccountsToCategory(ids, targetCat) {
+    let movedCount = 0;
+    localAccountData.forEach(acc => {
+      if (ids.includes(acc.id)) {
+        acc.category = targetCat;
+        movedCount++;
+      }
+    });
+    if (movedCount > 0) {
+      alert(`${movedCount}개의 계정을 '${targetCat}' 그룹으로 이동했습니다.`);
+      renderAccountCards();
+    }
+  }
+
+  window.resetAccountView = () => {
+    currentAccountCategory = "기관 계정";
+    const sidebarBtns = document.querySelectorAll(".account-nav-item");
+    sidebarBtns.forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.accountCat === currentAccountCategory);
+    });
+    renderAccountCards();
+  };
 
   async function loadAccountsFromFirebase() {
     if (!window.db) {
       localAccountData = [];
-      renderAccountTable();
+      renderAccountCards();
       return;
     }
     const { db, firestoreUtils } = window;
@@ -2273,91 +2701,225 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       loaded.sort((a, b) => (a.order || 0) - (b.order || 0));
       localAccountData = loaded;
-      renderAccountTable();
+      renderAccountCards();
     } catch (err) {
       console.error("Account load error:", err);
-      renderAccountTable();
+      renderAccountCards();
     }
   }
 
-  function renderAccountTable() {
-    const tableBody = document.getElementById("account-table-body");
-    if (!tableBody) return;
-
-    tableBody.innerHTML = "";
+  function renderAccountCards() {
+    const container = document.getElementById("account-card-container");
+    const titleEl = document.getElementById("current-account-category-title");
+    const descEl = document.getElementById("account-category-description");
+    const moveControls = document.getElementById("account-bulk-move-controls");
+    const editModeBtn = document.getElementById("account-edit-mode-btn");
+    const editActions = document.getElementById("account-edit-actions");
     
-    // Toggle edit col visibility based on mode
-    const editCols = document.querySelectorAll(".account-table .edit-col");
-    editCols.forEach(col => {
-      if (accountEditMode) col.classList.remove("hidden");
-      else col.classList.add("hidden");
-    });
+    if (!container) return;
 
-    localAccountData.forEach((acc, index) => {
-      const tr = document.createElement("tr");
-      tr.dataset.id = acc.id;
-      
-      tr.innerHTML = `
-        <td>
-          ${accountEditMode ? '<i class="fas fa-grip-lines drag-handle"></i>' : ""}
-          ${index + 1}
-        </td>
-        <td>
-          ${acc.url ? 
-            `<a href="${acc.url}" target="_blank" class="account-service-link"><i class="fas fa-external-link-alt"></i> ${acc.service}</a>` : 
-            `<span class="font-bold">${acc.service}</span>`
-          }
-        </td>
-        <td>
-          <div class="copyable-field" onclick="copyToClipboard('${acc.username}', this)" title="클릭하여 복사">
-            ${acc.username}
-          </div>
-        </td>
-        <td>
-          <div class="copyable-field" onclick="copyToClipboard('${acc.password}', this)" title="클릭하여 복사">
-            ${acc.password}
-          </div>
-        </td>
-        <td>
-          <div class="account-note">${acc.note || ""}</div>
-        </td>
-        <td class="edit-col ${accountEditMode ? "" : "hidden"}">
-          <div class="account-actions">
-            <button class="btn-icon btn-edit-sm" onclick="openAccountModal('${acc.id}')"><i class="fas fa-edit"></i></button>
-            <button class="btn-icon btn-delete-sm" onclick="deleteAccount('${acc.id}')"><i class="fas fa-trash"></i></button>
-          </div>
-        </td>
-      `;
-      tableBody.appendChild(tr);
-    });
+    // 편집 모드 상태에 따른 UI 가시성 동기화
+    const userRole = window.currentUserRole || 'user';
+    const isAdminUser = (userRole === 'admin' || userRole === 'sub-admin');
 
-    if (accountEditMode && window.Sortable) {
-      Sortable.create(tableBody, {
-        handle: '.drag-handle',
-        animation: 150,
-        ghostClass: 'sortable-ghost',
-        onEnd: () => {
-          const newOrder = [];
-          tableBody.querySelectorAll('tr').forEach((row, idx) => {
-            const id = row.dataset.id;
-            const item = localAccountData.find(a => a.id === id);
-            if (item) {
-              item.order = idx;
-              newOrder.push(item);
-            }
-          });
-          // Update numbers visually without full re-render
-          tableBody.querySelectorAll('tr').forEach((row, idx) => {
-             const numCell = row.querySelector('td:first-child');
-             if(numCell) {
-                 numCell.innerHTML = `<i class="fas fa-grip-lines drag-handle"></i> ${idx + 1}`;
-             }
-          });
-          localAccountData = newOrder;
-          if (window.logUserAction) window.logUserAction('account', '순서변경', '계정 순서를 변경했습니다.');
+    if (accountEditMode) {
+        if (moveControls) moveControls.classList.remove("hidden");
+        if (editModeBtn) editModeBtn.classList.add("hidden");
+        if (editActions) editActions.classList.remove("hidden");
+    } else {
+        if (moveControls) moveControls.classList.add("hidden");
+        if (editActions) editActions.classList.add("hidden");
+        // 편집 버튼은 관리자일 때만 노출
+        if (editModeBtn) {
+            if (isAdminUser) editModeBtn.classList.remove("hidden");
+            else editModeBtn.classList.add("hidden");
         }
+    }
+
+    container.innerHTML = "";
+    
+    let filtered = [];
+    const query = window.accountSearchQuery || "";
+    
+    try {
+        if (query) {
+            if (titleEl) titleEl.textContent = `전체 검색 결과: "${query}"`;
+            if (descEl) {
+                descEl.classList.remove("hidden");
+                descEl.textContent = `"${query}" 검색 결과입니다.`;
+                descEl.style.left = '0px'; // 검색 결과일 때는 좌측 고정
+            }
+            if (Array.isArray(localAccountData)) {
+                filtered = localAccountData.filter(acc => {
+                    if (!acc) return false;
+                    // 데이터 타입에 상관없이 안전하게 문자열로 변환 후 비교
+                    const s = String(acc.service || "").toLowerCase();
+                    const u = String(acc.username || "").toLowerCase();
+                    const n = String(acc.note || "").toLowerCase();
+                    const k = String(acc.authCode || "").toLowerCase();
+                    return s.includes(query) || u.includes(query) || n.includes(query) || k.includes(query);
+                });
+            }
+        } else {
+            if (titleEl) titleEl.textContent = currentAccountCategory;
+            if (descEl) {
+                descEl.classList.remove("hidden");
+                const catObj = accountCategories.find(c => c.name === currentAccountCategory);
+                descEl.textContent = catObj?.desc || "";
+                
+                // 위치 자동 배치 로직
+                setTimeout(() => {
+                    const activeBtn = document.querySelector('.account-nav-item.active');
+                    const descContainer = document.getElementById('account-category-description-container');
+                    if (activeBtn && descContainer) {
+                        const btnRect = activeBtn.getBoundingClientRect();
+                        const containerRect = descContainer.getBoundingClientRect();
+                        let leftPos = btnRect.left - containerRect.left;
+                        
+                        // 화면 오른쪽을 넘어가지 않도록 방어 로직
+                        if (leftPos + descEl.offsetWidth > containerRect.width) {
+                            leftPos = containerRect.width - descEl.offsetWidth;
+                        }
+                        // 왼쪽도 벗어나지 않도록 보장
+                        if (leftPos < 0) leftPos = 0;
+                        
+                        descEl.style.left = leftPos + 'px';
+                    }
+                }, 10);
+            }
+            if (Array.isArray(localAccountData)) {
+                filtered = localAccountData.filter(acc => acc && (acc.category || "기관 계정") === currentAccountCategory);
+            }
+        }
+    } catch (filterError) {
+        console.error("Filter error:", filterError);
+        container.innerHTML = `<div class="no-data-msg">검색 처리 중 오류가 발생했습니다.</div>`;
+        return;
+    }
+
+    if (filtered.length === 0) {
+        container.innerHTML = `<div class="no-data-msg">${query ? '검색 결과가 없습니다.' : '등록된 계정 정보가 없습니다.'}</div>`;
+    } else {
+      filtered.forEach((acc, index) => {
+        const card = document.createElement("div");
+        card.className = `account-card ${accountEditMode ? 'edit-mode' : ''} animate-fade-in`;
+        card.dataset.id = acc.id;
+        card.draggable = accountEditMode;
+        card.style.animationDelay = `${Math.min(index * 0.02, 0.4)}s`; // Staggered entry (max 0.4s)
+
+        // 드래그 시작 시 ID 저장
+        card.ondragstart = (e) => {
+          if(!accountEditMode) return;
+          e.dataTransfer.setData("text/plain", acc.id);
+        };
+
+        let logoHtml = "";
+        if (acc.iconType === 'custom' || (acc.icon && (acc.icon.startsWith('http') || acc.icon.startsWith('data:')))) {
+            logoHtml = `<img src="${acc.icon}" class="account-card-logo" onerror="this.src='./favicon.png'">`;
+        } else if (acc.icon) {
+            logoHtml = `<div class="account-card-logo-placeholder"><i class="fas ${acc.icon}"></i></div>`;
+        } else if (acc.url && String(acc.url).startsWith('http')) {
+            try {
+                const host = new URL(acc.url).hostname;
+                const faviconUrl = `https://www.google.com/s2/favicons?domain=${host}&sz=64`;
+                logoHtml = `<img src="${faviconUrl}" class="account-card-logo" onerror="this.src='./favicon.png'">`;
+            } catch (urlError) {
+                logoHtml = `<div class="account-card-logo-placeholder"><i class="fas fa-lock"></i></div>`;
+            }
+        } else {
+            logoHtml = `<div class="account-card-logo-placeholder"><i class="fas fa-lock"></i></div>`;
+        }
+
+        card.innerHTML = `
+          ${accountEditMode ? `<input type="checkbox" class="account-card-select" data-id="${acc.id}">` : ""}
+          <div class="account-card-header">
+            ${logoHtml}
+            <div class="account-card-title">
+              ${acc.service}
+              ${acc.url ? `<a href="${acc.url}" target="_blank" class="account-card-link" title="사이트 이동"><i class="fas fa-external-link-alt"></i></a>` : ""}
+            </div>
+          </div>
+          <div class="account-info-group">
+            ${acc.showId !== false ? `
+            <div class="account-info-row id-row" onclick="window.copyToClipboard('${acc.username || ''}', this, '${acc.service}', '아이디')">
+              <span class="info-label id-lbl">ID</span>
+              <div class="info-value-group">
+                <span class="info-value">${acc.username || ''}</span>
+                <button class="copy-btn"><i class="fas fa-copy"></i></button>
+              </div>
+            </div>
+            ` : ''}
+            ${acc.showPassword !== false ? `
+            <div class="account-info-row pw-row" onclick="window.copyToClipboard('${acc.password || ''}', this, '${acc.service}', '비밀번호')">
+              <span class="info-label pw-lbl">PW</span>
+              <div class="info-value-group">
+                <span class="info-value">${acc.password || ''}</span>
+                <button class="copy-btn"><i class="fas fa-copy"></i></button>
+              </div>
+            </div>
+            ` : ''}
+            ${acc.authCode && acc.showAuthCode !== false ? `
+            <div class="account-info-row key-row" onclick="window.copyToClipboard('${acc.authCode.replace(/'/g, "\\'")}', this, '${acc.service}', '인증코드')">
+              <span class="info-label key-lbl">KEY</span>
+              <div class="info-value-group">
+                <span class="info-value" style="font-family:ui-monospace,monospace;letter-spacing:0.04em;font-size:0.82rem;">${acc.authCode}</span>
+                <button class="copy-btn"><i class="fas fa-copy"></i></button>
+              </div>
+            </div>
+            ` : ''}
+          </div>
+          ${acc.note || accountEditMode ? `
+            <div class="account-card-footer">
+              <div class="account-card-note">${acc.note || ""}</div>
+              ${accountEditMode ? `
+                <div class="account-card-actions">
+                  <button class="btn-icon btn-edit-sm" onclick="openAccountModal('${acc.id}')"><i class="fas fa-edit"></i></button>
+                  <button class="btn-icon btn-delete-sm" onclick="deleteAccount('${acc.id}')"><i class="fas fa-trash"></i></button>
+                </div>
+              ` : ""}
+            </div>
+          ` : ""}
+        `;
+        container.appendChild(card);
       });
     }
+
+    if (accountEditMode) {
+      initAdvancedSorting();
+    } else if (accountSortable) {
+      accountSortable.destroy();
+      accountSortable = null;
+    }
+  }
+
+  function initAdvancedSorting() {
+    const container = document.getElementById("account-card-container");
+    if (!container || typeof Sortable === "undefined") return;
+    
+    if (accountSortable) accountSortable.destroy();
+    
+    accountSortable = new Sortable(container, {
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+      handle: '.account-card',
+      onEnd: function () {
+        // 현재 렌더링된 순서대로 localAccountData 업데이트
+        const newOrderIds = Array.from(container.querySelectorAll(".account-card")).map(c => c.dataset.id);
+        const otherCategoryAccounts = localAccountData.filter(acc => (acc.category || "기관 계정") !== currentAccountCategory);
+        const currentCategoryAccounts = [];
+        
+        newOrderIds.forEach((id, idx) => {
+          const acc = localAccountData.find(a => a.id === id);
+          if (acc) {
+            acc.order = idx;
+            currentCategoryAccounts.push(acc);
+          }
+        });
+
+        localAccountData = [...otherCategoryAccounts, ...currentCategoryAccounts];
+      }
+    });
   }
 
   function initAccountEditing() {
@@ -2373,7 +2935,23 @@ document.addEventListener("DOMContentLoaded", () => {
       accountEditMode = true;
       editModeBtn.classList.add("hidden");
       editActions.classList.remove("hidden");
-      renderAccountTable();
+      
+      // 일괄 이동 컨트롤 노출 및 드롭다운 채우기
+      const moveControls = document.getElementById("account-bulk-move-controls");
+      const moveSelect = document.getElementById("account-move-target-cat");
+      if (moveControls && moveSelect) {
+          moveControls.classList.remove("hidden");
+          moveSelect.innerHTML = '<option value="">이동할 그룹 선택...</option>';
+          accountCategories.forEach(cat => {
+              const opt = document.createElement("option");
+              opt.value = cat.name;
+              opt.textContent = cat.name;
+              moveSelect.appendChild(opt);
+          });
+      }
+      
+      renderAccountSidebar(); // 사이드바 편집 버튼 노출
+      renderAccountCards();
     };
 
     addBtn.onclick = () => openAccountModal();
@@ -2382,7 +2960,15 @@ document.addEventListener("DOMContentLoaded", () => {
       if (confirm("변경사항을 취소하시겠습니까?")) {
         accountEditMode = false;
         editActions.classList.add("hidden");
-        loadAccountsFromFirebase(); // Reload original data
+        editModeBtn.classList.remove("hidden");
+        
+        // 일괄 이동 컨트롤 숨김
+        const moveControls = document.getElementById("account-bulk-move-controls");
+        if (moveControls) moveControls.classList.add("hidden");
+        
+        renderAccountSidebar(); // 사이드바 편집 버튼 숨김
+        loadAccountsFromFirebase(); 
+        loadAccountCategories(); // 카테고리도 다시 로드
       }
     };
 
@@ -2390,24 +2976,40 @@ document.addEventListener("DOMContentLoaded", () => {
       if (window.db) {
         const { db, firestoreUtils } = window;
         try {
+          // 1. 계정 데이터 저장
           for (const acc of localAccountData) {
             await firestoreUtils.setDoc(firestoreUtils.doc(db, "schoolAccounts", acc.id), acc);
           }
-          alert("저장되었습니다.");
-          if (window.logUserAction) window.logUserAction('account', '저장', '계정 변경사항을 저장했습니다.');
+          // 2. 카테고리 데이터는 개별 저장 기능에서 이미 처리되지만, 정렬 순서 보장을 위해 재저장
+          for (const cat of accountCategories) {
+            await firestoreUtils.setDoc(firestoreUtils.doc(db, "accountCategories", cat.id), {
+                name: cat.name,
+                desc: cat.desc,
+                icon: cat.icon,
+                order: cat.order
+            });
+          }
+          
+          alert("모든 변경사항이 저장되었습니다.");
+          if (window.logUserAction) window.logUserAction('account', '저장', '계정 및 카테고리 설정을 저장했습니다.');
+          
           accountEditMode = false;
           editActions.classList.add("hidden");
-          renderAccountTable();
+          editModeBtn.classList.remove("hidden");
+          
+          // 일괄 이동 컨트롤 숨김
+          const moveControls = document.getElementById("account-bulk-move-controls");
+          if (moveControls) moveControls.classList.add("hidden");
+          
+          renderAccountSidebar(); // 사이드바 편집 버튼 숨김
+          renderAccountCards();
         } catch (err) {
           console.error(err);
           alert("저장 중 오류가 발생했습니다.");
         }
-      } else {
-        alert("로컬 모드에서는 저장할 수 없습니다.");
       }
     };
 
-    // Excel Import
     const importBtn = document.getElementById("account-import-btn");
     const excelInput = document.getElementById("account-excel-input");
     if(importBtn && excelInput) {
@@ -2416,16 +3018,36 @@ document.addEventListener("DOMContentLoaded", () => {
             const file = e.target.files[0];
             if(!file) return;
             handleAccountExcelImport(file);
-            e.target.value = ''; // Reset
+            e.target.value = ''; 
         };
     }
 
-    // Template Download
     const templateBtn = document.getElementById("account-template-btn");
     if(templateBtn) {
         templateBtn.onclick = () => downloadAccountExcelTemplate();
     }
   }
+
+  window.moveSelectedAccounts = () => {
+    const targetCat = document.getElementById("account-move-target-cat").value;
+    if (!targetCat) {
+      alert("이동할 대상 그룹을 먼저 선택해주세요.");
+      return;
+    }
+
+    const selectedCheckboxes = document.querySelectorAll(".account-card-select:checked");
+    const idsToMove = Array.from(selectedCheckboxes).map(cb => cb.dataset.id);
+
+    if (idsToMove.length === 0) {
+      alert("이동할 계정을 하나 이상 선택해주세요.");
+      return;
+    }
+
+    if (confirm(`선택한 ${idsToMove.length}개의 계정을 '${targetCat}' 그룹으로 이동하시겠습니까?`)) {
+      moveAccountsToCategory(idsToMove, targetCat);
+      alert(`이동되었습니다. '저장 완료' 버튼을 눌러야 최종 반영됩니다.`);
+    }
+  };
 
   function handleAccountExcelImport(file) {
       const reader = new FileReader();
@@ -2433,8 +3055,7 @@ document.addEventListener("DOMContentLoaded", () => {
           try {
               const data = new Uint8Array(e.target.result);
               const workbook = XLSX.read(data, { type: 'array' });
-              const firstSheetName = workbook.SheetNames[0];
-              const worksheet = workbook.Sheets[firstSheetName];
+              const worksheet = workbook.Sheets[workbook.SheetNames[0]];
               const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
               if (jsonData.length === 0) {
@@ -2442,25 +3063,25 @@ document.addEventListener("DOMContentLoaded", () => {
                   return;
               }
 
-              // Mapping fields: 서비스명, URL, 아이디, 비밀번호, 비고
               const newAccounts = jsonData.map((row, idx) => {
                   return {
                       id: "acc-" + Date.now() + "-" + idx,
+                      category: row['카테고리'] || row['Category'] || "기관 계정",
                       service: row['서비스명'] || row['Service'] || "미지정 서비스",
                       url: row['URL'] || row['Link'] || "",
-                      username: row['아이디'] || row['ID'] || row['Username'] || "",
-                      password: row['비밀번호'] || row['PW'] || row['Password'] || "",
+                      username: row['아이디'] || row['ID'] || "",
+                      password: row['비밀번호'] || row['PW'] || "",
                       note: row['비고'] || row['Note'] || "",
                       order: localAccountData.length + idx
                   };
               });
 
               localAccountData = [...localAccountData, ...newAccounts];
-              renderAccountTable();
+              renderAccountCards();
               alert(`${newAccounts.length}개의 계정 정보가 추가되었습니다. '저장 완료'를 눌러야 반영됩니다.`);
           } catch (err) {
               console.error("Excel import error:", err);
-              alert("엑셀 파일을 읽는 중 오류가 발생했습니다. 올바른 형식인지 확인해주세요.");
+              alert("엑셀 형식 오류입니다.");
           }
       };
       reader.readAsArrayBuffer(file);
@@ -2468,27 +3089,155 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function downloadAccountExcelTemplate() {
       const templateData = [
-          { "서비스명": "예: 구글 워크스페이스", "URL": "https://service.link", "아이디": "admin@school.com", "비밀번호": "pass1234", "비고": "교사 공용" },
-          { "서비스명": "예: 나이스", "URL": "https://neis.go.kr", "아이디": "neis_id", "비밀번호": "neis_pw", "비고": "행정팀" }
+          { "카테고리": "기관 계정", "서비스명": "구글 워크스페이스", "URL": "https://google.com", "아이디": "admin", "비밀번호": "pass", "비고": "예시" },
+          { "카테고리": "쇼핑몰", "서비스명": "G마켓", "URL": "https://gmarket.co.kr", "아이디": "id", "비밀번호": "pw", "비고": "구매용" }
       ];
-
       const worksheet = XLSX.utils.json_to_sheet(templateData);
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "계정정보_서식");
-
-      // Column widths
-      worksheet['!cols'] = [
-          { wch: 20 }, // 서비스명
-          { wch: 30 }, // URL
-          { wch: 20 }, // 아이디
-          { wch: 15 }, // 비밀번호
-          { wch: 30 }  // 비고
-      ];
-
-      XLSX.writeFile(workbook, "학교계정_등록_서식.xlsx");
+      XLSX.utils.book_append_sheet(workbook, worksheet, "서식");
+      XLSX.writeFile(workbook, "학교계정_서식.xlsx");
   }
 
+  // --- Account Item Icon Management ---
+  const ACCOUNT_ICON_LIST = [
+      "fa-university", "fa-school", "fa-shopping-cart", "fa-envelope", "fa-chalkboard-teacher", 
+      "fa-shield-alt", "fa-laptop-code", "fa-heartbeat", "fa-book", "fa-briefcase", 
+      "fa-globe", "fa-tools", "fa-user-graduate", "fa-bus", "fa-coffee", 
+      "fa-star", "fa-cog", "fa-folder", "fa-file-alt", "fa-chart-bar",
+      "fa-users", "fa-id-card", "fa-print", "fa-database", "fa-lock", "fa-key", "fa-link"
+  ];
+
+  let accountSelectedIcon = 'fa-lock';
+  let accountSelectedIconType = 'preset';
+  let accountCustomIconData = '';
+
+  function renderAccountItemIconPicker(selectedIcon = "") {
+      const grid = document.getElementById('account-icon-selector');
+      if (!grid) return;
+      grid.innerHTML = ACCOUNT_ICON_LIST.map(icon => `
+          <div class="icon-option ${icon === selectedIcon ? 'selected' : ''}" data-icon="${icon}" onclick="window.selectAccountItemIcon('${icon}')">
+              <i class="fas ${icon}"></i>
+          </div>
+      `).join('');
+  }
+
+  window.selectAccountItemIcon = (icon) => {
+      accountSelectedIcon = icon;
+      document.querySelectorAll('#account-icon-selector .icon-option').forEach(opt => {
+          opt.classList.toggle('selected', opt.dataset.icon === icon);
+      });
+  };
+
+  // --- Account Group Icon Picker ---
+  function renderAccountGroupIconPicker(selectedIcon = "") {
+      const grid = document.getElementById('account-group-icon-selector');
+      if (!grid) return;
+      grid.innerHTML = ACCOUNT_ICON_LIST.map(icon => `
+          <div class="icon-option ${icon === selectedIcon ? 'selected' : ''}" data-icon="${icon}" onclick="window.selectAccountGroupIcon('${icon}')">
+              <i class="fas ${icon}"></i>
+          </div>
+      `).join('');
+      
+      // Initialize preview
+      const previewBox = document.getElementById('account-group-icon-preview');
+      if (previewBox) {
+          previewBox.innerHTML = selectedIcon ? `<i class="fas ${selectedIcon}"></i>` : '<i class="fas fa-question"></i>';
+      }
+  }
+
+  window.selectAccountGroupIcon = (icon) => {
+      document.getElementById('account-group-icon').value = icon;
+      const previewBox = document.getElementById('account-group-icon-preview');
+      if (previewBox) {
+          previewBox.innerHTML = `<i class="fas ${icon}"></i>`;
+      }
+      
+      document.querySelectorAll('#account-group-icon-selector .icon-option').forEach(opt => {
+          opt.classList.toggle('selected', opt.dataset.icon === icon);
+      });
+  };
+
+  // Sync text input changes to preview and picker
+  document.getElementById('account-group-icon')?.addEventListener('input', (e) => {
+      const icon = e.target.value.trim();
+      const previewBox = document.getElementById('account-group-icon-preview');
+      if (previewBox) {
+          previewBox.innerHTML = `<i class="fas ${icon}"></i>`;
+      }
+      document.querySelectorAll('#account-group-icon-selector .icon-option').forEach(opt => {
+          opt.classList.toggle('selected', opt.dataset.icon === icon);
+      });
+  });
+
+  // Account Modal Tab Events
+  document.querySelectorAll('#account-icon-type-tabs .icon-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+          const target = tab.dataset.tab;
+          document.querySelectorAll('#account-icon-type-tabs .icon-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          document.querySelectorAll('#accountModal .icon-tab-content').forEach(c => c.classList.remove('active'));
+          const content = document.getElementById(`account-icon-tab-${target}`);
+          if (content) content.classList.add('active');
+          accountSelectedIconType = target;
+      });
+  });
+
+  // Account Custom Image Handlers
+  const accImgFile = document.getElementById('account-image-file');
+  const accImgUrl = document.getElementById('account-image-url');
+  const accImgPreview = document.getElementById('account-image-preview');
+  const accPreviewImg = accImgPreview?.querySelector('img');
+  const accClearBtn = document.getElementById('account-clear-image');
+  const accSourceRadios = document.querySelectorAll('input[name="account-image-source"]');
+
+  accSourceRadios.forEach(radio => {
+      radio.addEventListener('change', (e) => {
+          if(e.target.value === 'url') {
+              accImgUrl.disabled = false;
+              accImgFile.disabled = true;
+          } else {
+              accImgUrl.disabled = true;
+              accImgFile.disabled = false;
+          }
+      });
+  });
+
+  accImgFile?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 20480) {
+          alert('이미지 크기가 너무 큽니다. (20KB 이하 권장)');
+          e.target.value = '';
+          return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+          accountCustomIconData = event.target.result;
+          if (accPreviewImg) accPreviewImg.src = accountCustomIconData;
+          accImgPreview.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+  });
+
+  accImgUrl?.addEventListener('input', (e) => {
+      accountCustomIconData = e.target.value.trim();
+      if(accountCustomIconData && accPreviewImg) {
+          accPreviewImg.src = accountCustomIconData;
+          accImgPreview.classList.remove('hidden');
+      } else {
+          accImgPreview.classList.add('hidden');
+      }
+  });
+
+  accClearBtn?.addEventListener('click', () => {
+      if (accImgFile) accImgFile.value = '';
+      if (accImgUrl) accImgUrl.value = '';
+      accountCustomIconData = '';
+      if (accImgPreview) accImgPreview.classList.add('hidden');
+  });
+
   window.openAccountModal = (id = null) => {
+
     const modal = document.getElementById("accountModal");
     const form = document.getElementById("accountForm");
     const title = document.getElementById("accountModalTitle");
@@ -2496,95 +3245,211 @@ document.addEventListener("DOMContentLoaded", () => {
     form.reset();
     document.getElementById("account-id").value = id || "";
     
+    // Reset States
+    accountSelectedIcon = 'fa-lock';
+    accountSelectedIconType = 'preset';
+    accountCustomIconData = '';
+    document.querySelector('#account-icon-type-tabs .icon-tab[data-tab="preset"]').click();
+    if (accImgPreview) accImgPreview.classList.add('hidden');
+    if (accImgFile) accImgFile.value = '';
+    if (accImgUrl) accImgUrl.value = '';
+    
     if (id) {
       title.textContent = "계정 정보 수정";
       const acc = localAccountData.find(a => a.id === id);
       if (acc) {
         document.getElementById("account-service").value = acc.service;
+        document.getElementById("account-category").value = acc.category || "기관 계정";
         document.getElementById("account-url").value = acc.url || "";
         document.getElementById("account-username").value = acc.username;
         document.getElementById("account-password").value = acc.password;
+        document.getElementById("account-authcode").value = acc.authCode || "";
         document.getElementById("account-note").value = acc.note || "";
+        
+        // Restore Icon State
+        if (acc.iconType === 'custom') {
+            accountSelectedIconType = 'custom';
+            accountCustomIconData = acc.icon;
+            document.querySelector('#account-icon-type-tabs .icon-tab[data-tab="custom"]').click();
+            if (accImgUrl) accImgUrl.value = (acc.icon && !acc.icon.startsWith('data:')) ? acc.icon : '';
+            if (accPreviewImg) accPreviewImg.src = acc.icon;
+            accImgPreview.classList.remove('hidden');
+        } else {
+            accountSelectedIcon = acc.icon || 'fa-lock';
+            renderAccountItemIconPicker(accountSelectedIcon);
+        }
       }
     } else {
       title.textContent = "계정 정보 등록";
+      document.getElementById("account-category").value = currentAccountCategory;
+      renderAccountItemIconPicker('fa-lock');
     }
-    
+    // Restore toggle states
+    const _acc = id ? localAccountData.find(a => a.id === id) : null;
+    document.getElementById('account-show-id').checked       = _acc ? _acc.showId !== false : true;
+    document.getElementById('account-show-password').checked = _acc ? _acc.showPassword !== false : true;
+    document.getElementById('account-show-authcode').checked = _acc ? _acc.showAuthCode !== false : false;
+    updateAccFieldVisibility();
     modal.classList.add("active");
   };
-
-  const closeAccountModals = document.querySelectorAll(".close-account-modal");
-  closeAccountModals.forEach(btn => {
-    btn.onclick = () => document.getElementById("accountModal").classList.remove("active");
-  });
 
   document.getElementById("accountForm").onsubmit = (e) => {
     e.preventDefault();
     const id = document.getElementById("account-id").value;
-    const service = document.getElementById("account-service").value;
-    const url = document.getElementById("account-url").value;
-    const username = document.getElementById("account-username").value;
-    const password = document.getElementById("account-password").value;
-    const note = document.getElementById("account-note").value;
+    const data = {
+      service:      document.getElementById("account-service").value,
+      category:     document.getElementById("account-category").value,
+      url:          document.getElementById("account-url").value,
+      username:     document.getElementById("account-username").value,
+      password:     document.getElementById("account-password").value,
+      authCode:     document.getElementById("account-authcode").value.trim(),
+      showId:       document.getElementById("account-show-id").checked,
+      showPassword: document.getElementById("account-show-password").checked,
+      showAuthCode: document.getElementById("account-show-authcode").checked,
+      note:         document.getElementById("account-note").value,
+      iconType:     accountSelectedIconType,
+      icon:         accountSelectedIconType === 'custom' ? accountCustomIconData : accountSelectedIcon
+    };
 
     if (id) {
       const idx = localAccountData.findIndex(a => a.id === id);
-      if (idx !== -1) {
-        localAccountData[idx] = { ...localAccountData[idx], service, url, username, password, note };
-        if (window.logUserAction) window.logUserAction('account', '수정', `서비스: ${service}`);
-      }
+      if (idx !== -1) localAccountData[idx] = { ...localAccountData[idx], ...data };
     } else {
-      const newId = "acc-" + Date.now();
-      localAccountData.push({
-        id: newId,
-        service,
-        url,
-        username,
-        password,
-        note,
-        order: localAccountData.length
-      });
-      if (window.logUserAction) window.logUserAction('account', '생성', `서비스: ${service}`);
+      localAccountData.push({ id: "acc-" + Date.now(), ...data, order: localAccountData.length });
     }
 
     document.getElementById("accountModal").classList.remove("active");
-    renderAccountTable();
+    renderAccountCards();
   };
 
   window.deleteAccount = (id) => {
-    if (confirm("이 계정 정보를 삭제하시겠습니까?")) {
-      const acc = localAccountData.find(a => a.id === id);
-      if (window.logUserAction) window.logUserAction('account', '삭제', `서비스: ${acc ? acc.service : id}`);
+    if (confirm("삭제하시겠습니까?")) {
       localAccountData = localAccountData.filter(a => a.id !== id);
-      // Re-order
-      localAccountData.forEach((acc, idx) => acc.order = idx);
-      
-      // If deleted from Firebase instantly or wait for save?
-      // For consistency with edit mode, let's keep it in local until "Save" is clicked.
-      renderAccountTable();
+      renderAccountCards();
     }
   };
 
-  window.copyToClipboard = (text, element) => {
+  window.copyToClipboard = (text, element, serviceName, type) => {
     navigator.clipboard.writeText(text).then(() => {
-      // Log copy action
-      if(window.logUserAction) {
-          const type = element.closest('td').previousElementSibling?.previousElementSibling ? '비밀번호' : '아이디';
-          const serviceName = element.closest('tr').querySelector('td:nth-child(2)')?.textContent.trim();
-          window.logUserAction('account', '복사', `${serviceName} 계정의 ${type} 복사`);
+      if(window.logUserAction) window.logUserAction('account', '복사', `${serviceName} ${type}`);
+      const valGroup = element.querySelector('.info-value-group');
+      if (valGroup) {
+        const originalHtml = valGroup.innerHTML;
+        valGroup.innerHTML = `<span class="info-value copied" style="color:var(--primary-color)">복사됨!</span>`;
+        element.classList.add("copied-flash");
+        setTimeout(() => {
+          valGroup.innerHTML = originalHtml;
+          element.classList.remove("copied-flash");
+        }, 1000);
       }
-
-      // Small feedback animation
-      element.classList.add("copied-flash");
-      const originalText = element.textContent;
-      element.textContent = "복사됨!";
-      setTimeout(() => {
-        element.classList.remove("copied-flash");
-        element.textContent = text;
-      }, 1000);
-    }).catch(err => {
-      console.error('Copy failed', err);
     });
+  };
+
+  // Close modal listeners
+  document.querySelectorAll(".close-account-modal").forEach(btn => {
+    btn.onclick = () => document.getElementById("accountModal").classList.remove("active");
+  });
+
+  function updateAccFieldVisibility() {
+    const showId       = document.getElementById('account-show-id').checked;
+    const showPw       = document.getElementById('account-show-password').checked;
+    const showAuthCode = document.getElementById('account-show-authcode').checked;
+    const idInput      = document.getElementById('account-username');
+    const pwInput      = document.getElementById('account-password');
+    const authGroup    = document.getElementById('account-authcode-group');
+    const authInput    = document.getElementById('account-authcode');
+
+    idInput.style.opacity = showId ? '1' : '0.35';
+    idInput.required      = showId;
+    pwInput.style.opacity = showPw ? '1' : '0.35';
+    pwInput.required      = showPw;
+    if (authGroup) authGroup.style.display = showAuthCode ? '' : 'none';
+    if (authInput) authInput.disabled = !showAuthCode;
+  }
+
+  ['account-show-id', 'account-show-password', 'account-show-authcode'].forEach(chkId => {
+    const el = document.getElementById(chkId);
+    if (el) el.addEventListener('change', updateAccFieldVisibility);
+  });
+
+
+  window.openAccountGroupModal = (id = null) => {
+    const modal = document.getElementById("account-group-modal");
+    const form = document.getElementById("account-group-form");
+    const title = document.getElementById("account-group-modal-title");
+    const deleteBtn = document.getElementById("account-group-delete-btn");
+    
+    form.reset();
+    document.getElementById("account-group-id").value = id || "";
+    
+    if (id) {
+        title.textContent = "그룹 편집";
+        deleteBtn.classList.remove("hidden");
+        const cat = accountCategories.find(c => c.id === id);
+        if (cat) {
+            document.getElementById("account-group-name").value = cat.name;
+            document.getElementById("account-group-icon").value = cat.icon;
+            document.getElementById("account-group-desc").value = cat.desc || "";
+            renderAccountGroupIconPicker(cat.icon);
+        }
+    } else {
+        title.textContent = "그룹 등록";
+        deleteBtn.classList.add("hidden");
+        document.getElementById("account-group-icon").value = "fa-folder"; // Default icon
+        renderAccountGroupIconPicker("fa-folder");
+    }
+    modal.classList.add("active");
+  };
+
+  window.closeAccountGroupModal = () => {
+      document.getElementById("account-group-modal").classList.remove("active");
+  };
+
+  window.saveAccountGroup = async () => {
+    if (event) event.preventDefault();
+    const id = document.getElementById("account-group-id").value;
+    const name = document.getElementById("account-group-name").value.trim();
+    const icon = document.getElementById("account-group-icon").value.trim();
+    const desc = document.getElementById("account-group-desc").value.trim();
+    
+    if (!name) return alert("그룹명을 입력하세요.");
+    
+    const { db, firestoreUtils } = window;
+    
+    if (id) {
+        const cat = accountCategories.find(c => c.id === id);
+        if (cat) {
+            cat.name = name;
+            cat.icon = icon;
+            cat.desc = desc;
+            if (db) await firestoreUtils.updateDoc(firestoreUtils.doc(db, "accountCategories", id), { name, icon, desc });
+        }
+    } else {
+        const newId = "cat-" + Date.now();
+        const newCat = { id: newId, name, icon, desc, order: accountCategories.length };
+        accountCategories.push(newCat);
+        if (db) await firestoreUtils.setDoc(firestoreUtils.doc(db, "accountCategories", newId), { name, icon, desc, order: newCat.order });
+    }
+    
+    window.closeAccountGroupModal();
+    if (typeof renderAccountSidebar === 'function') renderAccountSidebar();
+    if (window.logUserAction) window.logUserAction('account', '그룹수정', `그룹명: ${name}`);
+  };
+
+  window.handleDeleteAccountGroupFromModal = async () => {
+    const id = document.getElementById("account-group-id").value;
+    if (!id) return;
+    
+    const cat = accountCategories.find(c => c.id === id);
+    if (!cat) return;
+    
+    if (confirm(`'${cat.name}' 그룹을 정말 삭제하시겠습니까? 속한 계정은 남아있습니다.`)) {
+        const { db, firestoreUtils } = window;
+        accountCategories = accountCategories.filter(c => c.id !== id);
+        if (db) await firestoreUtils.deleteDoc(firestoreUtils.doc(db, "accountCategories", id));
+        window.closeAccountGroupModal();
+        if (typeof renderAccountSidebar === 'function') renderAccountSidebar();
+    }
   };
 
   function saveAllEvents() {
@@ -2648,7 +3513,14 @@ document.addEventListener("DOMContentLoaded", () => {
       if (currentCategory === "status") {
         statusSection.classList.remove("hidden");
         targetSection = statusSection;
-        initStatusEditing(); 
+        // ★ 이미 로드된 데이터가 있으면 렌더링만 수행 (불필요한 재초기화 방지)
+        if (_statusDataLoaded && Object.keys(statusData).length > 0) {
+            renderStatusTabs();
+            renderStatusContent();
+            renderStatusControls();
+        } else {
+            initStatusEditing();
+        } 
       } else if (currentCategory === "curriculum") {
         curriculumSection.classList.remove("hidden");
         targetSection = curriculumSection;
@@ -2681,6 +3553,8 @@ document.addEventListener("DOMContentLoaded", () => {
         intro.classList.remove("hidden");
         targetSection = intro;
         document.documentElement.classList.add("intro-active");
+      } else if (currentCategory === "training" || currentCategory === "meal") {
+        // Handled entirely by switchTab — do nothing here
       } else {
         linksGrid.classList.remove("hidden");
         targetSection = linksGrid;
@@ -5432,8 +6306,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // === Tab Switching Logic ===
     window.switchTab = function(category) {
-        window.scrollTo({ top: 0, behavior: 'instant' });
-
         // 1. Hide all main sections
         const sections = [
             'status-section', 
@@ -5509,6 +6381,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 window.renderWeeklyView();
             }
         }
+
+        // Reset scroll AFTER layout is finalized
+        const mainEl = document.querySelector('main');
+        if (mainEl) mainEl.scrollTop = 0;
 
         // 4. Set active nav item
         const navBtn = document.querySelector(`.nav-item[data-category="${category}"]`);
@@ -5655,7 +6531,9 @@ window.menuSettings = {
         'bus': true,
         'datayard': true,
         'support': true,
-        'training': true
+        'training': true,
+        'meal': true,
+        'kigyo': true
     },
     widgets: {
         'school-today-widget': true,
@@ -5715,12 +6593,15 @@ window.loadMenuSettings = async () => {
 window.applyMenuSettings = () => {
     console.log("Applying Menu Settings UI...");
     // Apply Menus
+    const kigyoIdMap = { 'kigyo': 'nav-kigyo-btn' };
     for (const [key, isVisible] of Object.entries(window.menuSettings.menus)) {
-        const btn = document.querySelector(`.nav-item[data-category="${key}"]`);
+        const btn = kigyoIdMap[key]
+            ? document.getElementById(kigyoIdMap[key])
+            : document.querySelector(`.nav-item[data-category="${key}"]`);
         if (btn) {
             if (isVisible) {
                 btn.classList.remove('hidden');
-                btn.style.display = ''; 
+                btn.style.display = '';
             } else {
                 btn.classList.add('hidden');
                 btn.style.setProperty('display', 'none', 'important');
@@ -5758,7 +6639,8 @@ window.renderMenuSettings = () => {
         'datayard': '자료마당',
         'support': '온학교 e지원',
         'training': '연수관리',
-        'meal': '급식정보'
+        'meal': '급식정보',
+        'kigyo': '계기교육'
     };
     
     const widgetNames = {

@@ -135,7 +135,9 @@
 
     /* Hide UI Elements on Mobile */
     .nav-item[data-category="bus"],
+    .nav-item[data-category="meal"],
     #bus-section,
+    #meal-section,
     #nav-admin-btn,
     #user-greeting,
     .instructor-nav-btn {

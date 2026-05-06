@@ -950,7 +950,8 @@ document.addEventListener("DOMContentLoaded", () => {
             initialView: initialView,
             initialDate: currDate,
             locale: 'ko',
-            headerToolbar: false, 
+            headerToolbar: false,
+            displayEventTime: false,
             height: 'auto',
             editable: window.innerWidth > 768, // Disable editing on mobile
             events: function(info, successCallback) {
@@ -986,6 +987,9 @@ document.addEventListener("DOMContentLoaded", () => {
             eventDataTransform: function(eventData) {
                 if (eventData.isAuto) {
                     eventData.editable = false;
+                }
+                if (!eventData.time || eventData.time === '') {
+                    eventData.allDay = true;
                 }
                 return eventData;
             },

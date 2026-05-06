@@ -36,9 +36,14 @@
     <link rel="stylesheet" href="src/components/sidebar_widgets.css?v=4" />
     <link rel="stylesheet" href="src/components/board_modal.css" />
     <link rel="stylesheet" href="src/components/curriculum_confirm.css" />
+    <link rel="stylesheet" href="src/components/account_section.css" />
     <link rel="stylesheet" href="src/styles/mobile.css" />
     <link rel="stylesheet" href="src/components/meal_section.css" />
+    <link rel="stylesheet" href="src/components/status_section.css" />
+    <link rel="stylesheet" href="src/components/training_section.css" />
+    <link rel="stylesheet" href="src/components/datayard_section.css" />
     <script src="meal.js" defer></script>
+    <script src="src/utils/google-drive-upload.js" defer></script>
     <style>
       /* CRITICAL LOGIN STYLES - OVERRIDE EVERYTHING */
       #login-container {
@@ -661,7 +666,7 @@
             <button class="nav-item" data-category="meal">급식정보</button>
             <button class="nav-item" data-category="datayard">자료마당</button>
             <button class="nav-item" data-category="support" onclick="switchTab('support')">온학교 e지원</button>
-            <button onclick="window.open('special-edu/index.html', '_blank')" class="instructor-nav-btn" style="background: linear-gradient(135deg, #ff9a16 0%, #ff4b2b 100%) !important; color: #ffffff !important; box-shadow: 0 4px 12px rgba(255, 75, 43, 0.4);" title="계기교육 포털">
+            <button id="nav-kigyo-btn" onclick="window.open('special-edu/index.html', '_blank')" class="instructor-nav-btn" style="background: linear-gradient(135deg, #ff9a16 0%, #ff4b2b 100%) !important; color: #ffffff !important; box-shadow: 0 4px 12px rgba(255, 75, 43, 0.4);" title="계기교육 포털">
                <div class="btn-instructor-bg"></div>
                <span style="position:relative; z-index:2;"><i class="fas fa-calendar-alt" style="margin-right: 4px;"></i>계기교육</span>
             </button>
@@ -1003,6 +1008,10 @@
               <input type="text" id="datayard-group-title" required placeholder="예: 일반자료">
             </div>
             <div class="form-group">
+              <label for="datayard-group-desc">설명</label>
+              <input type="text" id="datayard-group-desc" placeholder="예: 일반자료 관련 자료 목록">
+            </div>
+            <div class="form-group">
               <label>아이콘 선택</label>
               <div class="icon-selector" id="datayard-group-icon-selector">
                 <div class="icon-option selected" data-icon="fa-folder"><i class="fas fa-folder"></i></div>
@@ -1112,6 +1121,11 @@
         <button id="datayard-edit-mode-btn" class="btn-primary admin-feature hidden"><i class="fas fa-edit"></i> 자료마당 편집</button>
         <div id="datayard-edit-actions" class="hidden">
           <button id="datayard-add-group-btn" class="btn-secondary"><i class="fas fa-folder-plus"></i> 그룹 추가</button>
+          <div class="drive-folder-config admin-feature hidden">
+            <i class="fab fa-google-drive" style="color:#4285f4;font-size:1rem;flex-shrink:0;"></i>
+            <label for="datayard-drive-folder-id">Drive 폴더 ID</label>
+            <input type="text" id="datayard-drive-folder-id" placeholder="Google Drive 폴더 ID">
+          </div>
           <button id="datayard-save-order-btn" class="btn-success"><i class="fas fa-save"></i> 저장 완료</button>
           <button id="datayard-cancel-edit-btn" class="btn-cancel"><i class="fas fa-times"></i> 취소</button>
         </div>
@@ -1123,35 +1137,68 @@
 
     <!-- Account Section (학교계정) -->
     <section id="account-section" class="category-content hidden">
+      <div class="account-container">
+        <!-- Category Navigation (Floating Segmented Control) -->
+        <aside class="account-sidebar">
+          <div class="account-sidebar-container">
+            <div class="account-sidebar-menu" id="account-category-menu" style="flex: 1; min-width: 0; overflow-x: auto; padding-right: 10px;">
+              <!-- JS로 동적 렌더링됨 -->
+            </div>
+          </div>
+        </aside>
 
-      <div id="account-controls" class="section-controls">
-        <button id="account-edit-mode-btn" class="btn-primary admin-feature hidden"><i class="fas fa-edit"></i> 학교계정 편집</button>
-        <div id="account-edit-actions" class="hidden">
-          <button id="account-add-btn" class="btn-secondary"><i class="fas fa-plus"></i> 계정 추가</button>
-          <button id="account-import-btn" class="btn-secondary"><i class="fas fa-file-import"></i> 엑셀 가져오기</button>
-          <button id="account-template-btn" class="btn-secondary"><i class="fas fa-download"></i> 서식 다운로드</button>
-          <button id="account-save-btn" class="btn-success"><i class="fas fa-save"></i> 저장 완료</button>
-          <button id="account-cancel-btn" class="btn-cancel"><i class="fas fa-times"></i> 취소</button>
-          <input type="file" id="account-excel-input" accept=".xlsx, .xls, .csv" style="display:none;">
+        <div id="account-category-description-container" style="display:none;"><div id="account-category-description"></div></div>
+
+        <!-- Edit Button and Bulk Move Controls moved outside sidebar -->
+        <div class="account-section-controls">
+          <button id="account-edit-mode-btn" class="btn-primary admin-feature" title="편집모드 시작"><i class="fas fa-edit"></i> 편집</button>
+          <div id="account-edit-actions" class="hidden">
+            <button id="account-group-add-btn" class="btn-secondary" title="그룹 추가" onclick="window.openAccountGroupModal()"><i class="fas fa-folder-plus"></i></button>
+            <button id="account-add-btn" class="btn-secondary" title="계정 추가"><i class="fas fa-plus"></i></button>
+            <button id="account-save-btn" class="btn-success" title="저장"><i class="fas fa-save"></i></button>
+            <button id="account-cancel-btn" class="btn-cancel" title="취소"><i class="fas fa-times"></i></button>
+          </div>
+
+          <div id="account-bulk-move-controls" class="account-bulk-move-wrap hidden">
+            <select id="account-move-target-cat" class="account-move-select">
+              <option value="">이동할 그룹 선택...</option>
+            </select>
+            <button class="btn-primary-sm" onclick="window.moveSelectedAccounts()">
+              <i class="fas fa-exchange-alt"></i> 선택 이동
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div class="account-table-wrapper">
-        <table class="account-table">
-          <thead>
-            <tr>
-              <th style="width: 60px;">번호</th>
-              <th>서비스명</th>
-              <th>아이디</th>
-              <th>비밀번호</th>
-              <th>비고</th>
-              <th class="edit-col hidden" style="width: 100px;">관리</th>
-            </tr>
-          </thead>
-          <tbody id="account-table-body">
-            <!-- JavaScript에서 렌더링 -->
-          </tbody>
-        </table>
+        <!-- Main Content Area -->
+        <div class="account-main">
+          <div class="account-main-header" style="display: none;">
+            <!-- Header row removed as buttons moved to sidebar -->
+          </div>
+          
+          <div id="account-card-container" class="account-card-grid">
+            <!-- JavaScript에서 카드 렌더링 -->
+          </div>
+          
+          <!-- Edit Mode Table (Hidden by default, used for easier bulk editing if needed, or we can use cards for edit too) -->
+          <div class="account-table-wrapper hidden">
+            <table class="account-table">
+              <thead>
+                <tr>
+                  <th style="width: 60px;">번호</th>
+                  <th>카테고리</th>
+                  <th>서비스명</th>
+                  <th>아이디</th>
+                  <th>비밀번호</th>
+                  <th>비고</th>
+                  <th class="edit-col hidden" style="width: 100px;">관리</th>
+                </tr>
+              </thead>
+              <tbody id="account-table-body">
+                <!-- JavaScript에서 렌더링 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -2569,7 +2616,7 @@
 
     <!-- Account Modal -->
     <div id="accountModal" class="modal">
-      <div class="modal-content">
+      <div class="modal-content" style="max-width: 850px;">
         <div class="modal-header">
           <h2 id="accountModalTitle">계정 정보 등록</h2>
           <span class="close-modal close-account-modal">&times;</span>
@@ -2577,31 +2624,172 @@
         <div class="modal-body">
           <form id="accountForm">
             <input type="hidden" id="account-id">
-            <div class="form-group">
-              <label for="account-service">서비스명</label>
-              <input type="text" id="account-service" required placeholder="예: 구글 워크스페이스">
-            </div>
-            <div class="form-group">
-              <label for="account-url">서비스 URL (선택)</label>
-              <input type="url" id="account-url" placeholder="https://example.com">
-            </div>
-            <div class="form-group">
-              <label for="account-username">아이디</label>
-              <input type="text" id="account-username" required placeholder="아이디를 입력하세요">
-            </div>
-            <div class="form-group">
-              <label for="account-password">비밀번호</label>
-              <input type="text" id="account-password" required placeholder="비밀번호를 입력하세요">
-            </div>
-            <div class="form-group">
-              <label for="account-note">비고</label>
-              <textarea id="account-note" rows="2" placeholder="참고사항을 입력하세요"></textarea>
+            
+            <div class="account-modal-grid">
+              <!-- Left Column: Primary Info -->
+              <div class="modal-col">
+                <div class="form-row">
+                  <div class="form-group flex-2">
+                    <label for="account-service">서비스명</label>
+                    <input type="text" id="account-service" required placeholder="예: 구글 워크스페이스">
+                  </div>
+                  <div class="form-group flex-1">
+                    <label for="account-category">카테고리</label>
+                    <select id="account-category" class="form-select" required>
+                      <option value="기관 계정">기관 계정</option>
+                      <option value="쇼핑몰">쇼핑몰</option>
+                      <option value="메일 및 문자">메일 및 문자</option>
+                      <option value="교수학습">교수학습</option>
+                      <option value="기기 및 보안">기기 및 보안</option>
+                      <option value="업무용 SW">업무용 SW</option>
+                      <option value="안전, 복지 업무">안전, 복지 업무</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="account-url">서비스 URL (선택)</label>
+                  <input type="url" id="account-url" placeholder="https://example.com">
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="field-label-with-toggle">
+                      <span>아이디</span>
+                      <label class="acc-field-toggle" title="카드에 표시">
+                        <input type="checkbox" id="account-show-id" checked>
+                        <span class="acc-toggle-track"></span>
+                      </label>
+                    </label>
+                    <input type="text" id="account-username" placeholder="아이디">
+                  </div>
+                  <div class="form-group">
+                    <label class="field-label-with-toggle">
+                      <span>비밀번호</span>
+                      <label class="acc-field-toggle" title="카드에 표시">
+                        <input type="checkbox" id="account-show-password" checked>
+                        <span class="acc-toggle-track"></span>
+                      </label>
+                    </label>
+                    <input type="text" id="account-password" placeholder="비밀번호">
+                  </div>
+                </div>
+
+                <div class="form-group" id="account-authcode-group">
+                  <label class="field-label-with-toggle">
+                    <span>인증코드</span>
+                    <label class="acc-field-toggle" title="카드에 표시">
+                      <input type="checkbox" id="account-show-authcode">
+                      <span class="acc-toggle-track"></span>
+                    </label>
+                  </label>
+                  <input type="text" id="account-authcode" placeholder="예: EW4VX-HNFMU-7XAZ7-DDWT5" style="font-family:ui-monospace,monospace;letter-spacing:0.04em;">
+                </div>
+
+                <div class="form-group">
+                  <label for="account-note">비고</label>
+                  <textarea id="account-note" rows="3" placeholder="참고사항을 입력하세요" style="height: 100px;"></textarea>
+                </div>
+              </div>
+
+              <!-- Right Column: Icon Settings -->
+              <div class="modal-col icon-col">
+                <label style="font-weight: 700; color: var(--primary-color); margin-bottom: 15px; display: block; font-size: 1rem;">아이콘 설정</label>
+                
+                <div class="icon-type-tabs" id="account-icon-type-tabs">
+                  <button type="button" class="icon-tab active" data-tab="preset">아이콘 선택</button>
+                  <button type="button" class="icon-tab" data-tab="custom">이미지 첨부</button>
+                </div>
+                
+                <!-- Tab 1: Preset Icons -->
+                <div id="account-icon-tab-preset" class="icon-tab-content active">
+                  <div class="icon-selector" id="account-icon-selector" style="grid-template-columns: repeat(5, 1fr); padding-right: 15px;">
+                     <!-- JS rendered -->
+                  </div>
+                </div>
+
+                <!-- Tab 2: Custom Image -->
+                <div id="account-icon-tab-custom" class="icon-tab-content">
+                   <div class="custom-icon-inputs">
+                      <p class="helper-text" style="text-align: left; margin-bottom: 10px;">* 권장 크기: 64x64px 이상 1:1 비율</p>
+                      
+                      <div class="source-toggle-group" style="margin-bottom: 15px;">
+                          <label class="source-toggle-label">
+                              <input type="radio" name="account-image-source" value="url" checked>
+                              <div class="source-toggle-btn">URL 입력</div>
+                          </label>
+                          <label class="source-toggle-label">
+                              <input type="radio" name="account-image-source" value="file">
+                              <div class="source-toggle-btn">파일 업로드</div>
+                          </label>
+                      </div>
+
+                      <input type="url" id="account-image-url" class="modern-input" placeholder="이미지 주소를 입력하세요">
+                      
+                      <div class="modern-file-upload">
+                          <input type="file" id="account-image-file" accept="image/*" class="modern-file-input">
+                          <label for="account-image-file" class="file-upload-label" style="padding: 1rem;">
+                              <i class="fas fa-cloud-upload-alt"></i>
+                              <span style="font-size: 0.85rem;">파일 선택 (20KB 미만)</span>
+                          </label>
+                      </div>
+
+                      <div id="account-image-preview" class="image-preview-container hidden" style="margin-top: 15px;">
+                          <div class="preview-box" style="width: 100px; height: 100px;">
+                              <img src="" alt="preview">
+                              <button type="button" id="account-clear-image" class="clear-img-btn" title="삭제">&times;</button>
+                          </div>
+                      </div>
+                   </div>
+                </div>
+              </div>
             </div>
           </form>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn-cancel close-account-modal">취소</button>
           <button type="submit" form="accountForm" class="btn-save">저장</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Account Group Modal -->
+    <div id="account-group-modal" class="modal">
+      <div class="modal-content glass-modal animate-fade-in" style="max-width: 450px;">
+        <div class="modal-header">
+          <h3 id="account-group-modal-title">그룹 편집</h3>
+          <span class="close-modal" onclick="window.closeAccountGroupModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+          <form id="account-group-form">
+            <input type="hidden" id="account-group-id">
+            <div class="form-group">
+              <label for="account-group-name">그룹명</label>
+              <input type="text" id="account-group-name" required placeholder="예: 기관 계정">
+            </div>
+            <div class="form-group">
+              <label for="account-group-icon">아이콘 선택</label>
+              <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                  <input type="text" id="account-group-icon" required placeholder="아이콘 클래스 입력 또는 아래에서 선택" style="flex: 1;">
+                  <div id="account-group-icon-preview" style="width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; background: var(--bg-color); border-radius: 10px; font-size: 1.2rem; color: var(--primary-color); border: 1px solid var(--border-color);">
+                      <i class="fas fa-question"></i>
+                  </div>
+              </div>
+              <!-- Icon Selection Grid -->
+              <div id="account-group-icon-selector" class="icon-selector" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; max-height: 150px; overflow-y: auto; padding-right: 5px;">
+                  <!-- JS rendered -->
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="account-group-desc">설명</label>
+              <textarea id="account-group-desc" placeholder="그룹에 대한 간단한 설명을 입력하세요." style="min-height: 80px;"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer" style="display: flex; gap: 8px;">
+          <button type="button" id="account-group-delete-btn" class="btn-delete hidden" style="margin-right: auto;" onclick="window.handleDeleteAccountGroupFromModal()">삭제</button>
+          <button class="btn-cancel" onclick="window.closeAccountGroupModal()">취소</button>
+          <button class="btn-success" onclick="window.saveAccountGroup()">저장</button>
         </div>
       </div>
     </div>
@@ -3012,6 +3200,7 @@
       const auth = window.auth;
       const db = window.db;
       const googleProvider = new GoogleAuthProvider();
+      googleProvider.addScope('https://www.googleapis.com/auth/drive.file');
 
       const loginContainer = document.getElementById('login-container');
       const appContainer = document.getElementById('app-container');
@@ -3380,7 +3569,20 @@
                   return;
               }
               try {
-                  await signInWithPopup(auth, googleProvider);
+                  const result = await signInWithPopup(auth, googleProvider);
+                  // Extract Google OAuth access token (belongs to Firebase project
+                  // where Drive API is enabled) and prime the Drive upload cache.
+                  const gCred = GoogleAuthProvider.credentialFromResult(result);
+                  if (gCred?.accessToken) {
+                      // Store in sessionStorage so google-drive-upload.js can use it
+                      // without showing an additional auth popup.
+                      sessionStorage.setItem('gd_access_token', gCred.accessToken);
+                      sessionStorage.setItem('gd_token_expiry',
+                          String(Date.now() + 55 * 60 * 1000));
+                      if (window.driveUpload?.setToken) {
+                          window.driveUpload.setToken(gCred.accessToken);
+                      }
+                  }
               } catch (err) {
                   console.error("Google Login Error:", err);
                   let msg = "Google 로그인 실패";
@@ -3964,7 +4166,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="overlay.js"></script>
     <script src="data.js"></script>
     <script src="src/utils/holidays.js"></script>

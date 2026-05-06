@@ -1,0 +1,508 @@
+/* ═══════════════════════════════════════════════════════════
+   Training Section — iOS 26 Liquid Glass Design
+   Scope: #training-section and training-specific classes only
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Background ── */
+body:not(.dark-mode).bg-theme-training {
+    background: linear-gradient(160deg, #dbeafe 0%, #ede9fe 42%, #d0f4ea 100%) !important;
+    background-attachment: fixed !important;
+}
+
+/* ── Outer Container: Transparent, reduced top spacing ── */
+#training-section .training-container {
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    padding-top: 0 !important;
+    margin-top: 0.5rem !important;
+}
+
+#training-section .training-container::before {
+    display: none;
+}
+
+/* ── Section Title ── */
+#training-section .section-title {
+    font-size: 1.18rem;
+    font-weight: 750;
+    letter-spacing: -0.4px;
+}
+
+#training-section .section-title i {
+    color: #007AFF;
+    font-size: 1.05rem;
+}
+
+/* ── Add Training Button ── */
+#training-section .btn-primary {
+    background: linear-gradient(145deg, #007AFF 0%, #005ED4 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 12px !important;
+    padding: 0.6rem 1.3rem !important;
+    font-weight: 650 !important;
+    font-size: 0.88rem !important;
+    letter-spacing: -0.2px !important;
+    box-shadow:
+        0 4px 14px rgba(0, 122, 255, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+    cursor: pointer !important;
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+}
+
+#training-section .btn-primary:hover {
+    background: linear-gradient(145deg, #1A8BFF 0%, #1462E0 100%) !important;
+    transform: translateY(-2px) scale(1.02) !important;
+    box-shadow:
+        0 7px 22px rgba(0, 122, 255, 0.48),
+        inset 0 1px 0 rgba(255, 255, 255, 0.32) !important;
+}
+
+#training-section .btn-primary:active {
+    transform: scale(0.97) !important;
+    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.28) !important;
+}
+
+/* ── Table Wrapper: Glass Card ──
+   overflow: clip clips at border-radius WITHOUT creating a scroll container,
+   so position:sticky on thead continues to work correctly.                    */
+.training-table-wrapper {
+    overflow: clip !important;
+    border-radius: 18px !important;
+    background: rgba(255, 255, 255, 0.55) !important;
+    backdrop-filter: blur(22px) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(160%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.72) !important;
+    border-top-color: rgba(255, 255, 255, 0.94) !important;
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.04),
+        0 6px 24px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+    margin-bottom: 0 !important;
+}
+
+/* ── Table Header: Frosted Glass, Sticky ── */
+.training-table-modern thead th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 50 !important;
+    /* Opaque enough to hide scrolling rows behind it */
+    background: rgba(238, 244, 255, 0.96) !important;
+    backdrop-filter: blur(24px) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+    color: #4a5568 !important;
+    font-weight: 700 !important;
+    text-align: center !important;
+    padding: 12px 14px !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.09) !important;
+    font-size: 0.85rem !important;
+    letter-spacing: 0.02em !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Rounded top corners for first/last header cell */
+.training-table-modern thead th:first-child { border-radius: 18px 0 0 0; }
+.training-table-modern thead th:last-child  { border-radius: 0 18px 0 0; }
+
+/* ── Table Body Cells ── */
+.training-table-modern tbody td {
+    padding: 9px 14px !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+    vertical-align: middle !important;
+    transition: background-color 0.15s !important;
+    background: transparent !important;
+    font-size: 0.9rem !important;
+}
+
+.training-table-modern tbody tr:last-child td {
+    border-bottom: none !important;
+}
+
+.training-table-modern tbody tr:hover td,
+.training-table-modern tbody tr:hover {
+    background-color: rgba(0, 122, 255, 0.04) !important;
+}
+
+/* Subtle even-row tint */
+.training-table-modern tbody tr:nth-child(even) td {
+    background-color: rgba(0, 0, 0, 0.018);
+}
+
+.training-table-modern tbody tr:nth-child(even):hover td {
+    background-color: rgba(0, 122, 255, 0.04) !important;
+}
+
+.training-table-modern .col-title {
+    font-weight: 630 !important;
+    font-size: 0.9rem !important;
+    letter-spacing: -0.1px !important;
+}
+
+/* ── Badges: iOS 26 Pill Style ── */
+.training-table-modern .badge,
+.training-table-modern .badge-essential,
+.training-table-modern .badge-optional {
+    padding: 4px 11px !important;
+    border-radius: 50px !important;
+    font-size: 0.76rem !important;
+    font-weight: 700 !important;
+    box-shadow: none !important;
+}
+
+.training-table-modern .badge-essential {
+    background: rgba(239, 68, 68, 0.1) !important;
+    color: #dc2626 !important;
+    border: 1px solid rgba(239, 68, 68, 0.22) !important;
+}
+
+.training-table-modern .badge-optional {
+    background: rgba(59, 130, 246, 0.1) !important;
+    color: #2563eb !important;
+    border: 1px solid rgba(59, 130, 246, 0.22) !important;
+}
+
+.training-table-modern .target-badge {
+    padding: 4px 11px !important;
+    border-radius: 50px !important;
+    font-size: 0.76rem !important;
+    font-weight: 630 !important;
+    background: rgba(99, 102, 241, 0.09) !important;
+    color: #4f46e5 !important;
+    border: 1px solid rgba(99, 102, 241, 0.2) !important;
+}
+
+/* ── Completer Status Button ── */
+.btn-completer-status {
+    background: rgba(37, 99, 235, 0.08) !important;
+    color: #2563eb !important;
+    font-size: 0.82rem !important;
+    font-weight: 650 !important;
+    padding: 6px 12px !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(37, 99, 235, 0.2) !important;
+    box-shadow: none !important;
+    transition: all 0.18s ease !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+}
+
+.btn-completer-status i.fa-check-circle {
+    color: #3b82f6 !important;
+}
+
+.btn-completer-status:hover {
+    background: rgba(37, 99, 235, 0.14) !important;
+    border-color: rgba(37, 99, 235, 0.35) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15) !important;
+}
+
+.btn-completer-status.expanded {
+    background: #2563eb !important;
+    color: white !important;
+    border-color: #1d4ed8 !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+}
+
+.btn-completer-status.expanded i.fa-check-circle {
+    color: white !important;
+}
+
+.btn-completer-status.empty {
+    background: rgba(255, 255, 255, 0.65) !important;
+    color: #94a3b8 !important;
+    border: 1px dashed rgba(0, 0, 0, 0.13) !important;
+    box-shadow: none !important;
+}
+
+.btn-completer-status.empty:hover {
+    background: rgba(0, 0, 0, 0.04) !important;
+    border-style: solid !important;
+    color: #64748b !important;
+    transform: none !important;
+}
+
+/* ── Completer Tags ── */
+.completer-tag-modern {
+    background: rgba(59, 130, 246, 0.09) !important;
+    color: #2563eb !important;
+    border: 1px solid rgba(59, 130, 246, 0.22) !important;
+    border-radius: 14px !important;
+    font-size: 0.79rem !important;
+    font-weight: 560 !important;
+    height: 23px !important;
+}
+
+/* ── Toggle Content ── */
+.completer-toggle-content {
+    background: rgba(248, 250, 254, 0.82) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    border-radius: 12px !important;
+}
+
+/* ── Action Buttons ── */
+.training-action-btns button {
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 9px !important;
+    background: rgba(255, 255, 255, 0.72) !important;
+    border: 1px solid rgba(0, 0, 0, 0.09) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    color: #64748b !important;
+    transition: all 0.18s ease !important;
+}
+
+.training-action-btns .btn-edit:hover {
+    background: rgba(0, 122, 255, 0.1) !important;
+    color: #007AFF !important;
+    border-color: rgba(0, 122, 255, 0.25) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 3px 10px rgba(0, 122, 255, 0.15) !important;
+}
+
+.training-action-btns .btn-delete {
+    color: #ef4444 !important;
+    background: rgba(239, 68, 68, 0.08) !important;
+    border-color: rgba(239, 68, 68, 0.22) !important;
+}
+
+.training-action-btns .btn-delete:hover {
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: #dc2626 !important;
+    border-color: rgba(239, 68, 68, 0.38) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 3px 10px rgba(239, 68, 68, 0.15) !important;
+}
+
+/* ── Note Input ── */
+.note-input-modern {
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    border-radius: 8px !important;
+    font-size: 0.88rem !important;
+    transition: all 0.18s !important;
+}
+
+.note-input-modern:hover {
+    background: rgba(0, 0, 0, 0.04) !important;
+}
+
+.note-input-modern:focus {
+    background: rgba(255, 255, 255, 0.88) !important;
+    border-color: rgba(0, 122, 255, 0.35) !important;
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1) !important;
+}
+
+/* ── Add Completer Button ── */
+.btn-add-completer {
+    background: rgba(255, 255, 255, 0.78) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+}
+
+.btn-add-completer:hover {
+    background: #007AFF !important;
+    color: white !important;
+    border-color: #007AFF !important;
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.35) !important;
+    transform: scale(1.1) rotate(90deg) !important;
+}
+
+/* ── Drag & Drop Ghost ── */
+.sortable-ghost {
+    opacity: 0.4 !important;
+    background: rgba(0, 122, 255, 0.06) !important;
+    border: 2px dashed rgba(0, 122, 255, 0.45) !important;
+}
+
+/* ════════════ DARK MODE ════════════ */
+
+body.dark-mode #training-section .training-container {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+body.dark-mode .training-table-wrapper {
+    background: rgba(18, 26, 52, 0.58) !important;
+    border-color: rgba(255, 255, 255, 0.09) !important;
+    border-top-color: rgba(255, 255, 255, 0.14) !important;
+    backdrop-filter: blur(22px) saturate(120%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(120%) !important;
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.28),
+        0 6px 24px rgba(0, 0, 0, 0.38),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+body.dark-mode .training-table-modern thead th {
+    background: rgba(10, 16, 36, 0.95) !important;
+    color: rgba(255, 255, 255, 0.68) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.32) !important;
+}
+
+body.dark-mode .training-table-modern tbody td {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    color: rgba(255, 255, 255, 0.84) !important;
+    background: transparent !important;
+}
+
+body.dark-mode .training-table-modern tbody tr:hover td,
+body.dark-mode .training-table-modern tbody tr:hover {
+    background-color: rgba(0, 122, 255, 0.08) !important;
+}
+
+body.dark-mode .training-table-modern tbody tr:nth-child(even) td {
+    background-color: rgba(255, 255, 255, 0.025);
+}
+
+body.dark-mode .training-table-modern tbody tr:nth-child(even):hover td {
+    background-color: rgba(0, 122, 255, 0.08) !important;
+}
+
+body.dark-mode .training-table-modern .col-title,
+body.dark-mode td.col-title,
+body.dark-mode .training-table-modern tbody td.col-title,
+body.dark-mode .training-table-modern tbody td.col-title div,
+body.dark-mode td.col-title div {
+    color: rgba(255, 255, 255, 0.95) !important;
+    font-weight: 660 !important;
+    text-shadow: none !important;
+}
+
+body.dark-mode .training-table-modern .col-num,
+body.dark-mode .training-table-modern .col-manager,
+body.dark-mode .training-table-modern .col-target,
+body.dark-mode .training-table-modern .col-deadline {
+    color: rgba(255, 255, 255, 0.75) !important;
+    opacity: 1 !important;
+}
+
+body.dark-mode .training-table-modern .badge-essential {
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: #f87171 !important;
+    border-color: rgba(239, 68, 68, 0.25) !important;
+}
+
+body.dark-mode .training-table-modern .badge-optional {
+    background: rgba(59, 130, 246, 0.15) !important;
+    color: #60a5fa !important;
+    border-color: rgba(59, 130, 246, 0.25) !important;
+}
+
+body.dark-mode .training-table-modern .target-badge {
+    background: rgba(139, 92, 246, 0.15) !important;
+    color: #a78bfa !important;
+    border-color: rgba(139, 92, 246, 0.25) !important;
+}
+
+body.dark-mode .btn-completer-status {
+    background: rgba(37, 99, 235, 0.14) !important;
+    color: #60a5fa !important;
+    border-color: rgba(37, 99, 235, 0.3) !important;
+}
+
+body.dark-mode .btn-completer-status:hover {
+    background: rgba(37, 99, 235, 0.24) !important;
+    border-color: rgba(37, 99, 235, 0.48) !important;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.22) !important;
+}
+
+body.dark-mode .btn-completer-status.expanded {
+    background: #2563eb !important;
+    color: white !important;
+    border-color: #1d4ed8 !important;
+}
+
+body.dark-mode .btn-completer-status.empty {
+    background: rgba(255, 255, 255, 0.04) !important;
+    color: #64748b !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode .btn-completer-status.empty:hover {
+    background: rgba(255, 255, 255, 0.07) !important;
+    color: #94a3b8 !important;
+    border-style: solid !important;
+}
+
+body.dark-mode .completer-tag-modern {
+    background: rgba(79, 70, 229, 0.18) !important;
+    color: #a5b4fc !important;
+    border-color: rgba(79, 70, 229, 0.32) !important;
+}
+
+body.dark-mode .completer-toggle-content {
+    background: rgba(10, 16, 40, 0.78) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+}
+
+body.dark-mode .training-action-btns button {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #94a3b8 !important;
+}
+
+body.dark-mode .training-action-btns .btn-edit:hover {
+    background: rgba(0, 122, 255, 0.2) !important;
+    color: #4AABFF !important;
+    border-color: rgba(0, 122, 255, 0.38) !important;
+    box-shadow: 0 3px 10px rgba(0, 122, 255, 0.2) !important;
+}
+
+body.dark-mode .training-action-btns .btn-delete {
+    background: rgba(239, 68, 68, 0.12) !important;
+    border-color: rgba(239, 68, 68, 0.24) !important;
+    color: #fca5a5 !important;
+}
+
+body.dark-mode .training-action-btns .btn-delete:hover {
+    background: rgba(239, 68, 68, 0.22) !important;
+    color: #f87171 !important;
+    border-color: rgba(239, 68, 68, 0.42) !important;
+    box-shadow: 0 3px 10px rgba(239, 68, 68, 0.18) !important;
+}
+
+body.dark-mode .note-input-modern {
+    color: rgba(255, 255, 255, 0.82) !important;
+}
+
+body.dark-mode .note-input-modern:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+body.dark-mode .note-input-modern:focus {
+    background: rgba(18, 28, 60, 0.88) !important;
+    border-color: rgba(0, 122, 255, 0.45) !important;
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12) !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+body.dark-mode .btn-add-completer {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+body.dark-mode .btn-add-completer:hover {
+    background: #007AFF !important;
+    border-color: #007AFF !important;
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4) !important;
+}
+
+body.dark-mode .sortable-ghost {
+    background: rgba(0, 122, 255, 0.12) !important;
+    border-color: rgba(0, 122, 255, 0.5) !important;
+}
