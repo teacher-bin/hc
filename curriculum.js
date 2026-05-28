@@ -52,6 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
         
         // 1. 기본 UI 설정 및 즉시 렌더링 (빈 화면 방지)
         setupEventListeners();
+        setupFloatingWidget(); // 학사일정 전용 플로팅 위젯
         updatePeriodDisplay();
         renderCurrentView(); // [중요] 데이터 없어도 일단 달력을 그린다!
         
@@ -524,6 +525,230 @@ document.addEventListener("DOMContentLoaded", () => {
                 setTimeout(() => renderFullCalendar(), 50);
             }
         }
+
+        // Keep the floating widget in sync (month number, view-mode buttons)
+        refreshFloatWidget();
+    }
+
+    // ==========================================
+    // Floating Widget (학사일정 전용 네비게이션)
+    // ==========================================
+    const FLOAT_WIDGET_POS_KEY = 'currFloatWidgetPos';
+
+    function setupFloatingWidget() {
+        // Guard: build only once
+        if (document.getElementById('curr-float-widget')) return;
+
+        const widget = document.createElement('div');
+        widget.id = 'curr-float-widget';
+        widget.className = 'curr-float-widget';
+        widget.innerHTML = `
+            <div class="cfw-inner">
+                <div class="cfw-grabber" title="드래그하여 위치 이동"></div>
+                <div class="cfw-month-section">
+                    <button type="button" class="cfw-step-btn cfw-month-next" title="다음 달">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                    <div class="cfw-month-display" title="휠로 이동 · 클릭하여 직접 입력">
+                        <span class="cfw-month-num">-</span>
+                        <span class="cfw-year">----</span>
+                    </div>
+                    <button type="button" class="cfw-step-btn cfw-month-prev" title="이전 달">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+                <div class="cfw-divider"></div>
+                <div class="cfw-actions">
+                    <button type="button" class="cfw-action-btn cfw-top" title="달력 맨 위로">
+                        <i class="fas fa-angle-double-up"></i><span>위로</span>
+                    </button>
+                    <button type="button" class="cfw-action-btn cfw-today" title="오늘로 이동">
+                        <i class="fas fa-calendar-day"></i><span>오늘</span>
+                    </button>
+                    <button type="button" class="cfw-action-btn cfw-bottom" title="달력 맨 아래로">
+                        <i class="fas fa-angle-double-down"></i><span>아래</span>
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(widget);
+
+        // Restore saved position (clamped later once size is known)
+        try {
+            const saved = JSON.parse(localStorage.getItem(FLOAT_WIDGET_POS_KEY) || 'null');
+            if (saved && typeof saved.left === 'number' && typeof saved.top === 'number') {
+                widget.style.left = saved.left + 'px';
+                widget.style.top = saved.top + 'px';
+                widget.style.bottom = 'auto';
+            }
+        } catch (e) { /* ignore corrupt value */ }
+
+        // --- Month navigation ---
+        widget.querySelector('.cfw-month-next').addEventListener('click', () => changeMonth(1));
+        widget.querySelector('.cfw-month-prev').addEventListener('click', () => changeMonth(-1));
+
+        // Wheel over the month number — consistent with the ▲/▼ buttons (up=next, down=prev)
+        const monthDisplay = widget.querySelector('.cfw-month-display');
+        let lastWheelTime = 0;
+        monthDisplay.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const now = Date.now();
+            if (now - lastWheelTime < 140) return; // throttle for trackpads
+            lastWheelTime = now;
+            changeMonth(e.deltaY < 0 ? 1 : -1);
+        }, { passive: false });
+
+        // Click the number → inline edit → jump to that month of the *currently displayed* year
+        monthDisplay.addEventListener('click', () => {
+            if (monthDisplay.querySelector('.cfw-month-input')) return; // already editing
+            const numSpan = monthDisplay.querySelector('.cfw-month-num');
+            if (!numSpan) return;
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'cfw-month-input';
+            input.inputMode = 'numeric';
+            input.maxLength = 2;
+            input.placeholder = String(currDate.getMonth() + 1);
+            numSpan.replaceWith(input);
+            input.focus();
+
+            let done = false;
+            const commit = (apply) => {
+                if (done) return;
+                done = true;
+                if (apply) {
+                    const m = parseInt(input.value, 10);
+                    if (m >= 1 && m <= 12) {
+                        const delta = (m - 1) - currDate.getMonth(); // same displayed year
+                        if (delta !== 0) changeMonth(delta);
+                    }
+                }
+                const span = document.createElement('span');
+                span.className = 'cfw-month-num';
+                span.textContent = currDate.getMonth() + 1;
+                if (input.parentNode) input.replaceWith(span);
+            };
+            input.addEventListener('keydown', (ev) => {
+                if (ev.key === 'Enter') { ev.preventDefault(); commit(true); }
+                else if (ev.key === 'Escape') { ev.preventDefault(); commit(false); }
+            });
+            input.addEventListener('blur', () => commit(true));
+        });
+
+        // --- Scroll actions ---
+        widget.querySelector('.cfw-top').addEventListener('click', () => {
+            const main = document.querySelector('main');
+            if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        widget.querySelector('.cfw-bottom').addEventListener('click', () => {
+            const main = document.querySelector('main');
+            if (main) main.scrollTo({ top: main.scrollHeight, behavior: 'smooth' });
+        });
+
+        // --- Today ---
+        widget.querySelector('.cfw-today').addEventListener('click', async () => {
+            currDate = new Date();
+            updatePeriodDisplay();
+            await loadYearlyData(currDate.getFullYear());
+            window.shouldScrollToToday = true; // 표 보기의 오늘 행 스크롤 트리거
+            renderCurrentView();
+        });
+
+        // --- Drag & drop ---
+        let dragging = false, dragOffX = 0, dragOffY = 0;
+        widget.addEventListener('mousedown', (e) => {
+            // Do not start a drag from interactive controls
+            if (e.target.closest('.cfw-step-btn, .cfw-action-btn, .cfw-month-display')) return;
+            const rect = widget.getBoundingClientRect();
+            dragging = true;
+            dragOffX = e.clientX - rect.left;
+            dragOffY = e.clientY - rect.top;
+            // Switch from bottom-anchored CSS to absolute top/left positioning
+            widget.style.left = rect.left + 'px';
+            widget.style.top = rect.top + 'px';
+            widget.style.bottom = 'auto';
+            widget.classList.add('cfw-dragging');
+            e.preventDefault();
+        });
+        document.addEventListener('mousemove', (e) => {
+            if (!dragging) return;
+            const rect = widget.getBoundingClientRect();
+            let x = e.clientX - dragOffX;
+            let y = e.clientY - dragOffY;
+            x = Math.max(8, Math.min(x, window.innerWidth - rect.width - 8));
+            y = Math.max(8, Math.min(y, window.innerHeight - rect.height - 8));
+            widget.style.left = x + 'px';
+            widget.style.top = y + 'px';
+        });
+        document.addEventListener('mouseup', () => {
+            if (!dragging) return;
+            dragging = false;
+            widget.classList.remove('cfw-dragging');
+            try {
+                localStorage.setItem(FLOAT_WIDGET_POS_KEY, JSON.stringify({
+                    left: parseInt(widget.style.left, 10),
+                    top: parseInt(widget.style.top, 10)
+                }));
+            } catch (e) { /* ignore quota errors */ }
+        });
+
+        // --- Visibility: curriculum tab only, hidden on mobile ---
+        const section = document.getElementById('curriculum-section');
+        if (section) {
+            new MutationObserver(evaluateFloatWidgetVisibility)
+                .observe(section, { attributes: true, attributeFilter: ['class'] });
+        }
+        window.addEventListener('resize', () => {
+            evaluateFloatWidgetVisibility();
+            clampFloatWidget();
+        });
+
+        refreshFloatWidget();
+        evaluateFloatWidgetVisibility();
+    }
+
+    function refreshFloatWidget() {
+        const widget = document.getElementById('curr-float-widget');
+        if (!widget) return;
+        const numEl = widget.querySelector('.cfw-month-num'); // absent while editing
+        if (numEl) numEl.textContent = currDate.getMonth() + 1;
+        const yearEl = widget.querySelector('.cfw-year');
+        if (yearEl) yearEl.textContent = currDate.getFullYear();
+        // Calendar view is not long — hide the top/bottom scroll buttons there
+        widget.classList.toggle('cfw-calendar-mode', currViewMode === 'calendar');
+    }
+
+    function clampFloatWidget() {
+        const widget = document.getElementById('curr-float-widget');
+        if (!widget || !widget.style.left) return; // still using default bottom-left
+        const rect = widget.getBoundingClientRect();
+        if (rect.width === 0) return; // hidden — nothing to clamp
+        let x = parseInt(widget.style.left, 10);
+        let y = parseInt(widget.style.top, 10);
+        x = Math.max(8, Math.min(x, window.innerWidth - rect.width - 8));
+        y = Math.max(8, Math.min(y, window.innerHeight - rect.height - 8));
+        widget.style.left = x + 'px';
+        widget.style.top = y + 'px';
+    }
+
+    function evaluateFloatWidgetVisibility() {
+        const widget = document.getElementById('curr-float-widget');
+        if (!widget) return;
+        const section = document.getElementById('curriculum-section');
+        const isMobile = window.innerWidth <= 768;
+        const shouldShow = section && !section.classList.contains('hidden') && !isMobile;
+
+        if (shouldShow) {
+            widget.style.display = 'block';
+            void widget.offsetWidth; // force reflow so the entrance transition runs from hidden state
+            clampFloatWidget();
+            widget.classList.add('cfw-visible');
+        } else {
+            widget.classList.remove('cfw-visible');
+            setTimeout(() => {
+                if (!widget.classList.contains('cfw-visible')) widget.style.display = 'none';
+            }, 320);
+        }
     }
 
     // --- Table Rendering Logic ---
@@ -562,6 +787,24 @@ document.addEventListener("DOMContentLoaded", () => {
         const combinedEvents = [...currEvents, ...filteredAutoEvents];
         window.combinedEvents = combinedEvents; // Expose for Google Sync
 
+        // Helper: does an event occupy this date cell?
+        // - Single event: start === dateStr
+        // - Range event displayMode:
+        //   · 'start-only' → 시작일만
+        //   · 'end-only'   → 종료일만
+        //   · 'start-end'  → 시작일·종료일만
+        //   · 'all-days'   → 기간 내 모든 날짜 (기본값)
+        const eventOccupiesDate = (e, dStr) => {
+            if (e.isDeleted) return false;
+            if (!e.start) return false;
+            const isRange = e.end && e.end !== e.start;
+            if (!isRange) return e.start === dStr;
+            if (e.displayMode === 'start-only') return e.start === dStr;
+            if (e.displayMode === 'end-only') return e.end === dStr;
+            if (e.displayMode === 'start-end') return e.start === dStr || e.end === dStr;
+            return e.start <= dStr && dStr <= e.end;
+        };
+
         for(let d = 1; d <= lastDateOfMonth; d++) {
             const dateObj = new Date(y, m, d);
             const dayOfWeek = dateObj.getDay(); // 0=Sun, 6=Sat
@@ -572,8 +815,8 @@ document.addEventListener("DOMContentLoaded", () => {
             if (dayOfWeek === 0) dayClass = "day-sunday";
             else if (dayOfWeek === 6) dayClass = "day-saturday";
 
-            // Filter events for this day
-            const dayEvents = combinedEvents.filter(e => e.start === dateStr && !e.isDeleted);
+            // Filter events for this day (includes range events per displayMode)
+            const dayEvents = combinedEvents.filter(e => eventOccupiesDate(e, dateStr));
 
             // Create Row
             const row = document.createElement("div");
@@ -633,6 +876,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 group: 'curr-events', // Shared group to move between cells
                 animation: 150,
                 draggable: '.curr-event-chip',
+                filter: '.is-range-chip', // Range events are read-only for drag
+                preventOnFilter: false,
                 disabled: window.innerWidth <= 768, // Restrict drag on mobile
                 onEnd: async function (evt) {
                     const eventId = evt.item.dataset.id;
@@ -767,43 +1012,57 @@ document.addEventListener("DOMContentLoaded", () => {
         const cell = document.createElement("div");
         cell.className = "curr-cell";
         
+        // Helper: short range string like "5/22~5/24"
+        const rangeShort = (s, e) => {
+            if (!s || !e) return '';
+            const [, sm, sd] = s.split('-');
+            const [, em, ed] = e.split('-');
+            return `${parseInt(sm,10)}/${parseInt(sd,10)}~${parseInt(em,10)}/${parseInt(ed,10)}`;
+        };
+
         events
             .filter(e => e.eventType === type)
             .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
             .forEach(ev => {
             const chip = document.createElement("div");
-            chip.className = `curr-event-chip chip-type-${type} ${ev.isAuto ? 'is-auto-chip' : ''}`;
-            // Remove 'is-auto-chip' class effect via JS if needed, or rely on CSS removal. 
+            const isRange = ev.end && ev.end !== ev.start;
+            chip.className = `curr-event-chip chip-type-${type} ${ev.isAuto ? 'is-auto-chip' : ''}${isRange ? ' is-range-chip' : ''}`;
+            // Remove 'is-auto-chip' class effect via JS if needed, or rely on CSS removal.
             // We want them to look editable.
             if (ev.isAuto) chip.classList.remove('is-auto-chip');
             chip.dataset.id = ev.id; // Critical for Sortable
-            
+
             // Apply custom colors if exist
             if (ev.backgroundColor) chip.style.backgroundColor = ev.backgroundColor;
             if (ev.textColor) chip.style.color = ev.textColor;
             if (ev.borderColor) chip.style.borderColor = ev.borderColor;
 
             let displayTitle = ev.title;
+            const rangeLabel = isRange ? rangeShort(ev.start, ev.end) : '';
 
             if (type === 'edu') {
                 const parts = [];
+                if (rangeLabel) parts.push(`<span class="chip-range">${rangeLabel}</span>`);
                 if (ev.time) parts.push(ev.time);
                 if (ev.place) parts.push(ev.place);
                 if (ev.target) parts.push(ev.target);
                 if (ev.inCharge) parts.push(`<span class="chip-incharge">${ev.inCharge}</span>`);
-                
+
                 if (parts.length > 0) {
                     displayTitle = `${ev.title}(${parts.join(', ')})`;
                 }
 
             } else if (type === 'staff') {
                 if (ev.staffStatus) {
-                    displayTitle = `${ev.title}(<span class="chip-incharge">${ev.staffStatus}</span>)`;
+                    const statusPart = `<span class="chip-incharge">${ev.staffStatus}</span>`;
+                    const rangePart = rangeLabel ? `, <span class="chip-range">${rangeLabel}</span>` : '';
+                    displayTitle = `${ev.title}(${statusPart}${rangePart})`;
                     
                     // Standardized HTML Tooltip for Staff
                     const tooltipItems = [
                         { label: '이름', value: ev.title },
                         { label: '복무', value: ev.staffStatus },
+                        { label: '기간', value: rangeLabel },
                         { label: '사유', value: ev.reason },
                         { label: '장소', value: ev.place },
                         { label: '시간', value: ev.time }
@@ -823,6 +1082,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     
                     chip.onmouseenter = (e) => window.showChipTooltip(e, tooltipHtml);
                     chip.onmouseleave = window.hideChipTooltip;
+                }
+            } else if (type === 'life') {
+                if (rangeLabel) {
+                    displayTitle = `${ev.title} <span class="chip-range">${rangeLabel}</span>`;
                 }
             } else if (type === 'doc') {
                 if (ev.inCharge) {
@@ -874,10 +1137,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 `;
             }
 
+            // Recurring event indicator
+            const recurIconHtml = ev.recurrenceGroupId
+                ? '<i class="fas fa-redo curr-recur-icon" title="반복 일정"></i>'
+                : '';
+            if (ev.recurrenceGroupId) chip.classList.add('is-recurring-chip');
+
             chip.innerHTML = `
                 ${badgeHtml}
                 ${prefixHtml}
-                <span class="chip-text ${ev.isCompleted ? 'completed-text' : ''}">${displayTitle}</span>
+                <span class="chip-text ${ev.isCompleted ? 'completed-text' : ''}">${recurIconHtml}${displayTitle}</span>
                 <div class="chip-controls">
                     <button class="chip-btn edit" onclick="window.editCurrEvent('${ev.id}')" title="수정"><i class="fas fa-pencil-alt"></i></button>
                     <button class="chip-btn duplicate" onclick="window.duplicateCurrEvent('${ev.id}')" title="복제"><i class="fas fa-copy"></i></button>
@@ -908,6 +1177,33 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderFullCalendar(viewType = 'dayGridMonth') {
         const calendarEl = document.getElementById('curr-fullcalendar');
         if(!calendarEl) return;
+
+        // 특별일 텍스트가 칸 너비를 넘으면 호버 시 전체 내용을 툴팁으로 표시
+        // (이벤트 위임 — 셀이 재렌더되어도 동작, 리스너는 한 번만 등록)
+        if (!calendarEl.dataset.specialTooltipBound) {
+            calendarEl.dataset.specialTooltipBound = '1';
+            calendarEl.addEventListener('mouseover', (e) => {
+                const item = e.target.closest('.fc-special-day-item');
+                if (!item) return;
+                // 실제로 잘려서 페이드된 경우에만 툴팁 표시
+                if (item.scrollWidth > item.clientWidth + 1) {
+                    const fullText = item.textContent.trim();
+                    if (fullText) {
+                        window.showChipTooltip(e, `
+                            <div class="tooltip-item">
+                                <span class="tooltip-bullet"></span>
+                                <div class="tooltip-value">${fullText}</div>
+                            </div>
+                        `);
+                    }
+                }
+            });
+            calendarEl.addEventListener('mouseout', (e) => {
+                const item = e.target.closest('.fc-special-day-item');
+                if (!item) return;
+                window.hideChipTooltip(e);
+            });
+        }
 
         // [New] Scroll to Change Month Logic (Only for Calendar Mode)
         let scrollAccumulator = 0;
@@ -973,13 +1269,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 // 3. Filter DB Events (Only show 'edu' in Monthly Calendar for simplicity)
-                const filteredDbEvents = dbEvents.filter(e => e.eventType === 'edu');
-                
+                //    'start-end' range events are split into two single-day markers
+                //    (start marker + end marker) so they render only on both endpoints.
+                const filteredDbEvents = [];
+                dbEvents.filter(e => e.eventType === 'edu').forEach(e => {
+                    const isRange = e.end && e.end !== e.start;
+                    if (isRange && e.displayMode === 'start-end') {
+                        filteredDbEvents.push({ ...e, end: null, editable: false });
+                        filteredDbEvents.push({ ...e, id: e.id + '__end', start: e.end, end: null, editable: false });
+                    } else {
+                        filteredDbEvents.push(e);
+                    }
+                });
+
                 // 4. Filter Auto Events (Special days are handled in dayCellContent)
                 const dbEventIds = new Set(filteredDbEvents.map(e => e.id));
                 const filteredAutoEvents = generatedAutoEvents.filter(auto => {
                     // Hide all auto events from the main calendar chip list
-                    return false; 
+                    return false;
                 });
 
                 successCallback([...filteredDbEvents, ...filteredAutoEvents]);
@@ -991,6 +1298,34 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (!eventData.time || eventData.time === '') {
                     eventData.allDay = true;
                 }
+
+                // Range event handling for FullCalendar.
+                // ('start-end' is pre-split into two single-day markers in the events()
+                //  function, so it never reaches this block with a live `end`.)
+                if (eventData.end && eventData.end !== eventData.start) {
+                    if (eventData.displayMode === 'start-only') {
+                        // Render only on start date — drop end so FullCalendar treats it as single-day
+                        delete eventData.end;
+                    } else if (eventData.displayMode === 'end-only') {
+                        // Render only on end date
+                        eventData.start = eventData.end;
+                        delete eventData.end;
+                    } else {
+                        // 'all-days' (default): FullCalendar's end is EXCLUSIVE for all-day,
+                        // so push it forward by one day to include the final day visually.
+                        const parts = String(eventData.end).split('-');
+                        if (parts.length === 3) {
+                            const d = new Date(parseInt(parts[0],10), parseInt(parts[1],10) - 1, parseInt(parts[2],10) + 1);
+                            const yyyy = d.getFullYear();
+                            const mm = String(d.getMonth() + 1).padStart(2, '0');
+                            const dd = String(d.getDate()).padStart(2, '0');
+                            eventData.end = `${yyyy}-${mm}-${dd}`;
+                        }
+                    }
+                    // Range events are not draggable (consistent with table view)
+                    eventData.editable = false;
+                }
+
                 return eventData;
             },
             dayCellContent: function(arg) {
@@ -1017,8 +1352,17 @@ document.addEventListener("DOMContentLoaded", () => {
                     autoEvents.filter(e => e.start === dateStr).forEach(e => specialTitles.push(e.title));
                 }
                 
-                // 2. Manual 'life' events from DB
-                currEvents.filter(e => e.start === dateStr && e.eventType === 'life').forEach(e => specialTitles.push(e.title));
+                // 2. Manual 'life' events from DB (range·recurring 지원)
+                currEvents.filter(e => {
+                    if (e.eventType !== 'life' || e.isDeleted) return false;
+                    if (!e.start) return false;
+                    const isRange = e.end && e.end !== e.start;
+                    if (!isRange) return e.start === dateStr;
+                    if (e.displayMode === 'start-only') return e.start === dateStr;
+                    if (e.displayMode === 'end-only') return e.end === dateStr;
+                    if (e.displayMode === 'start-end') return e.start === dateStr || e.end === dateStr;
+                    return e.start <= dateStr && dateStr <= e.end;
+                }).forEach(e => specialTitles.push(e.title));
                 
                 if (specialTitles.length > 0) {
                     const joined = [...new Set(specialTitles)].join(', '); // Deduplicate and join
@@ -1031,7 +1375,9 @@ document.addEventListener("DOMContentLoaded", () => {
             },
             eventClick: function(info) {
                 if (info.event.extendedProps.isAuto) return;
-                const eventObj = currEvents.find(e => e.id === info.event.id);
+                // 'start-end' split markers carry an '__end' suffix — strip it to find the real doc
+                const realId = String(info.event.id).replace(/__end$/, '');
+                const eventObj = currEvents.find(e => e.id === realId);
                 if(eventObj) openCurrModal(null, eventObj);
             },
             eventDrop: async function(info) {
@@ -1285,20 +1631,173 @@ document.addEventListener("DOMContentLoaded", () => {
                 <input type="hidden" id="curr-event-type" value="${type}">
             `;
 
-            // 2. Date & Title (Common)
-            html += `
-                <div class="curr-form-row">
-                    <div class="curr-form-group" style="flex: 1;">
-                        <label class="curr-label">날짜</label>
-                        <input type="date" id="curr-date" class="curr-input" value="${data.start || ''}" required>
+            // 2. Date & Title (Common) — edu/staff/life supports range & recurring mode
+            const supportsRange = (type === 'edu' || type === 'staff' || type === 'life');
+            const initialDateMode = (supportsRange && data.end && data.end !== data.start) ? 'range' : 'single';
+            const initialDisplayMode = data.displayMode || 'all-days';
+            const initialEndVal = data.end || data.start || '';
+            const isEditing = !!data.id; // 반복 탭은 신규 등록 시에만 노출
+
+            if (supportsRange) {
+                html += `
+                    <div class="curr-form-row">
+                        <div class="curr-form-group" style="flex: 1;">
+                            <div class="curr-date-selector-container">
+                                <div class="curr-date-mode-tabs">
+                                    <div class="curr-date-mode-tab ${initialDateMode === 'single' ? 'active' : ''}"
+                                         data-mode="single" onclick="window.setCurrDateMode('single')">
+                                        <i class="far fa-calendar"></i> 날짜
+                                    </div>
+                                    <div class="curr-date-mode-tab ${initialDateMode === 'range' ? 'active' : ''}"
+                                         data-mode="range" onclick="window.setCurrDateMode('range')">
+                                        <i class="far fa-calendar-alt"></i> 기간
+                                    </div>
+                                    ${!isEditing ? `
+                                    <div class="curr-date-mode-tab" data-mode="recurring"
+                                         onclick="window.setCurrDateMode('recurring')">
+                                        <i class="fas fa-redo"></i> 반복
+                                    </div>` : ''}
+                                </div>
+                                <input type="hidden" id="curr-date-mode" value="${initialDateMode}">
+
+                                <div id="curr-date-single-wrap" class="curr-date-input-area ${initialDateMode === 'single' ? '' : 'hidden'}">
+                                    <input type="date" id="curr-date" class="curr-input" value="${data.start || ''}" ${initialDateMode === 'single' ? 'required' : ''}>
+                                </div>
+
+                                <div id="curr-date-range-wrap" class="curr-date-input-area ${initialDateMode === 'range' ? '' : 'hidden'}">
+                                    <div class="curr-range-inputs">
+                                        <input type="date" id="curr-date-range-start" class="curr-input" value="${data.start || ''}">
+                                        <span class="range-separator">~</span>
+                                        <input type="date" id="curr-date-range-end" class="curr-input" value="${initialEndVal}">
+                                    </div>
+
+                                    <div class="curr-display-mode-row">
+                                        <div class="display-mode-opt ${initialDisplayMode === 'all-days' ? 'active' : ''}"
+                                             data-value="all-days"
+                                             onclick="window.selectDisplayMode('all-days')">
+                                            <div class="dmo-visual">
+                                                <span class="dmo-bar filled"></span>
+                                                <span class="dmo-bar filled"></span>
+                                                <span class="dmo-bar filled"></span>
+                                            </div>
+                                            <div class="dmo-text">
+                                                <strong>매일 표시</strong>
+                                                <small>기간 내 모든 날짜</small>
+                                            </div>
+                                        </div>
+                                        <div class="display-mode-opt ${initialDisplayMode === 'start-only' ? 'active' : ''}"
+                                             data-value="start-only"
+                                             onclick="window.selectDisplayMode('start-only')">
+                                            <div class="dmo-visual">
+                                                <span class="dmo-bar filled"></span>
+                                                <span class="dmo-bar"></span>
+                                                <span class="dmo-bar"></span>
+                                            </div>
+                                            <div class="dmo-text">
+                                                <strong>시작일에만</strong>
+                                                <small>시작일 1회만</small>
+                                            </div>
+                                        </div>
+                                        <div class="display-mode-opt ${initialDisplayMode === 'end-only' ? 'active' : ''}"
+                                             data-value="end-only"
+                                             onclick="window.selectDisplayMode('end-only')">
+                                            <div class="dmo-visual">
+                                                <span class="dmo-bar"></span>
+                                                <span class="dmo-bar"></span>
+                                                <span class="dmo-bar filled"></span>
+                                            </div>
+                                            <div class="dmo-text">
+                                                <strong>종료일에만</strong>
+                                                <small>종료일 1회만</small>
+                                            </div>
+                                        </div>
+                                        <div class="display-mode-opt ${initialDisplayMode === 'start-end' ? 'active' : ''}"
+                                             data-value="start-end"
+                                             onclick="window.selectDisplayMode('start-end')">
+                                            <div class="dmo-visual">
+                                                <span class="dmo-bar filled"></span>
+                                                <span class="dmo-bar"></span>
+                                                <span class="dmo-bar filled"></span>
+                                            </div>
+                                            <div class="dmo-text">
+                                                <strong>시작·종료일</strong>
+                                                <small>양 끝 날짜에만</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="curr-display-mode" value="${initialDisplayMode}">
+                                </div>
+
+                                <div id="curr-date-recur-wrap" class="curr-date-input-area hidden">
+                                    <div class="recur-method-tabs">
+                                        <div class="recur-method-tab active" data-method="weekday"
+                                             onclick="window.setRecurMethod('weekday')">
+                                            <i class="far fa-calendar-check"></i> 요일 반복
+                                        </div>
+                                        <div class="recur-method-tab" data-method="dates"
+                                             onclick="window.setRecurMethod('dates')">
+                                            <i class="far fa-calendar-plus"></i> 날짜 선택
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="curr-recur-method" value="weekday">
+
+                                    <div id="recur-weekday-section">
+                                        <div class="recur-field-label">반복 요일 <span class="recur-req">*</span></div>
+                                        <div class="recur-weekday-chips">
+                                            ${['일','월','화','수','목','금','토'].map((wd, i) =>
+                                                `<div class="recur-wd-chip${i===0?' wd-sun':''}${i===6?' wd-sat':''}" data-dow="${i}" onclick="window.toggleRecurWeekday(this)">${wd}</div>`
+                                            ).join('')}
+                                        </div>
+                                        <div class="recur-field-label">반복 기간</div>
+                                        <div class="recur-period-inputs">
+                                            <input type="date" id="curr-recur-start" class="curr-input" value="${data.start || ''}">
+                                            <span class="range-separator">~</span>
+                                            <input type="date" id="curr-recur-end" class="curr-input">
+                                        </div>
+                                        <label class="recur-infinite-check">
+                                            <input type="checkbox" id="curr-recur-infinite" onchange="window.toggleRecurInfinite(this)">
+                                            <span>무한 반복 <small>(현재 학년도 말까지 자동 생성)</small></span>
+                                        </label>
+                                    </div>
+
+                                    <div id="recur-dates-section" class="hidden">
+                                        <div class="recur-field-label">반복할 날짜 <span class="recur-req">*</span></div>
+                                        <div class="recur-date-adder">
+                                            <input type="date" id="curr-recur-date-input" class="curr-input">
+                                            <button type="button" class="recur-add-btn" onclick="window.addRecurDate()">
+                                                <i class="fas fa-plus"></i> 추가
+                                            </button>
+                                        </div>
+                                        <div id="recur-date-list" class="recur-date-list"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    ${type === 'life' ? `
-                    <label class="holiday-check-wrapper">
-                        <input type="checkbox" id="curr-is-holiday" ${data.isHoliday ? 'checked' : ''}>
-                        <span>공휴일</span>
-                    </label>
-                    ` : ''}
-                </div>
+                `;
+            } else {
+                html += `
+                    <div class="curr-form-row">
+                        <div class="curr-form-group" style="flex: 1;">
+                            <label class="curr-label">날짜</label>
+                            <input type="date" id="curr-date" class="curr-input" value="${data.start || ''}" required>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 공휴일 체크박스 — 특별일 전용, 모든 날짜 모드(날짜/기간/반복)에서 동작
+            if (type === 'life') {
+                html += `
+                    <div class="curr-form-row">
+                        <label class="holiday-check-wrapper">
+                            <input type="checkbox" id="curr-is-holiday" ${data.isHoliday ? 'checked' : ''}>
+                            <span>공휴일</span>
+                        </label>
+                    </div>
+                `;
+            }
+            html += `
 
                 ${type === 'doc' ? `
                     <div class="doc-bulk-container">
@@ -1471,16 +1970,142 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Global helper for Type switching
     window.switchCurrType = (newType) => {
-        const dateEl = document.getElementById('curr-date');
         const idEl = document.getElementById('curr-event-id');
         const titleEl = document.getElementById('curr-title');
-        
+
+        // Preserve range data when switching between range-supporting types
+        const dateMode = document.getElementById('curr-date-mode')?.value || 'single';
+        let startVal, endVal, displayModeVal;
+        if (dateMode === 'range') {
+            startVal = document.getElementById('curr-date-range-start')?.value || formatDate(new Date());
+            endVal = document.getElementById('curr-date-range-end')?.value || '';
+            displayModeVal = document.getElementById('curr-display-mode')?.value || 'all-days';
+        } else {
+            startVal = document.getElementById('curr-date')?.value || formatDate(new Date());
+        }
+
         const currentData = {
             id: idEl ? idEl.value : '',
-            start: dateEl ? dateEl.value : formatDate(new Date()),
+            start: startVal,
             title: titleEl ? titleEl.value : ''
         };
-        showEventForm(newType, currentData); 
+        if (dateMode === 'range' && endVal) {
+            currentData.end = endVal;
+            currentData.displayMode = displayModeVal;
+        }
+        showEventForm(newType, currentData);
+    };
+
+    // Date mode toggle (날짜 / 기간 / 반복)
+    window.setCurrDateMode = (mode) => {
+        const modeInput = document.getElementById('curr-date-mode');
+        if (!modeInput) return;
+        modeInput.value = mode;
+
+        document.querySelectorAll('.curr-date-mode-tab').forEach(tab => {
+            tab.classList.toggle('active', tab.dataset.mode === mode);
+        });
+
+        const singleWrap = document.getElementById('curr-date-single-wrap');
+        const rangeWrap = document.getElementById('curr-date-range-wrap');
+        const recurWrap = document.getElementById('curr-date-recur-wrap');
+        const singleInput = document.getElementById('curr-date');
+        const rangeStart = document.getElementById('curr-date-range-start');
+        const rangeEnd = document.getElementById('curr-date-range-end');
+
+        // Hide all sections, clear HTML5 required (validation handled in JS)
+        singleWrap?.classList.add('hidden');
+        rangeWrap?.classList.add('hidden');
+        recurWrap?.classList.add('hidden');
+        singleInput?.removeAttribute('required');
+        rangeStart?.removeAttribute('required');
+        rangeEnd?.removeAttribute('required');
+
+        if (mode === 'single') {
+            singleWrap?.classList.remove('hidden');
+            if (singleInput && rangeStart?.value) singleInput.value = rangeStart.value;
+            singleInput?.setAttribute('required', 'required');
+        } else if (mode === 'range') {
+            rangeWrap?.classList.remove('hidden');
+            if (rangeStart && singleInput?.value) rangeStart.value = singleInput.value;
+            if (rangeEnd && !rangeEnd.value && rangeStart?.value) rangeEnd.value = rangeStart.value;
+            rangeStart?.setAttribute('required', 'required');
+            rangeEnd?.setAttribute('required', 'required');
+        } else if (mode === 'recurring') {
+            recurWrap?.classList.remove('hidden');
+            // Seed the recurrence start date from whatever single date is set
+            const recurStart = document.getElementById('curr-recur-start');
+            if (recurStart && !recurStart.value && singleInput?.value) recurStart.value = singleInput.value;
+        }
+    };
+
+    // Display-mode option selector
+    window.selectDisplayMode = (mode) => {
+        const hidden = document.getElementById('curr-display-mode');
+        if (hidden) hidden.value = mode;
+        document.querySelectorAll('.display-mode-opt').forEach(opt => {
+            opt.classList.toggle('active', opt.dataset.value === mode);
+        });
+    };
+
+    // --- Recurring mode UI handlers ---
+    window.setRecurMethod = (method) => {
+        const input = document.getElementById('curr-recur-method');
+        if (input) input.value = method;
+        document.querySelectorAll('.recur-method-tab').forEach(t => {
+            t.classList.toggle('active', t.dataset.method === method);
+        });
+        const wd = document.getElementById('recur-weekday-section');
+        const dt = document.getElementById('recur-dates-section');
+        if (method === 'weekday') {
+            wd?.classList.remove('hidden');
+            dt?.classList.add('hidden');
+        } else {
+            wd?.classList.add('hidden');
+            dt?.classList.remove('hidden');
+        }
+    };
+
+    window.toggleRecurWeekday = (el) => {
+        el.classList.toggle('active');
+    };
+
+    window.toggleRecurInfinite = (cb) => {
+        const endInput = document.getElementById('curr-recur-end');
+        if (!endInput) return;
+        endInput.disabled = cb.checked;
+        endInput.classList.toggle('recur-input-disabled', cb.checked);
+        if (cb.checked) endInput.value = '';
+    };
+
+    window.addRecurDate = () => {
+        const input = document.getElementById('curr-recur-date-input');
+        const list = document.getElementById('recur-date-list');
+        if (!input || !list || !input.value) return;
+        const v = input.value;
+        // Prevent duplicates
+        if ([...list.querySelectorAll('.recur-date-chip')].some(c => c.dataset.date === v)) {
+            input.value = '';
+            return;
+        }
+        const dObj = new Date(v + 'T00:00:00');
+        const dowNames = ['일','월','화','수','목','금','토'];
+        const label = `${dObj.getMonth() + 1}/${dObj.getDate()} (${dowNames[dObj.getDay()]})`;
+        const chip = document.createElement('div');
+        chip.className = 'recur-date-chip';
+        chip.dataset.date = v;
+        chip.innerHTML = `<span>${label}</span><i class="fas fa-times" onclick="window.removeRecurDate(this)"></i>`;
+        list.appendChild(chip);
+        // Keep chips sorted by date
+        [...list.querySelectorAll('.recur-date-chip')]
+            .sort((a, b) => a.dataset.date.localeCompare(b.dataset.date))
+            .forEach(c => list.appendChild(c));
+        input.value = '';
+    };
+
+    window.removeRecurDate = (el) => {
+        const chip = el.closest('.recur-date-chip');
+        if (chip) chip.remove();
     };
 
     // Time Input UI Logic
@@ -1566,7 +2191,27 @@ document.addEventListener("DOMContentLoaded", () => {
         const type = document.getElementById("curr-event-type").value;
         const titleEl = document.getElementById("curr-title");
         const title = titleEl ? titleEl.value : "";
-        const date = document.getElementById("curr-date").value;
+
+        // Date mode handling — edu/staff support "기간"
+        const dateMode = document.getElementById("curr-date-mode")?.value || 'single';
+        let date = "";
+        let endDate = "";
+        let displayMode = "";
+        if (dateMode === 'range') {
+            date = document.getElementById("curr-date-range-start")?.value || "";
+            endDate = document.getElementById("curr-date-range-end")?.value || "";
+            displayMode = document.getElementById("curr-display-mode")?.value || 'all-days';
+            if (!date || !endDate) {
+                alert('기간의 시작일과 종료일을 모두 선택해주세요.');
+                return;
+            }
+            if (endDate < date) {
+                alert('종료일은 시작일과 같거나 이후여야 합니다.');
+                return;
+            }
+        } else {
+            date = document.getElementById("curr-date")?.value || "";
+        }
         
         // Time Assembly Logic
         let time = "";
@@ -1619,6 +2264,16 @@ document.addEventListener("DOMContentLoaded", () => {
             updatedAt: new Date().toISOString()
         };
 
+        // Range fields: only stored when a real range is set; otherwise cleared
+        // (use null when editing so Firestore drops the previous range data)
+        if (dateMode === 'range' && endDate && endDate !== date) {
+            eventData.end = endDate;
+            eventData.displayMode = displayMode || 'all-days';
+        } else if (eventId) {
+            eventData.end = null;
+            eventData.displayMode = null;
+        }
+
         // Specific Fields (Fields might not exist depending on type, use optional chaining or check type)
         if (type === 'edu') {
             eventData.place = document.getElementById("curr-place")?.value || "";
@@ -1667,7 +2322,104 @@ document.addEventListener("DOMContentLoaded", () => {
         const { db, firestoreUtils } = window;
         if(window.db) {
             try {
-                if (type === 'doc') {
+                if (dateMode === 'recurring') {
+                    // --- Recurring: materialize one event document per target date ---
+                    const method = document.getElementById('curr-recur-method')?.value || 'weekday';
+                    let targetDates = [];
+                    let skippedHolidays = 0;
+
+                    if (method === 'weekday') {
+                        const dows = [...document.querySelectorAll('.recur-wd-chip.active')]
+                            .map(c => parseInt(c.dataset.dow, 10));
+                        if (dows.length === 0) {
+                            alert('반복할 요일을 하나 이상 선택해주세요.');
+                            return;
+                        }
+                        const rStart = document.getElementById('curr-recur-start')?.value;
+                        if (!rStart) {
+                            alert('반복 시작일을 선택해주세요.');
+                            return;
+                        }
+                        const infinite = document.getElementById('curr-recur-infinite')?.checked;
+                        const rEnd = infinite ? academicYearEnd(rStart)
+                                              : (document.getElementById('curr-recur-end')?.value || '');
+                        if (!rEnd) {
+                            alert('반복 종료일을 선택하거나 "무한 반복"을 체크해주세요.');
+                            return;
+                        }
+                        if (rEnd < rStart) {
+                            alert('반복 종료일은 시작일과 같거나 이후여야 합니다.');
+                            return;
+                        }
+                        const allDates = generateRecurWeekdayDates(rStart, rEnd, dows);
+
+                        // Build a holiday date set (auto holidays + DB life events flagged as holiday)
+                        const holidaySet = new Set();
+                        const monthsSeen = new Set();
+                        allDates.forEach(d => {
+                            const key = d.slice(0, 7); // YYYY-MM
+                            if (monthsSeen.has(key)) return;
+                            monthsSeen.add(key);
+                            const y2 = parseInt(d.slice(0,4), 10);
+                            const m2 = parseInt(d.slice(5,7), 10) - 1;
+                            if (window.KoreanHolidayService) {
+                                window.KoreanHolidayService.getAutoEvents(y2, m2).forEach(ev => {
+                                    if (ev.isHoliday === true || ev.isHoliday === 'true') holidaySet.add(ev.start);
+                                });
+                            }
+                        });
+                        currEvents.forEach(ev => {
+                            if (!ev.isDeleted && (ev.isHoliday === true || ev.isHoliday === 'true')) {
+                                holidaySet.add(ev.start);
+                            }
+                        });
+
+                        targetDates = allDates.filter(d => !holidaySet.has(d));
+                        skippedHolidays = allDates.length - targetDates.length;
+                    } else {
+                        targetDates = [...document.querySelectorAll('#recur-date-list .recur-date-chip')]
+                            .map(c => c.dataset.date);
+                        if (targetDates.length === 0) {
+                            alert('반복할 날짜를 하나 이상 추가해주세요.');
+                            return;
+                        }
+                    }
+
+                    if (targetDates.length === 0) {
+                        alert('조건에 맞는 생성 가능한 날짜가 없습니다. (공휴일 제외 후 남은 날짜 없음)');
+                        return;
+                    }
+
+                    let confirmMsg = `${targetDates.length}개의 일정을 생성합니다.`;
+                    if (skippedHolidays > 0) confirmMsg += `\n(공휴일과 겹치는 ${skippedHolidays}일은 자동 제외됨)`;
+                    confirmMsg += `\n\n계속하시겠습니까?`;
+                    if (!confirm(confirmMsg)) return;
+
+                    const groupId = `recur_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    const nowIso = new Date().toISOString();
+                    const writes = targetDates.map((d, idx) => {
+                        const occ = {
+                            ...eventData,
+                            start: d,
+                            recurrenceGroupId: groupId,
+                            isRecurring: true,
+                            createdAt: nowIso,
+                            updatedAt: nowIso
+                        };
+                        delete occ.end;
+                        delete occ.displayMode;
+                        const newId = `evt_${Date.now()}_${idx}_${Math.random().toString(36).substr(2, 9)}`;
+                        return firestoreUtils.setDoc(firestoreUtils.doc(db, "curriculum_events", newId), occ);
+                    });
+                    await Promise.all(writes);
+
+                    if (window.logUserAction) {
+                        window.logUserAction('curriculum', '생성', `${eventData.title} 반복 일정 ${targetDates.length}개 생성`);
+                    }
+                    currModal.classList.remove("active");
+                    if (window.updateTodayWidget) window.updateTodayWidget();
+                    return;
+                } else if (type === 'doc') {
                     const rows = document.querySelectorAll('.curr-doc-bulk-row');
                     const bulkData = [];
                     rows.forEach(row => {
@@ -1747,19 +2499,43 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function handleDeleteEvent() {
-        if(!confirm("정말 삭제하시겠습니까?")) return;
-        
         const eventId = document.getElementById("curr-event-id").value;
         const title = document.getElementById("curr-title")?.value || "제목 없음";
         if(!eventId) return;
 
+        // Recurring events: offer "this only" vs "entire series"
+        const thisEv = currEvents.find(e => e.id === eventId);
+        const groupId = thisEv && thisEv.recurrenceGroupId;
+        let deleteAll = false;
+
+        if (groupId) {
+            const groupCount = currEvents.filter(e => e.recurrenceGroupId === groupId && !e.isDeleted).length;
+            if (!confirm("정말 삭제하시겠습니까?")) return;
+            deleteAll = confirm(
+                `이 일정은 반복 일정입니다 (총 ${groupCount}개).\n\n` +
+                `[확인] 전체 반복 일정 ${groupCount}개를 모두 삭제\n` +
+                `[취소] 이 일정 하나만 삭제`
+            );
+        } else {
+            if(!confirm("정말 삭제하시겠습니까?")) return;
+        }
+
         const { db, firestoreUtils } = window;
         if(window.db) {
             try {
-                await firestoreUtils.deleteDoc(firestoreUtils.doc(db, "curriculum_events", eventId));
-                
-                if(window.logUserAction) {
-                    window.logUserAction('curriculum', '삭제', `${title} 일정 삭제`);
+                if (deleteAll && groupId) {
+                    const groupEvents = currEvents.filter(e => e.recurrenceGroupId === groupId);
+                    for (const ge of groupEvents) {
+                        await firestoreUtils.deleteDoc(firestoreUtils.doc(db, "curriculum_events", ge.id));
+                    }
+                    if(window.logUserAction) {
+                        window.logUserAction('curriculum', '삭제', `${title} 반복 일정 ${groupEvents.length}개 전체 삭제`);
+                    }
+                } else {
+                    await firestoreUtils.deleteDoc(firestoreUtils.doc(db, "curriculum_events", eventId));
+                    if(window.logUserAction) {
+                        window.logUserAction('curriculum', '삭제', `${title} 일정 삭제`);
+                    }
                 }
 
                 // Auto-Delete from Google is now handled by Real-time Listener
@@ -1811,10 +2587,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
     window.deleteCurrEventBubble = async (id) => {
         if (window.event) window.event.stopPropagation(); // Stop bubble to cell
-        if(!confirm("바로 삭제하시겠습니까?")) return;
-        
+
         const { db, firestoreUtils } = window;
-        const isAuto = !currEvents.find(e => e.id === id); // If not in loaded DB events, it's auto
+        const dbEv = currEvents.find(e => e.id === id);
+        const isAuto = !dbEv; // If not in loaded DB events, it's auto
+
+        // Recurring events: offer "this only" vs "entire series"
+        const groupId = dbEv && dbEv.recurrenceGroupId;
+        let deleteAll = false;
+        if (groupId) {
+            const groupCount = currEvents.filter(e => e.recurrenceGroupId === groupId && !e.isDeleted).length;
+            if (!confirm("바로 삭제하시겠습니까?")) return;
+            deleteAll = confirm(
+                `이 일정은 반복 일정입니다 (총 ${groupCount}개).\n\n` +
+                `[확인] 전체 반복 일정 ${groupCount}개를 모두 삭제\n` +
+                `[취소] 이 일정 하나만 삭제`
+            );
+        } else {
+            if(!confirm("바로 삭제하시겠습니까?")) return;
+        }
 
         try {
             let logTitle = "알 수 없는 일정";
@@ -1830,14 +2621,21 @@ document.addEventListener("DOMContentLoaded", () => {
                     isDeleted: true,
                     updatedAt: new Date().toISOString()
                 });
+            } else if (deleteAll && groupId) {
+                const groupEvents = currEvents.filter(e => e.recurrenceGroupId === groupId);
+                logTitle = dbEv.title;
+                for (const ge of groupEvents) {
+                    await firestoreUtils.deleteDoc(firestoreUtils.doc(db, "curriculum_events", ge.id));
+                    if (window.deleteEventFromGoogle) window.deleteEventFromGoogle(ge.id);
+                }
             } else {
-                const ev = currEvents.find(e => e.id === id);
-                if(ev) logTitle = ev.title;
+                logTitle = dbEv ? dbEv.title : logTitle;
                 await firestoreUtils.deleteDoc(firestoreUtils.doc(db, "curriculum_events", id));
             }
-            
+
             if(window.logUserAction) {
-                window.logUserAction('curriculum', '삭제', `${logTitle} 일정 삭제 (빠른 삭제)`);
+                const logSuffix = (deleteAll && groupId) ? `반복 일정 전체 삭제 (빠른 삭제)` : `일정 삭제 (빠른 삭제)`;
+                window.logUserAction('curriculum', '삭제', `${logTitle} ${logSuffix}`);
             }
 
             // Auto-Delete from Google
@@ -1869,7 +2667,10 @@ document.addEventListener("DOMContentLoaded", () => {
             // Clone data and remove ID
             const newData = { ...originalEvent };
             delete newData.id;
-            
+            // A duplicate is a standalone event — detach it from any recurrence series
+            delete newData.recurrenceGroupId;
+            delete newData.isRecurring;
+
             // Adjust title or name
             if (newData.eventType === 'staff' && newData.staffName) {
                 // If staff, title is staffName usually
@@ -2157,6 +2958,33 @@ document.addEventListener("DOMContentLoaded", () => {
         return [year, month, day].join('-');
     }
 
+    // --- Recurring schedule helpers ---
+    // Korean academic year runs Mar 1 ~ end of Feb. Returns the last day (YYYY-MM-DD)
+    // of the academic year containing the given date.
+    function academicYearEnd(fromDateStr) {
+        const parts = String(fromDateStr).split('-');
+        const y = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10); // 1-12
+        const endYear = (m >= 3) ? y + 1 : y;
+        const lastFeb = new Date(endYear, 2, 0); // day 0 of March = last day of Feb
+        return formatDate(lastFeb);
+    }
+
+    // Generates every date between start~end (inclusive) whose weekday is in `dows` (0=Sun..6=Sat).
+    function generateRecurWeekdayDates(startStr, endStr, dows) {
+        const dates = [];
+        const sp = startStr.split('-'), ep = endStr.split('-');
+        let cur = new Date(parseInt(sp[0],10), parseInt(sp[1],10) - 1, parseInt(sp[2],10));
+        const end = new Date(parseInt(ep[0],10), parseInt(ep[1],10) - 1, parseInt(ep[2],10));
+        let guard = 0;
+        while (cur <= end && guard < 1000) {
+            if (dows.includes(cur.getDay())) dates.push(formatDate(cur));
+            cur.setDate(cur.getDate() + 1);
+            guard++;
+        }
+        return dates;
+    }
+
     // --- Export Function ---
     function exportCurriculum(format) {
         const year = currDate.getFullYear();
@@ -2220,7 +3048,16 @@ document.addEventListener("DOMContentLoaded", () => {
             const dayOfWeek = dateObj.getDay();
             const dateStr = formatDate(dateObj);
             
-            const dayEvents = combinedEvents.filter(e => e.start === dateStr);
+            // Include range events according to their displayMode
+            const dayEvents = combinedEvents.filter(e => {
+                if (!e.start) return false;
+                const isRange = e.end && e.end !== e.start;
+                if (!isRange) return e.start === dateStr;
+                if (e.displayMode === 'start-only') return e.start === dateStr;
+                if (e.displayMode === 'end-only') return e.end === dateStr;
+                if (e.displayMode === 'start-end') return e.start === dateStr || e.end === dateStr;
+                return e.start <= dateStr && dateStr <= e.end;
+            });
             const isHoliday = dayEvents.some(e => e.isHoliday === true || e.isHoliday === "true");
             
             let dayColor = "#000000";
@@ -2236,14 +3073,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (events.length === 0) return '';
 
+                const fmtRange = (s, en) => {
+                    const [, sm, sd] = s.split('-');
+                    const [, em, ed] = en.split('-');
+                    return `${parseInt(sm,10)}/${parseInt(sd,10)}~${parseInt(em,10)}/${parseInt(ed,10)}`;
+                };
+
                 return events.map(e => {
                     let t = e.title;
+                    const rangeStr = (e.end && e.end !== e.start) ? fmtRange(e.start, e.end) : '';
                     if (type === 'edu') {
-                        const details = [e.time, e.place, e.target, e.inCharge].filter(Boolean).join(', ');
+                        const details = [rangeStr, e.time, e.place, e.target, e.inCharge].filter(Boolean).join(', ');
                         if (details) t += ` <span style="color:#555; font-size:8pt;">[${details}]</span>`;
                     } else if (type === 'staff') {
                         if (e.staffStatus) t += `(${e.staffStatus})`;
-                        const details = [e.reason, e.place, e.time].filter(Boolean).join(', ');
+                        const details = [rangeStr, e.reason, e.place, e.time].filter(Boolean).join(', ');
                         if (details) t += ` <span style="color:#555; font-size:8pt;">- ${details}</span>`;
                     } else if (type === 'doc') {
                         if (e.inCharge) t += `(${e.inCharge})`;
