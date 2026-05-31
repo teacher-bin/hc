@@ -554,9 +554,9 @@ body.dark-mode .event-item.is-holiday {
 }
 
 /* Responsive adjustments */
-@media (max-width: 1200px) {
+@media (max-width: 1600px) {
   .sidebar-container {
-    display: none; /* Hide sidebar on small screens */
+    display: none; /* 태블릿~중소형 노트북(≤1600px)까지 사이드 위젯 숨김 */
   }
 }
 
