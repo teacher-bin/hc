@@ -14264,8 +14264,8 @@ body.dark-mode .iframe-action-btn.close-btn:hover {
 
 
 
-/* ================= Intermediate & Low-Res Desktop Fix (769px ~ 1450px) ================= */
-@media (min-width: 769px) and (max-width: 1450px) {
+/* ================= Intermediate & Low-Res Desktop Fix (769px ~ 1600px) ================= */
+@media (min-width: 769px) and (max-width: 1600px) {
     /* 1. Expand Header to Accommodate Stacked Elements */
     .header-container {
         min-height: 120px !important;
@@ -14305,19 +14305,15 @@ body.dark-mode .iframe-action-btn.close-btn:hover {
         z-index: 6000 !important;
     }
 
-    /* 3. User Panel Placement */
+    /* 3. User Panel — 태블릿 모드에서는 우측 상단 아이콘·인사말 숨김 */
     .header-user-panel {
-        top: 25px !important;
-        right: 20px !important;
-        flex-direction: row !important;
-        transform: none !important;
-        align-items: center !important;
+        display: none !important;
     }
 
-    /* 4. Section & Margin Reset */
-    #curriculum-section, 
-    #status-section, 
-    #account-section, 
+    /* 4-a. Outer section wrappers — 좌우 패딩 제거 (카드들이 자기 패딩으로 관리) */
+    #curriculum-section,
+    #status-section,
+    #account-section,
     #bus-section,
     #datayard-section,
     #helppage-section,
@@ -14325,23 +14321,79 @@ body.dark-mode .iframe-action-btn.close-btn:hover {
         margin-left: auto !important;
         margin-right: auto !important;
         width: 95% !important;
-        max-width: 1100px !important;
+        max-width: 1500px !important;
+        min-width: 0 !important;
         padding-left: 0 !important;
         padding-right: 0 !important;
         transform: none !important;
+    }
+
+    /* 4-b. Inner card containers — 가운데 정렬·폭 확장만, 자체 내부 패딩 보존 */
+    .meal-container,
+    #training-section .training-container {
+        margin-left: auto !important;
+        margin-right: auto !important;
+        width: 95% !important;
+        max-width: 1500px !important;
+        min-width: 0 !important;
     }
 
     .intro-landing-container {
         margin-left: auto !important;
         margin-right: auto !important;
         width: 95% !important;
-        max-width: 1100px !important;
+        max-width: 1500px !important;
         margin-top: 1.5rem !important;
     }
 
     /* Table Horizontal Scroll */
     .account-table-wrapper, .bus-table-wrapper, .editable-table-wrapper {
         overflow-x: auto !important;
+    }
+
+    /* 5. 학교현황 — 두 표/세 표 그리드를 세로로 쌓아 각 표가 전체 폭을 사용
+       태블릿에서 좌우 분할 시 컬럼 정렬이 어긋나고 우측 여백이 어색해지는 문제 해소 */
+    .table-grid-wrapper.table-grid-2,
+    .table-grid-wrapper.table-grid-3 {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* 6. 학교현황 — 표·컬럼에 박힌 인라인 width(저장된 px값)를 무효화하여
+       표가 wrapper 전체 폭에 균등 분할되도록 강제 */
+    #status-section .status-table {
+        width: 100% !important;
+        table-layout: fixed !important;
+        border-collapse: collapse !important;
+        border-spacing: 0 !important;
+    }
+    #status-section .status-table thead tr,
+    #status-section .status-table tbody tr {
+        height: auto !important;
+        min-height: 0 !important;
+    }
+    /* th·td 동일 높이 강제 — 명시적 height + line-height로 단일행 텍스트 정렬 */
+    #status-section .status-table th,
+    #status-section .status-table td {
+        width: auto !important;
+        height: 44px !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        padding: 0 0.5rem !important;
+        line-height: 1.4 !important;
+        vertical-align: middle !important;
+        box-sizing: border-box !important;
+    }
+    /* header-inner와 그 안의 모든 후손이 셀 높이를 늘리지 못하도록 차단 */
+    #status-section .status-table th .header-inner,
+    #status-section .status-table th .header-inner * {
+        display: inline-block !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        line-height: inherit !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        vertical-align: middle !important;
     }
 }
 
@@ -14476,21 +14528,17 @@ body.dark-mode #helppage-bg-elements .bg-nature-wrap {
         }
     
 
-/* Restored Section Layouts */
-#helppage-section,
-#datayard-section {
-  padding: calc(2rem - 20px) 5% 4rem;
-  max-width: 1300px;
-  margin: 0 auto 4rem 350px !important; max-width: 1300px !important; padding-left: 5% !important;
-}
-
-/* Restored Helppage & Datayard Styles */
-/* Helppage Section (??????e???????????????? - ????????????????????????????????????????袁⑸즴筌?씛彛???돗??????????????癲ル슢二??곸젞???????????????????????됰Ŧ?????????????????????대첐??????????????????????????????????????????????????????????????*/
-#helppage-section,
-#datayard-section {
-  padding: calc(2rem - 20px) 5% 4rem;
-  max-width: 1300px;
-  margin: 0 auto 4rem 350px !important; max-width: 1300px !important; padding-left: 5% !important; /* Increased left margin from 260px to 350px for balance */
+/* Restored Helppage & Datayard Layout
+   ─ 위젯이 표시되는 데스크톱(≥1601px)에서만 위젯 자리(350px) 비워둠
+   ─ 태블릿(≤1600px)에서는 중간 브레이크포인트의 가운데 정렬 규칙이 그대로 적용됨 */
+@media (min-width: 1601px) {
+  #helppage-section,
+  #datayard-section {
+    padding: calc(2rem - 20px) 5% 4rem;
+    margin: 0 auto 4rem 350px !important;
+    max-width: 1300px !important;
+    padding-left: 5% !important;
+  }
 }
 
 .helppage-grid {
@@ -14938,8 +14986,9 @@ body.dark-mode #helppage-bg-elements .bg-nature-wrap {
   font-size: 0.875rem;
 }
 
-/* Fix overlaps for desktop and reset for mobile */
-@media (min-width: 769px) {
+/* Fix overlaps for desktop only (위젯이 표시되는 ≥1601px 한정) and reset for mobile.
+   태블릿(769~1600px)에서는 중간 브레이크포인트의 가운데 정렬 규칙이 그대로 적용됨 */
+@media (min-width: 1601px) {
     #datayard-section,
     #helppage-section {
         margin-left: 360px !important;
