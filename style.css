@@ -6131,12 +6131,31 @@ body.dark-mode {
     display: none !important; /* Hide bullet for docs */
 }
 
-.doc-checkbox {
+/* 체크박스 래퍼 — 보이지 않는 확장 클릭 영역(테두리에서 8px 더) 제공 */
+.doc-checkbox-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     margin-right: 6px;
     cursor: pointer;
-    width: 14px;
-    height: 14px;
+    position: relative;
+    flex-shrink: 0;
+}
+.doc-checkbox-wrap::before {
+    content: '';
+    position: absolute;
+    inset: -8px;  /* 체크박스 사방으로 8px 확장 — 약 30×30px 히트존 */
+    border-radius: 6px;
+}
+
+.doc-checkbox {
+    margin: 0;
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
     accent-color: #8b5cf6; /* Match doc theme color */
+    position: relative;
+    z-index: 1;
 }
 
 .completed-text {

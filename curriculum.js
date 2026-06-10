@@ -1102,7 +1102,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (type === 'doc') {
                 chip.classList.add('doc-chip'); // Marker for styling
                  // Prevent bubble to cell, allow checkbox only
-                prefixHtml = `<input type="checkbox" class="doc-checkbox" ${ev.isCompleted ? 'checked' : ''} onclick="window.toggleDocComplete('${ev.id}', this)">`;
+                prefixHtml = `<label class="doc-checkbox-wrap"><input type="checkbox" class="doc-checkbox" ${ev.isCompleted ? 'checked' : ''} onclick="window.toggleDocComplete('${ev.id}', this)"></label>`;
             }
 
             // [New Badge Logic]
